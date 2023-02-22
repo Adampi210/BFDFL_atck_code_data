@@ -200,13 +200,14 @@ class Server_FL():
 
     # Method to aggregate client models into a global model:
     def aggregate_client_models(self):
+
         scaled_client_weights = [[layer * self.client_scale_dictionary[client.client_id] / self.total_clients_weights \
                                     for layer in client.client_model.get_params()] for client in self.list_clients]
 
         new_model_parameters = [sum(layers) for layers in zip(*scaled_client_weights)]
+
         if self.global_server_model == None:
             self.init_compiled_model()
-
         self.global_server_model.set_params(new_model_parameters)
 
     # Test the accuracy and loss of a global model
@@ -302,35 +303,38 @@ def split_data_uniform_excl_server(num_clients):
 # Set hyperparameters
 BATCH_SIZE = 1000   # Batch size while training
 N_EPOCHS   = 2      # Number of epochs for training
-N_SERVERS  = 0      # Number of servers
-N_CLIENTS  = 2      # Number of clients
+N_SERVERS  = 1      # Number of servers
+N_CLIENTS  = 10     # Number of clients
 # Remark: With 0 servers and 1 client I get the same scenarion as in mnist_basic_net
 
 # Split the data for the specified number of clients and servers
 train_dset_split, valid_dset_split = split_data_uniform_excl_server(N_CLIENTS)
 
-# Initialize empty clients array (can do that or initialize server first, and then store the clients in server client list)
-cl_arr = []
-for i in range(N_CLIENTS):
-    cl_arr.append(client_FL(i))
-    cl_arr[i].get_data(train_dset_split[i], valid_dset_split[i])
-    cl_arr[i].init_compiled_model()
-
+# Initialize the main server
 main_server = Server_FL()
-main_server.add_client(cl_arr[0])
-main_server.add_client(cl_arr[1])
-main_server.aggregate_client_models()
-main_server.get_data(valid_dset_split[1])
+main_server.get_data(valid_dset_split[0])
 
+# Add clients to the server
+for i in range(N_CLIENTS):
+    temp_client = client_FL(i)
+    temp_client.get_data(train_dset_split[i], valid_dset_split[i])
+    temp_client.init_compiled_model()
+    main_server.add_client(temp_client)
+
+
+# Check initial accuracy
+main_server.aggregate_client_models()
 main_server.validate_global_model()
+
 # Train and test
 if __name__ == "__main__":
-    for i in range(N_CLIENTS):
-        print(f'Client {i} is training')
-        (cl_arr[i]).train_client(100, 2)
-        print(f'Client {i} is validating')
-        (cl_arr[i]).validate_client()
+    for i in range(10):
+        print(f'global epoch: {i}')
+        for client in main_server.list_clients:
+            client.train_client(100, 1)
+            client.validate_client()
 
-    main_server.aggregate_client_models()
-    main_server.validate_global_model()
-    pass
+        main_server.aggregate_client_models()
+        main_server.validate_global_model()
+        main_server.distribute_global_model()
+    
