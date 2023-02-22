@@ -2,7 +2,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-from torch.autograd import Variable
 import torchvision
 import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
@@ -132,17 +131,6 @@ class CompiledModel():
         # Return the calculated validation loss and validation accuracy
         return valid_loss, valid_accur
 
-    # Return parameters of the network
-    def get_params(self):
-        return [self.model.state_dict()[layer] for layer in self.model.state_dict()]
-
-    # Set parameters of the network to some specified parameters of the same network type (i.e. all layers match shapes)
-    def set_params(self, param_list):
-        # First get the new state dictionary
-        new_state_dict = {key: new_weights for key, new_weights in zip(self.model.state_dict(), param_list)}
-        self.model.load_state_dict(new_state_dict)
-
-
 # Import data, all the data is in the (N, C, H, W) format (N - data samles, C - channels, H - height, W - width)
 mnist_dir = '~/data/datasets/mnist' # Specify which directory to download MNIST to
 # Get the data
@@ -158,7 +146,7 @@ x_valid = x_valid.view(x_valid.shape[0], 1, x_valid.shape[1], x_valid.shape[2])
 
 # Normalize the datasets to be between 0 and 1
 x_train = x_train.float() / 255
-x_valid  = x_valid.float()  / 255
+x_valid  = x_valid.float() / 255
 
 # Set hyperparameters
 BATCH_SIZE = 1000   # Batch size while training
@@ -174,13 +162,6 @@ compiled_basic_MNIST_classifier = CompiledModel(model = basic_MNIST_classifier, 
 
 # Train and tesst
 if __name__ == "__main__":
-    #compiled_basic_MNIST_classifier.train(x_train, y_train, BATCH_SIZE, N_EPOCHS)
-    #calc_loss, calc_accur = compiled_basic_MNIST_classifier.validate(x_valid, y_valid)
-    #print(f'Final loss: {calc_loss}, Final accuracy: {calc_accur}')
-    params = compiled_basic_MNIST_classifier.get_params()
-    print(params[-1])
-    params = [param / 2 for param in params]
-    compiled_basic_MNIST_classifier.set_params(params)
-    params = compiled_basic_MNIST_classifier.get_params()
-    print(params[-1])
-
+    compiled_basic_MNIST_classifier.train(x_train, y_train, BATCH_SIZE, N_EPOCHS)
+    calc_loss, calc_accur = compiled_basic_MNIST_classifier.validate(x_valid, y_valid)
+    print(f'Final loss: {calc_loss}, Final accuracy: {calc_accur}')
