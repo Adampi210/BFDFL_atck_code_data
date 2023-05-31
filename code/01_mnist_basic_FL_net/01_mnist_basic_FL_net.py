@@ -1,3 +1,6 @@
+import sys
+sys.path.append("../plot_data/")
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -6,6 +9,8 @@ import torch.utils.data as data_utils
 import torchvision
 import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
+import csv
+from plot_basic_data import plot_acc_loss_data
 
 # Device configuration
 # Always check first if GPU is avaialble
@@ -15,6 +20,7 @@ if device_used != torch.device('cuda'):
     print(f'CUDA not available, have to use {device_used}')
 
 # Next, create a class for the neural net that will be used
+filename = 'global_model_data.csv'
 
 class NetBasic(nn.Module):
     def __init__(self):
@@ -188,7 +194,7 @@ class Server_FL():
     
     # Method to send the global model over to the clients of the server
     def distribute_global_model(self):
-        # If themodel is not initialized, initialize it to some default model specified in this class
+        # If the model is not initialized, initialize it to some default model specified in this class
         if self.global_server_model == None:
             self.init_compiled_model()
 
@@ -199,7 +205,7 @@ class Server_FL():
             client.client_model.set_params(global_model_state_dict)
 
     # Method to aggregate client models into a global model:
-    def aggregate_client_models(self):
+    def aggregate_client_models_fed_avg(self):
 
         scaled_client_weights = [[layer * self.client_scale_dictionary[client.client_id] / self.total_clients_weights \
                                     for layer in client.client_model.get_params()] for client in self.list_clients]
@@ -209,6 +215,7 @@ class Server_FL():
         if self.global_server_model == None:
             self.init_compiled_model()
         self.global_server_model.set_params(new_model_parameters)
+        print('Server model parameters updated')
 
     # Test the accuracy and loss of a global model
     def validate_global_model(self):
@@ -286,7 +293,7 @@ def split_data_uniform_incl_server(num_servers, num_clients):
 
 # This function only splits the data between the clients, currently split is iid
 def split_data_uniform_excl_server(num_clients):
-     # Import data, all the data is in the (N, C, H, W) format (N - data samles, C - channels, H - height, W - width)
+    # Import data, all the data is in the (N, C, H, W) format (N - data samles, C - channels, H - height, W - width)
     mnist_dir = '~/data/datasets/mnist' # Specify which directory to download MNIST to
     # Get the data
     train_data = torchvision.datasets.MNIST(root = mnist_dir, train = True, download = True, transform = transforms.ToTensor())
@@ -323,18 +330,25 @@ for i in range(N_CLIENTS):
 
 
 # Check initial accuracy
-main_server.aggregate_client_models()
+main_server.aggregate_client_models_fed_avg()
 main_server.validate_global_model()
+main_server.distribute_global_model()
 
 # Train and test
 if __name__ == "__main__":
-    for i in range(10):
-        print(f'global epoch: {i}')
-        for client in main_server.list_clients:
-            client.train_client(100, 1)
-            client.validate_client()
+    global_loss, global_acc = 0, 0
+    with open(filename, 'w', newline = '') as file_data:
+        # Setup a writer
+        writer = csv.writer(file_data)
+        # Training
+        for i in range(10):
+            print(f'global epoch: {i}')
+            for client in main_server.list_clients:
+                client.train_client(500, 1)
+                client.validate_client()
 
-        main_server.aggregate_client_models()
-        main_server.validate_global_model()
-        main_server.distribute_global_model()
-    
+            main_server.aggregate_client_models_fed_avg()
+            global_loss, global_acc = main_server.validate_global_model()
+            main_server.distribute_global_model()
+            writer.writerow([i, global_loss.data.item(), global_acc])
+    plot_acc_loss_data(filename)
