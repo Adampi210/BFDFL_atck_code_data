@@ -40,8 +40,8 @@ attacks = ('None', 'FGSM', 'PGD', 'Noise')
 architectures = ('star', 'fully_decentralized')
 attack_used = 1
 attack = attacks[0]
-adv_pow = 28
-adv_number = 4
+adv_pow = 1
+adv_number = 0
 adv_list = random.sample(list(range(N_CLIENTS)), adv_number)
 attack_time = 4
 # PGD attack parameters
@@ -391,3 +391,8 @@ if __name__ == "__main__":
             main_server.distribute_global_model()
             writer.writerow([i, global_loss.data.item(), global_acc])
     plot_acc_loss_data(filename)
+
+# Use FMNIST 
+# Use 50 devices
+# Decentralized + 1 adversarial + consider centrality + undirected + DFedAvg (assume matrix to be doubly stochastic)
+# Add non-iid
