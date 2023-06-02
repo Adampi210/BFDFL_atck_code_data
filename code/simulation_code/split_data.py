@@ -148,10 +148,22 @@ def split_data_non_iid_excl_server(num_clients, dataset_name):
     for i in range(len(train_per_class_per_client)):
         train_per_class_per_client[i][client_classes[i][NUM_CLASSES_NONIID - 1]] = train_per_client[i] - sum(train_per_class_per_client[i].values())
         valid_per_class_per_client[i][client_classes[i][NUM_CLASSES_NONIID - 1]] = valid_per_client[i] - sum(valid_per_class_per_client[i].values())
-
+    # There's a problem here:
+    client_sums = {i: 0 for i in range(10)}
+    for client_class_list in train_per_class_per_client:
+        for client_class in client_class_list.keys():
+            client_sums[client_class] += client_class_list[client_class]
+    # TODO: Fix idea -> first calculate how to split the classes among clients given available data points for each client
+    # Try to do that with fixed numbers first. So for example, we know that 6000 0's, and if 4 clients use it, then 1500 each
+    # It might be easier to do it that way: choose random, then split uniformly per client, so the choice determines the dataset size
+    # Friday: implement that + FCN (MLP) for centralized FMNIST + CNN for CIFAR10 + attacks centralized. Then can run some simulations finally
+    # When sims are going: Finish writing proofs in notebook + Start literature review + look over other proofs
+    # Also implement decentralized + look at centrality and attacks
+    print(client_sums)
+    print(len(train_data), sum(client_sums.values()))
     # Finally, split the data accordingly
     
-    
+
     return [], []
 
 # Use FMNIST 
