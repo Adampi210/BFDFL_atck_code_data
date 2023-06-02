@@ -1,3 +1,18 @@
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+import torch.optim as optim
+import torch.utils.data as data_utils
+import torchvision
+import torchvision.transforms as transforms
+from torch.utils.data import DataLoader
+import random
+
+from cleverhans.torch.attacks.fast_gradient_method import fast_gradient_method # FGSM
+from cleverhans.torch.attacks.projected_gradient_descent import projected_gradient_descent # PGD
+from cleverhans.torch.attacks.noise import noise # Basic uniform noise perturbation
+
+
 # Create a compiled model class (or learner class) that accepts a created model, optimizer, and loss function, and gives some training/testng functionality
 class CompiledModel():
     def __init__(self, model, optimizer, loss_func):
@@ -103,10 +118,10 @@ class Server_FL():
         self.list_servers.append(server_object)
 
     # Initialize compiled model (if model not initialized) with specified architecture, optimizer, and loss function (adjustable)
-    def init_compiled_model(self):
+    def init_compiled_model(self, net_arch_class):
         # This will always run, but will only initialize the model if the clients model has not been specified
         if self.global_server_model == None:
-            global_model_raw = NetBasic() # Note that the architecture can be changed as necessary (also can import model architecture from other file)
+            global_model_raw = net_arch_class # Note that the architecture can be changed as necessary (also can import model architecture from other file)
             global_loss_function = nn.CrossEntropyLoss() # Again, adjustable here for each client, or can pass a model
             global_optimizer = optim.Adam(global_model_raw.parameters()) # Adjustable here or pass in the compiled model
             # Initialize the compiled model
@@ -167,10 +182,10 @@ class client_FL():
         self.dset_size = len(self.x_train)
 
     # Initialize compiled model (if model not initialized) with specified architecture, optimizer, and loss function (adjustable)
-    def init_compiled_model(self):
+    def init_compiled_model(self, net_arch_class):
         # This will always run, but will only initialize the model if the clients model has not been specified
         if self.client_model == None:
-            local_client_raw_model = NetBasic() # Note that the architecture can be changed as necessary (also can import model architecture from other file)
+            local_client_raw_model = net_arch_class # Note that the architecture can be changed as necessary (also can import model architecture from other file)
             local_client_loss_function = nn.CrossEntropyLoss() # Again, adjustable here for each client, or can pass a model
             local_client_optimizer = optim.Adam(local_client_raw_model.parameters()) # Adjustable here or pass in the compiled model
             # Initialize the compiled model

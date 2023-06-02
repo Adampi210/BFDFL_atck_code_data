@@ -19,6 +19,10 @@ from cleverhans.torch.attacks.fast_gradient_method import fast_gradient_method #
 from cleverhans.torch.attacks.projected_gradient_descent import projected_gradient_descent # PGD
 from cleverhans.torch.attacks.noise import noise # Basic uniform noise perturbation
 
+# User defined
+from split_data import *
+from nn_FL import *
+
 # Device configuration
 # Always check first if GPU is avaialble
 device_used = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -103,9 +107,8 @@ class NetBasic(nn.Module):
 
         return x
 
-        
 # Split the data for the specified number of clients and servers
-train_dset_split, valid_dset_split = split_data_uniform_excl_server(N_CLIENTS)
+train_dset_split, valid_dset_split = split_data_iid_excl_server(N_CLIENTS, 'fmnist')
 
 # Initialize the main server
 main_server = Server_FL()
@@ -115,13 +118,14 @@ main_server.get_data(valid_dset_split[0])
 for i in range(N_CLIENTS):
     temp_client = client_FL(client_id = i, if_adv_client = True if i in adv_list else False)
     temp_client.get_data(train_dset_split[i], valid_dset_split[i])
-    temp_client.init_compiled_model()
+    temp_client.init_compiled_model(NetBasic())
     main_server.add_client(temp_client)
 
 for client in main_server.list_clients:
     print(client.client_id, client.if_adv_client)
 
 # Check initial accuracy
+main_server.init_compiled_model(NetBasic())
 main_server.aggregate_client_models_fed_avg()
 main_server.validate_global_model()
 main_server.distribute_global_model()

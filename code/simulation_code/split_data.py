@@ -17,6 +17,9 @@ random.seed(0)
 torch.manual_seed(0)
 np.random.seed(0)
 
+# Number of classes each non-iid client should have
+NUM_CLASSES_NONIID = 3
+TOTAL_CLASSES = 10
 # Split data between servers and clients IID
 def split_data_iid_incl_server(num_servers, num_clients, dataset_name):
     # Data directory
@@ -102,13 +105,54 @@ def split_data_iid_excl_server(num_clients, dataset_name):
     return train_list_dsets, valid_list_dsets
 
 
-def split_data_non_iid_incl_server(clients):
+def split_data_non_iid_incl_server(num_servers, num_clients, dataset_name):
     # TODO
     pass
 
-def split_data_non_iid_excl_server(clients):
-    # TODO
-    pass
+def split_data_non_iid_excl_server(num_clients, dataset_name):
+    # Data directory
+    data_dir = '~/data/datasets' + dataset_name
+    # Get the data, currently 3 datasets available
+    if dataset_name == 'mnist':
+        train_data = torchvision.datasets.MNIST(root = data_dir, train = True, download = True, transform = transforms.ToTensor())
+        validation_data  = torchvision.datasets.MNIST(root = data_dir, train = False, transform = transforms.ToTensor())
+    elif dataset_name == 'fmnist':
+        train_data = torchvision.datasets.FashionMNIST(root = data_dir, train = True, download = True, transform = transforms.ToTensor())
+        validation_data  = torchvision.datasets.FashionMNIST(root = data_dir, train = False, transform = transforms.ToTensor())
+    elif dataset_name == 'cifar10':
+        train_data = torchvision.datasets.CIFAR10(root = data_dir, train = True, download = True, transform = transforms.ToTensor())
+        validation_data  = torchvision.datasets.CIFAR10(root = data_dir, train = False, transform = transforms.ToTensor())
+    else:
+        print(f'Currently {dataset_name} is not supported')
+        return -1
+    # Get the fractions that determine the split (i.e. what fraction of the dataset each split will have)
+    data_split_fractions = [random.random() for i in range(num_clients)]
+    # Make sure the fractions sum up to 1
+    sum_fractions = sum(data_split_fractions)
+    while sum_fractions != 1:
+        data_split_fractions = [i / sum(data_split_fractions) for i in data_split_fractions]
+        sum_fractions = sum(data_split_fractions)
+
+    # Split the classes among clients
+    client_classes = [random.sample(list(range(TOTAL_CLASSES)), NUM_CLASSES_NONIID) for _ in range(num_clients)]
+    # Calculate data-set sizes for each client based on their fraction sizes (train and validation data)
+    train_per_client, valid_per_client = [int(len(train_data) * fraction) for fraction in data_split_fractions], [int(len(validation_data) * fraction) for fraction in data_split_fractions]
+    train_per_client[-1] = len(train_data) - sum(train_per_client[0:-1])
+    valid_per_client[-1] = len(validation_data) - sum(valid_per_client[0:-1])
+    # Calculate number of data-points per client per each non-iid class
+    train_per_class_per_client = [{client_class:int(train_per_client[i] / 3) if j != NUM_CLASSES_NONIID - 1 
+        else 0 for j, client_class in enumerate(client_class_list)} for i, client_class_list in enumerate(client_classes)]
+    valid_per_class_per_client = [{client_class:int(valid_per_client[i] / 3) if j != NUM_CLASSES_NONIID - 1 
+        else 0 for j, client_class in enumerate(client_class_list)} for i, client_class_list in enumerate(client_classes)]
+    # Adjust for the floating-point to int conversion
+    for i in range(len(train_per_class_per_client)):
+        train_per_class_per_client[i][client_classes[i][NUM_CLASSES_NONIID - 1]] = train_per_client[i] - sum(train_per_class_per_client[i].values())
+        valid_per_class_per_client[i][client_classes[i][NUM_CLASSES_NONIID - 1]] = valid_per_client[i] - sum(valid_per_class_per_client[i].values())
+
+    # Finally, split the data accordingly
+    
+    
+    return [], []
 
 # Use FMNIST 
 # Use 50 devices
@@ -116,5 +160,5 @@ def split_data_non_iid_excl_server(clients):
 # Add non-iid
 servers, clients = 1, 10
 dset_len = clients
-a,b = split_data_iid_excl_server(clients, 'cifar10')
-[print(a[i][0][1]) for i in range(dset_len)]
+a,b = split_data_non_iid_excl_server(clients, 'fmnist')
+
