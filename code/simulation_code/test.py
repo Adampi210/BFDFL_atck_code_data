@@ -176,7 +176,9 @@ def split_data_non_iid_incl_server(num_servers, num_clients, dataset_name):
         return -1
     # First, split the data to the server 
     data_split_fractions = [1 / total_data_containers for i in range(total_data_containers)]
-
+    # TODO: Better Idea. When I draw the random list, just include all classes for the servers (in non_iid_split)!!!
+    # Should be a simple fix, although there is a potential problem -> the distribution might differ
+    # In that case, might consider only looking at the dataset that has min number (i.e. look at lowest label number of points for all labels)
 
     # Split the training and validation data
     train_list_dsets = non_iid_split(train_data, total_data_containers)
