@@ -13,7 +13,6 @@ from torch.utils.data import DataLoader
 import random
 
 import csv
-from plot_basic_data import plot_acc_loss_data
 
 from cleverhans.torch.attacks.fast_gradient_method import fast_gradient_method # FGSM
 from cleverhans.torch.attacks.projected_gradient_descent import projected_gradient_descent # PGD
@@ -31,98 +30,122 @@ if device_used != torch.device('cuda'):
     print(f'CUDA not available, have to use {device_used}')
 
 # Set hyperparameters
+seed = 0 # Seed for PRNGs 
+random.seed(seed)
+torch.manual_seed(seed)
+np.random.seed(seed)
 # Training parameters
-BATCH_SIZE = 500     # Batch size while training
-N_LOCAL_EPOCHS  = 1  # Number of epochs for local training
-N_GLOBAL_EPOCHS = 10 #
-N_SERVERS  = 1       # Number of servers
-N_CLIENTS  = 10      # Number of clients
-# Remark: With 0 servers and 1 client I get the same scenarion as in mnist_basic_net
+iid_type = 'iid'      # 'iid' or 'non_iid'
+BATCH_SIZE = 100      # Batch size while training
+N_LOCAL_EPOCHS  = 1   # Number of epochs for local training
+N_GLOBAL_EPOCHS = 100 # Number of epochs for global training
+N_SERVERS  = 1        # Number of servers
+N_CLIENTS  = 10       # Number of clients
+dataset_name = 'fmnist' # 'fmnist' or 'cifar10'
 
 # Adversarial parameters
-attacks = ('None', 'FGSM', 'PGD', 'Noise')
-architectures = ('star', 'fully_decentralized')
-attack_used = 1
-attack = attacks[0]
-adv_pow = 1
-adv_number = 0
-adv_list = random.sample(list(range(N_CLIENTS)), adv_number)
-attack_time = 4
+attacks = ('none', 'FGSM', 'PGD', 'noise')      # Available attacks
+architectures = ('star', 'fully_decentralized') # Architecture used
+attack_used = 0                                 # Which attack from the list was used
+attack = attacks[0]                             # Always start with no attack (attack at some point)
+adv_pow = 0                                     # Power of the attack
+adv_number = 0                                  # Number of adversaries
+adv_list = random.sample(list(range(N_CLIENTS)), adv_number) # Choose the adversaries at random
+attack_time = 0                                 # Global epoch at which the attack activates
 # PGD attack parameters
+# TODO -> add number of iterations of the attack
+
+# Filename for the saved data
+filename = '../../data/star/' + 'atk_%s_advs_%d_adv_pow_%s_clients_%d_atk_time_%d_arch_%s_seed_%d_iid_type_%s' % (attacks[attack_used], adv_number, str(adv_pow), N_CLIENTS, attack_time, architectures[0], seed, iid_type)
+
+print(f'Servers: {N_SERVERS}, Clients: {N_CLIENTS}, Adversaries: {adv_number}')
+print(f'iid-type: {iid_type}, seed: {seed}')
+print(f'Attack used: {attacks[attack_used]}, Architecture: {architectures[0]}')
 
 # Next, create a class for the neural net that will be used
-filename = '../../data/star/' + 'attack_%s_adv_pow_%s_adv_number_%s_atk_time_%s_architecture_%s.csv' % (attacks[attack_used], str(adv_pow), str(adv_number), attack_time, architectures[0])
-
-class NetBasic(nn.Module):
+class FashionMNIST_Classifier(nn.Module):
     def __init__(self):
-        # Inherit the __init__() method from nn.Module (call __init__() from the parent class of NetBasic)
-        super(NetBasic, self).__init__()
+        # Inherit the __init__() method from nn.Module (call __init__() from the parent class of FashionMNIST_Classifier)
+        super(FashionMNIST_Classifier, self).__init__()
 
-        # Define layers of the NetBasic
-        # Add first convolutional layer (stride specifies to move kernel by 1 pixel horizontally and vertically, padding = 'same' specifies to pad the output with 0s to preserve image size (decreases in convolution))
-        self.conv0 = nn.Conv2d(in_channels = 1, out_channels = 16, kernel_size = (3, 3), stride = (1, 1), padding = 'same')
-        # Add Batch Normalization layer (Basically normalizes batch by subtracting mean and dividing by st.dev.)
-        # num_features = input channels, eps = scalable epsilon value used in normalization formula, momentum adds moving average (takes 0.1 * prev input + 0.9 * new)
-        # And affine allows to learn the gamma and beta parameters used in batch normalization
-        self.bn0   = nn.BatchNorm2d(num_features = 16, momentum = 0.1, eps = 1e-5, affine = True)
-        # Add relu activation layer
+        # Define layers of the FashionMNIST_Classifier
+        # padding = (k - 1) / 2 to preserve size for square kernel of size 3 and stride 1
+        self.conv0 = nn.Conv2d(in_channels = 1, out_channels = 32, kernel_size = (3, 3), stride = (1, 1), padding = 1)
         self.relu0 = nn.ReLU()
-        # Add max pooling layer
+        self.drop0 = nn.Dropout(p = 0.5)
         self.pool0 = nn.MaxPool2d(kernel_size = (2, 2), stride = (2, 2))
 
         # Next add another layers batch: convolutional, batch normalization, relu, max pooling
-        self.conv1 = nn.Conv2d(in_channels = 16, out_channels = 32, kernel_size = (3, 3), stride = (1, 1), padding = 'same')
-        self.bn1   = nn.BatchNorm2d(num_features = 32, momentum = 0.1, eps = 1e-5, affine = True)
+        self.conv1 = nn.Conv2d(in_channels = 32, out_channels = 64, kernel_size = (3, 3), stride = (1, 1), padding = 1)
         self.relu1 = nn.ReLU()
+        self.drop1 = nn.Dropout(p = 0.5)
         self.pool1 = nn.MaxPool2d(kernel_size = (2, 2), stride = (2, 2))
-
-        # And another layers batch, similar to previous, no pooling this time
-        self.conv2 = nn.Conv2d(in_channels = 32, out_channels = 64, kernel_size = (3, 3), stride = (1, 1), padding = 'same')
-        self.bn2   = nn.BatchNorm2d(num_features = 64, momentum = 0.1, eps = 1e-5, affine = True)
-        self.relu2 = nn.ReLU()
 
         # Finally add last layers batch, that includes flattening the output, and 2 linear layers (only add linear here)
         self.lin0  = nn.Linear(in_features = 64 * 7 * 7, out_features = 128)
+        self.drop2 = nn.Dropout(p = 0.5)
         self.lin1  = nn.Linear(in_features = 128, out_features = 10)
 
     # Push the input through the net
+    def forward(self, x):
+        # Reshape the input data to have desired shape (specific for given data, change as needed, here 1 channel for MNIST)
+        x = x.view(x.shape[0], 1, x.shape[1], x.shape[2]) 
+        x = self.conv0(x)
+        x = self.relu0(x)
+        x = self.drop0(x)
+        x = self.pool0(x)
+        
+        x = self.conv1(x)
+        x = self.relu1(x)
+        x = self.drop1(x)
+        x = self.pool1(x)
+
+        x = torch.flatten(x, 1) # Flatten the tensor, except the batch dimension
+        x = self.lin0(x)
+        x = self.drop2(x)
+        x = self.lin1(x)
+
+        return x
+
+class CIFAR10_Classifier(nn.Module):
+    def __init__(self):
+        # Inherit __init__ from nn.Module
+        super(CIFAR10_Classifier, self).__init__()
+
+        # Define layers for CIFAR10_Classifier
+        self.conv0 = nn.Conv2d(in_channels = 3, out_channels = 64, kernel_size = (3, 3), stride = (1, 1), padding = 'same')
+        self.bn0 = nn.BatchNorm2d(num_features = 64, momentum = 0.1, eps = 1e-5, affine = True)
+        self.relu0 = nn.ReLU()
+        self.pool0 = nn.MaxPool2d(kernel_size = (2, 2), stride = (2, 2))
+    
     def forward(self, x):
         x = self.conv0(x)
         x = self.bn0(x)
         x = self.relu0(x)
         x = self.pool0(x)
-        
-        x = self.conv1(x)
-        x = self.bn1(x)
-        x = self.relu1(x)
-        x = self.pool1(x)
-
-        x = self.conv2(x)
-        x = self.bn2(x)
-        x = self.relu2(x)
-
-        x = torch.flatten(x, 1) # Flatten the tensor, except the batch dimension
-        x = self.lin0(x)
-        x = self.lin1(x)
-
-        return x
 
 # Split the data for the specified number of clients and servers
-train_dset_split, valid_dset_split = split_data_iid_excl_server(N_CLIENTS, 'fmnist')
+if iid_type == 'iid':
+    train_dset_split, valid_dset_split = split_data_iid_incl_server(N_SERVERS, N_CLIENTS, dataset_name)
+elif iid_type == 'non_iid':
+    train_dset_split, valid_dset_split = split_data_non_iid_incl_server(N_SERVERS, N_CLIENTS, dataset_name)
 
 # Initialize the main server
 main_server = Server_FL()
 main_server.get_data(valid_dset_split[0])
 
+# Set the model used
+if dataset_name == 'fmnist':
+    NetBasic = FashionMNIST_Classifier
+elif dataset_name == 'cifar10':
+    NetBasic = CIFAR10_Classifier
+
 # Add clients to the server
-for i in range(N_CLIENTS):
-    temp_client = client_FL(client_id = i, if_adv_client = True if i in adv_list else False)
+for i in range(N_SERVERS, N_CLIENTS + N_SERVERS):
+    temp_client = client_FL(client_id = i - 1, if_adv_client = True if i in adv_list else False)
     temp_client.get_data(train_dset_split[i], valid_dset_split[i])
     temp_client.init_compiled_model(NetBasic())
     main_server.add_client(temp_client)
-
-for client in main_server.list_clients:
-    print(client.client_id, client.if_adv_client)
 
 # Check initial accuracy
 main_server.init_compiled_model(NetBasic())
@@ -133,7 +156,7 @@ main_server.distribute_global_model()
 # Train and test
 if __name__ == "__main__":
     global_loss, global_acc = 0, 0
-    with open(filename, 'w', newline = '') as file_data:
+    with open(filename + '.csv', 'w', newline = '') as file_data:
         # Setup a writer
         writer = csv.writer(file_data)
         # Training
@@ -149,7 +172,6 @@ if __name__ == "__main__":
             global_loss, global_acc = main_server.validate_global_model()
             main_server.distribute_global_model()
             writer.writerow([i, global_loss.data.item(), global_acc])
-    plot_acc_loss_data(filename)
 
 # Use FMNIST 
 # Use 50 devices

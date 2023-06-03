@@ -99,10 +99,7 @@ class Server_FL():
     def get_data(self, valid_dataset):
         # Get the training and testing data
         x_valid, self.y_valid = valid_dataset.tensors 
-
-        # Reshape the input data to have desired shape (specific for given data, change as needed, here 1 channel for MNIST)
-        x_valid = x_valid.view(x_valid.shape[0], 1, x_valid.shape[1], x_valid.shape[2])
-
+        print(x_valid.shape)
         # Normalize the datasets to be between 0 and 1
         self.x_valid = x_valid.float() / 255
 
@@ -123,7 +120,7 @@ class Server_FL():
         if self.global_server_model == None:
             global_model_raw = net_arch_class # Note that the architecture can be changed as necessary (also can import model architecture from other file)
             global_loss_function = nn.CrossEntropyLoss() # Again, adjustable here for each client, or can pass a model
-            global_optimizer = optim.Adam(global_model_raw.parameters()) # Adjustable here or pass in the compiled model
+            global_optimizer = optim.SGD(global_model_raw.parameters(), lr = 0.1, momentum = 0.2) # Adjustable here or pass in the compiled model
             # Initialize the compiled model
             self.global_server_model = CompiledModel(model = global_model_raw, optimizer = global_optimizer, loss_func = global_loss_function)
         else:
@@ -170,10 +167,6 @@ class client_FL():
         x_train, self.y_train = train_dataset.tensors 
         x_valid, self.y_valid = valid_dataset.tensors 
 
-        # Reshape the input data to have desired shape (specific for given data, change as needed, here 1 channel for MNIST)
-        x_train = x_train.view(x_train.shape[0], 1, x_train.shape[1], x_train.shape[2])
-        x_valid = x_valid.view(x_valid.shape[0], 1, x_valid.shape[1], x_valid.shape[2])
-
         # Normalize the datasets to be between 0 and 1
         self.x_train = x_train.float() / 255
         self.x_valid = x_valid.float() / 255
@@ -187,7 +180,7 @@ class client_FL():
         if self.client_model == None:
             local_client_raw_model = net_arch_class # Note that the architecture can be changed as necessary (also can import model architecture from other file)
             local_client_loss_function = nn.CrossEntropyLoss() # Again, adjustable here for each client, or can pass a model
-            local_client_optimizer = optim.Adam(local_client_raw_model.parameters()) # Adjustable here or pass in the compiled model
+            local_client_optimizer = optim.SGD(local_client_raw_model.parameters(), lr = 0.1, momentum = 0.2) # Adjustable here or pass in the compiled model
             # Initialize the compiled model
             self.client_model = CompiledModel(model = local_client_raw_model, optimizer = local_client_optimizer, loss_func = local_client_loss_function)
         else:
@@ -195,7 +188,7 @@ class client_FL():
 
     # Train the client model for a specified number of epochs on local data
     def train_client(self, batch_s, n_epoch, show_progress = False):
-        if self.if_adv_client == False or (self.if_adv_client and attack == 'None'):
+        if self.if_adv_client == False or (self.if_adv_client and attack == 'none'):
             if self.client_model == None:
                 self.init_compiled_model()
                 print("Model was not initialized, called init_compiled_model() to initialize")
@@ -216,12 +209,13 @@ class client_FL():
             elif attack == 'PGD':
                 # TODO
                 pass
-            elif attack == 'Noise':
+            elif attack == 'noise':
                 # TODO
                 pass
     
     # Test the accuracy and loss for a client's model
-    def validate_client(self):
+    def validate_client(self, show_progress = False):
         client_loss, client_accuracy = self.client_model.validate(valid_data = self.x_valid, valid_labels = self.y_valid)
-        print(f'Client id: {self.client_id}, Current loss: {client_loss}, Current accuracy: {client_accuracy}')
+        if show_progress:
+            print(f'Client id: {self.client_id}, Current loss: {client_loss}, Current accuracy: {client_accuracy}')
         return client_loss, client_accuracy
