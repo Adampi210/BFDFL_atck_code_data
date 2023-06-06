@@ -40,7 +40,7 @@ BATCH_SIZE = 100      # Batch size while training
 N_LOCAL_EPOCHS  = 1   # Number of epochs for local training
 N_GLOBAL_EPOCHS = 100 # Number of epochs for global training
 N_SERVERS  = 1        # Number of servers
-N_CLIENTS  = 40       # Number of clients
+N_CLIENTS  = 10       # Number of clients
 dataset_name = 'fmnist' # 'fmnist' or 'cifar10'
 
 # Adversarial parameters
