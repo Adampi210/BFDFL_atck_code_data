@@ -24,9 +24,9 @@ from nn_FL import *
 
 # Device configuration
 # Always check first if GPU is avaialble
-device_used = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+device_used = torch.device('cuda:1' if torch.cuda.is_available() else 'cpu')
 # If CUDA is not avaialbe, print message that CPU will be used
-if device_used != torch.device('cuda:0'):
+if device_used != torch.device('cuda:1'):
     print(f'CUDA not available, have to use {device_used}')
 
 # Set hyperparameters
@@ -40,8 +40,8 @@ BATCH_SIZE = 100      # Batch size while training
 N_LOCAL_EPOCHS  = 1   # Number of epochs for local training
 N_GLOBAL_EPOCHS = 100 # Number of epochs for global training
 N_SERVERS  = 1        # Number of servers
-N_CLIENTS  = 40       # Number of clients
-dataset_name = 'fmnist' # 'fmnist' or 'cifar10'
+N_CLIENTS  = 10       # Number of clients
+dataset_name = 'cifar10' # 'fmnist' or 'cifar10'
 
 # Adversarial parameters
 attacks = ('none', 'FGSM', 'PGD', 'noise')      # Available attacks

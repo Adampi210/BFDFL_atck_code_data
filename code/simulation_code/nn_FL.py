@@ -99,7 +99,6 @@ class Server_FL():
     def get_data(self, valid_dataset):
         # Get the training and testing data
         x_valid, self.y_valid = valid_dataset.tensors 
-        print(x_valid.shape)
         # Normalize the datasets to be between 0 and 1
         self.x_valid = x_valid.float() / 255
 
@@ -120,7 +119,7 @@ class Server_FL():
         if self.global_server_model == None:
             global_model_raw = net_arch_class # Note that the architecture can be changed as necessary (also can import model architecture from other file)
             global_loss_function = nn.CrossEntropyLoss() # Again, adjustable here for each client, or can pass a model
-            global_optimizer = optim.SGD(global_model_raw.parameters(), lr = 0.1, momentum = 0.2) # Adjustable here or pass in the compiled model
+            global_optimizer = optim.Adam(global_model_raw.parameters())
             # Initialize the compiled model
             self.global_server_model = CompiledModel(model = global_model_raw, optimizer = global_optimizer, loss_func = global_loss_function)
         else:
@@ -156,10 +155,12 @@ class Server_FL():
         return global_loss, global_accuracy
 
 class client_FL():
-    def __init__(self, client_id, init_model_client = None, if_adv_client = False):
+    def __init__(self, client_id, init_model_client = None, if_adv_client = False, attack = 'none', adv_pow = 0):
         self.client_model = init_model_client # Set the model of the client to be 
         self.client_id = client_id            # Each client should have a distinct id (can be just a number, or address, etc.)
         self.if_adv_client = if_adv_client    # If a client is an adversarial client
+        self.attack = attack
+        self.adv_pow = adv_pow
     # Get client data from training and validation dataloaders
     # Client data should be local to the client
     def get_data(self, train_dataset, valid_dataset):
@@ -180,38 +181,49 @@ class client_FL():
         if self.client_model == None:
             local_client_raw_model = net_arch_class # Note that the architecture can be changed as necessary (also can import model architecture from other file)
             local_client_loss_function = nn.CrossEntropyLoss() # Again, adjustable here for each client, or can pass a model
-            local_client_optimizer = optim.SGD(local_client_raw_model.parameters(), lr = 0.1, momentum = 0.2) # Adjustable here or pass in the compiled model
+            local_client_optimizer = optim.Adam(local_client_raw_model.parameters())
             # Initialize the compiled model
             self.client_model = CompiledModel(model = local_client_raw_model, optimizer = local_client_optimizer, loss_func = local_client_loss_function)
         else:
             pass
 
     # Train the client model for a specified number of epochs on local data
-    def train_client(self, batch_s, n_epoch, show_progress = False):
-        if self.if_adv_client == False or (self.if_adv_client and attack == 'none'):
+    def train_client(self, batch_s, n_epoch, show_progress = False, eps_iter = 0, nb_iter = 0):
+        if self.if_adv_client == False or (self.if_adv_client and self.attack == 'none'):
             if self.client_model == None:
-                self.init_compiled_model()
-                print("Model was not initialized, called init_compiled_model() to initialize")
+                print("Model was not initialized!")
             # Train the compiled model for a specified number of epochs
             self.client_model.train(train_data = self.x_train, train_labels = self.y_train, train_batch_size = batch_s, n_epoch = n_epoch, show_progress = show_progress)
             return
         else:
-            if attack == 'FGSM':
-                print('Attacking dataset')
+            if self.attack == 'FGSM':
+                print('FGSM - attacking dataset')
                 if self.client_model == None:
-                    self.init_compiled_model()
-                    print("Model was not initialized, called init_compiled_model() to initialize")
+                    print("Model was not initialized!")
                 # Create posioned dataset
-                new_adv_data = fast_gradient_method(model_fn = self.client_model.model, x = self.x_train, eps = adv_pow, norm = 2)
+                new_adv_data = fast_gradient_method(model_fn = self.client_model.model, x = self.x_train, eps = self.adv_pow, norm = 2)
                 # Train on the posioned dataset
                 self.client_model.train(train_data = new_adv_data,  train_labels = self.y_train, train_batch_size = batch_s, n_epoch = n_epoch, show_progress = show_progress)
                 return
-            elif attack == 'PGD':
-                # TODO
-                pass
-            elif attack == 'noise':
-                # TODO
-                pass
+            elif self.attack == 'PGD':
+                print('PGD - attacking dataset')
+                if self.client_model == None:
+                    print("Model was not initialized!")
+                # Create posioned dataset
+                new_adv_data = projected_gradient_descent(model_fn = self.client_model.model, x = self.x_train, 
+                    eps = self.adv_pow, eps_iter = eps_iter, nb_iter = nb_iter, norm = 2)
+                # Train on the posioned dataset
+                self.client_model.train(train_data = new_adv_data,  train_labels = self.y_train, train_batch_size = batch_s, n_epoch = n_epoch, show_progress = show_progress)
+                return
+            elif self.attack == 'noise':
+                print('noise - attacking dataset')
+                if self.client_model == None:
+                    print("Model was not initialized!")
+                # Create posioned dataset
+                new_adv_data = noise(x = self.x_train, eps = self.adv_pow)
+                # Train on the posioned dataset
+                self.client_model.train(train_data = new_adv_data,  train_labels = self.y_train, train_batch_size = batch_s, n_epoch = n_epoch, show_progress = show_progress)
+                return
     
     # Test the accuracy and loss for a client's model
     def validate_client(self, show_progress = False):

@@ -1,13 +1,14 @@
-# Use FMNIST and CIFAR10 -> DONE (both datasets can now be imported, Friday 02.06.2023)
-# Implement non-iid split -> DONE (Friday 02.06.2023)
-# Implement FCN for centralized FMNIST + CNN for CIFAR10 -> Done FMNIST, TODO: CIFAR 10 + fix non-iid case
-# Implement attacks centralized -> TODO
+# Use FMNIST and CIFAR10 -> DONE (both datasets can now be imported)
+# Implement non-iid split -> DONE 
+# Fix non-iid case -> DONE  + Checked with all MNIST, FMNIST, CIFAR10
+# Implement FCN for centralized FMNIST -> Done FMNIST (although using CNN w/ 2 conv layers)
+# Implement CNN for CIFAR10 -> DONE (need to use Adam optimizer though)
+# Implement attacks centralized -> DONE
 # Run simulations -> TODO (ongoing)
-# Finish writing proofs in notebook -> TODO
-# Look at centrality + attacks -> TODO
-# Start writing literature review on Overleaf -> TODO
-# Look over other proofs -> TODO
 # Implement decentralized -> TODO
-# Use 50 devices -> TODO
-# Decentralized + 1 adversarial + consider centrality + undirected + DFedAvg (assume matrix to be doubly stochastic) -> TODO
 # Add graphviz for decentralized -> TODO
+# Finish writing proofs in notebook -> TODO WIP
+# Look at centrality + attacks -> TODO WIP
+# Start writing literature review on Overleaf -> TODO WIP
+# Look over other proofs -> TODO WIP
+# Decentralized + 1 adversarial + consider centrality + undirected + DFedAvg (assume matrix to be doubly stochastic) -> TODO
