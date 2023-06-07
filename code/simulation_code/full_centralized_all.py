@@ -35,12 +35,12 @@ random.seed(seed)
 torch.manual_seed(seed)
 np.random.seed(seed)
 # Training parameters
-iid_type = 'iid'      # 'iid' or 'non_iid'
+iid_type = 'non_iid'      # 'iid' or 'non_iid'
 BATCH_SIZE = 100      # Batch size while training
 N_LOCAL_EPOCHS  = 1   # Number of epochs for local training
 N_GLOBAL_EPOCHS = 100 # Number of epochs for global training
 N_SERVERS  = 1        # Number of servers
-N_CLIENTS  = 30       # Number of clients
+N_CLIENTS  = 10       # Number of clients
 dataset_name = 'cifar10' # 'fmnist' or 'cifar10'
 
 # Adversarial parameters
@@ -48,8 +48,8 @@ attacks = ('none', 'FGSM', 'PGD', 'noise')      # Available attacks
 architectures = ('star', 'fully_decentralized') # Architecture used
 attack_used = 0                                 # Which attack from the list was used
 attack = attacks[0]                             # Always start with no attack (attack at some point)
-adv_pow = 0                                     # Power of the attack
-adv_percent = 0.0                               # Percentage of adversaries
+adv_pow = 1                                     # Power of the attack
+adv_percent = 0.1                               # Percentage of adversaries
 adv_number = int(adv_percent * N_CLIENTS)       # Number of adversaries
 adv_list = random.sample(list(range(N_CLIENTS)), adv_number) # Choose the adversaries at random
 attack_time = 0                                 # Global epoch at which the attack activates
