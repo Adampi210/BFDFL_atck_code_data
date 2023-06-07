@@ -48,8 +48,8 @@ attacks = ('none', 'FGSM', 'PGD', 'noise')      # Available attacks
 architectures = ('star', 'full_decentralized')  # Architecture used
 attack_used = 0                                 # Which attack from the list was used
 attack = attacks[0]                             # Always start with no attack (attack at some point)
-adv_pow = 1                                     # Power of the attack
-adv_percent = 0.1                               # Percentage of adversaries
+adv_pow = 0                                     # Power of the attack
+adv_percent = 0.0                               # Percentage of adversaries
 adv_number = int(adv_percent * N_CLIENTS)       # Number of adversaries
 adv_list = random.sample(list(range(N_CLIENTS)), adv_number) # Choose the adversaries at random
 attack_time = 0                                 # Global epoch at which the attack activates
@@ -205,4 +205,4 @@ if __name__ == "__main__":
                 if curr_acc < global_acc:
                     global_loss, global_acc = curr_loss, curr_acc
 
-            writer.writerow([i, global_loss.data(), global_acc])
+            writer.writerow([i, global_loss.item(), global_acc])
