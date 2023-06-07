@@ -161,6 +161,9 @@ class client_FL():
         self.if_adv_client = if_adv_client    # If a client is an adversarial client
         self.attack = attack
         self.adv_pow = adv_pow
+        self.out_neighbors = {}
+        self.in_neighbors = {}
+
     # Get client data from training and validation dataloaders
     # Client data should be local to the client
     def get_data(self, train_dataset, valid_dataset):
@@ -231,3 +234,44 @@ class client_FL():
         if show_progress:
             print(f'Client id: {self.client_id}, Current loss: {client_loss}, Current accuracy: {client_accuracy}')
         return client_loss, client_accuracy
+
+    # Add out neigbor
+    def add_out_neighbor(self, out_neighbor_object):
+        self.out_neighbors[out_neighbor_object.client_id] = out_neighbor_object
+        out_neighbor_object.in_neighbors[self.client_id] = self
+
+    # Add in neighbor
+    def add_in_neigbor(self, in_neighbor_object):
+        self.in_neighbors[in_neighbor_object.client_id] = in_neighbor_object
+        in_neighbor_object.out_neighbors[self.client_id] = self
+
+    # Add neigbor two ways
+    def add_neighbor(self, neighbor_object):
+        self.out_neighbors[neighbor_object.client_id] = neighbor_object
+        self.in_neighbors[neighbor_object.client_id] = neighbor_object
+        neighbor_object.out_neighbors[self.client_id] = self
+        neighbor_object.in_neighbors[self.client_id] = self
+
+    # Aggregate using dfedaverage (meaning scaling current model by neighbor models)
+    def aggregate_d_fed_avg(self):
+        # Calculate sum of dataset sizes for each client
+        neighbor_dset_sum = sum([neighbor.dset_size for neighbor in self.in_neighbors.values()])
+        # Calculate scaled weighted layers for neighbors
+        scaled_neighbor_weights = [[(neighbor_layer - curr_model_layer) * neighbor.dset_size / neighbor_dset_sum 
+            for curr_model_layer, neighbor_layer in zip(self.client_model.get_params(), neighbor.client_model.get_params())] for neighbor in self.in_neighbors.values()]
+        # Calculate new model
+
+        model_update_parameters = [sum(layers) for layers in zip(*scaled_neighbor_weights)]
+        new_model_parameters = [curr_layer + new_layer for curr_layer, new_layer in zip(self.client_model.get_params(), model_update_parameters)]
+        self.client_model.set_params(new_model_parameters)
+
+
+if __name__ == "__main__":
+    client_list = []
+    for i in range(10):
+        client_list.append(client_FL(i))
+    for i in range(1, 10):
+        client_list[i].add_neighbor(client_list[i - 1])
+    client_list[0].add_neighbor(client_list[9])
+
+    [print(client.out_neighbors) for client in client_list]

@@ -39,17 +39,17 @@ iid_type = 'iid'      # 'iid' or 'non_iid'
 BATCH_SIZE = 100      # Batch size while training
 N_LOCAL_EPOCHS  = 1   # Number of epochs for local training
 N_GLOBAL_EPOCHS = 100 # Number of epochs for global training
-N_SERVERS  = 1        # Number of servers
+N_SERVERS  = 0        # Number of servers
 N_CLIENTS  = 10       # Number of clients
-dataset_name = 'cifar10' # 'fmnist' or 'cifar10'
+dataset_name = 'fmnist' # 'fmnist' or 'cifar10'
 
 # Adversarial parameters
 attacks = ('none', 'FGSM', 'PGD', 'noise')      # Available attacks
-architectures = ('star', 'fully_decentralized') # Architecture used
+architectures = ('star', 'full_decentralized')  # Architecture used
 attack_used = 0                                 # Which attack from the list was used
 attack = attacks[0]                             # Always start with no attack (attack at some point)
-adv_pow = 0                                     # Power of the attack
-adv_percent = 0.0                               # Percentage of adversaries
+adv_pow = 1                                     # Power of the attack
+adv_percent = 0.1                               # Percentage of adversaries
 adv_number = int(adv_percent * N_CLIENTS)       # Number of adversaries
 adv_list = random.sample(list(range(N_CLIENTS)), adv_number) # Choose the adversaries at random
 attack_time = 0                                 # Global epoch at which the attack activates
@@ -57,11 +57,11 @@ attack_time = 0                                 # Global epoch at which the atta
 eps_iter = 0.1 # Learning rate for PGD attack
 nb_iter = 15   # Number of epochs for PGD attack
 # Filename for the saved data
-filename = '../../data/star/%s/' % (dataset_name) + 'atk_%s_advs_%d_adv_pow_%s_clients_%d_atk_time_%d_arch_%s_seed_%d_iid_type_%s' % (attacks[attack_used], adv_number, str(adv_pow), N_CLIENTS, attack_time, architectures[0], seed, iid_type)
+filename = '../../data/full_decentralized/%s/' % (dataset_name) + 'atk_%s_advs_%d_adv_pow_%s_clients_%d_atk_time_%d_arch_%s_seed_%d_iid_type_%s' % (attacks[attack_used], adv_number, str(adv_pow), N_CLIENTS, attack_time, architectures[0], seed, iid_type)
 
 print(f'Servers: {N_SERVERS}, Clients: {N_CLIENTS}, Adversaries: {adv_number}')
 print(f'iid-type: {iid_type}, seed: {seed}')
-print(f'Attack used: {attacks[attack_used]}, Architecture: {architectures[0]}')
+print(f'Attack used: {attacks[attack_used]}, Architecture: {architectures[1]}')
 
 # Next, create a class for the neural net that will be used
 class FashionMNIST_Classifier(nn.Module):
@@ -154,13 +154,9 @@ class CIFAR10_Classifier(nn.Module):
 
 # Split the data for the specified number of clients and servers
 if iid_type == 'iid':
-    train_dset_split, valid_dset_split = split_data_iid_incl_server(N_SERVERS, N_CLIENTS, dataset_name)
+    train_dset_split, valid_dset_split = split_data_iid_excl_server(N_CLIENTS, dataset_name)
 elif iid_type == 'non_iid':
-    train_dset_split, valid_dset_split = split_data_non_iid_incl_server(N_SERVERS, N_CLIENTS, dataset_name)
-
-# Initialize the main server
-main_server = Server_FL()
-main_server.get_data(valid_dset_split[0])
+    train_dset_split, valid_dset_split = split_data_non_iid_excl_server(N_CLIENTS, dataset_name)
 
 # Set the model used
 if dataset_name == 'fmnist':
@@ -168,18 +164,21 @@ if dataset_name == 'fmnist':
 elif dataset_name == 'cifar10':
     NetBasic = CIFAR10_Classifier
 
-# Add clients to the server
-for i in range(N_SERVERS, N_CLIENTS + N_SERVERS):
-    temp_client = client_FL(client_id = i - 1, if_adv_client = True if i in adv_list else False, )
-    temp_client.get_data(train_dset_split[i], valid_dset_split[i])
-    temp_client.init_compiled_model(NetBasic())
-    main_server.add_client(temp_client)
+# Initialize list storing all the nodes
+node_list = []
 
-# Check initial accuracy
-main_server.init_compiled_model(NetBasic())
-main_server.aggregate_client_models_fed_avg()
-main_server.validate_global_model()
-main_server.distribute_global_model()
+# Create nodes in the graph
+for i in range(N_CLIENTS):
+    temp_node = client_FL(client_id = i, if_adv_client = True if i in adv_list else False)
+    temp_node.get_data(train_dset_split[i], valid_dset_split[i])
+    temp_node.init_compiled_model(NetBasic())
+    node_list.append(temp_node)
+
+# Add neigbors, for now just do the circle 
+for i in range(N_CLIENTS - 1):
+    node_list[i].add_neighbor(node_list[i + 1])
+node_list[N_CLIENTS - 1].add_neighbor(node_list[0])
+
 
 # Train and test
 if __name__ == "__main__":
@@ -191,15 +190,19 @@ if __name__ == "__main__":
         for i in range(N_GLOBAL_EPOCHS):
             if i == attack_time:
                 attack = attacks[attack_used]
-                for client in main_server.list_clients:
-                    if client.if_adv_client:
-                        client.attack = attack
-                        client.adv_pow = adv_pow
+                for node in node_list:
+                    if node.if_adv_client:
+                        node.attack = attack
+                        node.adv_pow = adv_pow
             print(f'global epoch: {i}')
-            for client in main_server.list_clients:
-                client.train_client(BATCH_SIZE, N_LOCAL_EPOCHS, show_progress = False, eps_iter = eps_iter, nb_iter = nb_iter)
-                client.validate_client(True)
-            main_server.aggregate_client_models_fed_avg()
-            global_loss, global_acc = main_server.validate_global_model()
-            main_server.distribute_global_model()
-            writer.writerow([i, global_loss.data.item(), global_acc])
+            for node in node_list:
+                node.train_client(BATCH_SIZE, N_LOCAL_EPOCHS, show_progress = False, eps_iter = eps_iter, nb_iter = nb_iter)
+            for node in node_list:
+                node.aggregate_d_fed_avg()
+            global_acc = 1.0
+            for node in node_list:
+                curr_loss, curr_acc = node.validate_client(True)
+                if curr_acc < global_acc:
+                    global_loss, global_acc = curr_loss, curr_acc
+
+            writer.writerow([i, global_loss.data(), global_acc])
