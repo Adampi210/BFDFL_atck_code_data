@@ -18,6 +18,26 @@ import numpy as np
 # Number of classes each non-iid client should have
 NUM_CLASSES_NONIID = 3
 
+
+# Splits the dataset in a iid way, excluding server (servers should have all data)
+def iid_split(data_set, num_containers, dataset_name = None):
+    # Get the fractions that determine the split (i.e. what fraction of the dataset each split will have)
+    data_split_fractions = [1 / num_containers for i in range(num_containers)]
+    data_split_fractions[num_containers - 1] = 1 - sum(data_split_fractions[0:num_containers - 1])
+    # Get the shuffled indecies for each client from training and validation datasets
+    data_split = data_utils.random_split(data_set, data_split_fractions, torch.Generator())
+
+    # Get the datasets for each client
+    # For mnist and fmnist I can just use the indices method
+    if dataset_name == 'mnist' or dataset_name == 'fmnist':
+        devices_list_dsets = [data_utils.TensorDataset(subset.dataset.data[subset.indices], subset.dataset.targets[subset.indices]) for subset in data_split]
+    # For cifar, iterate through indices manually
+    elif dataset_name == 'cifar10':
+        devices_list_dsets = [data_utils.TensorDataset(torch.tensor(np.array([subset.dataset.data[i] for i in subset.indices])),
+                                                    torch.tensor(np.array([subset.dataset.targets[i] for i in subset.indices])))
+                            for subset in data_split]
+    return devices_list_dsets
+
 # Split data between servers and clients iid
 def split_data_iid_incl_server(num_servers, num_clients, dataset_name):
     # Data directory
@@ -38,26 +58,9 @@ def split_data_iid_incl_server(num_servers, num_clients, dataset_name):
         print(f'Currently {dataset_name} is not supported')
         return -1
 
-    # Get the fractions that determine the split (i.e. what fraction of the dataset each split will have)
-    data_split_fractions = [1 / total_data_containers for i in range(total_data_containers)]
-    data_split_fractions[total_data_containers - 1] = 1 - sum(data_split_fractions[0:total_data_containers - 1])
-    # Get the shuffled indecies for each client from training and validation datasets
-    train_data_split = data_utils.random_split(train_data, data_split_fractions, torch.Generator())
-    valid_data_split = data_utils.random_split(validation_data, data_split_fractions, torch.Generator())
-    # Get the datasets for each client
-    # For mnist and fmnist I can just use the indices method
-    if dataset_name == 'mnist' or dataset_name == 'fmnist':
-        train_list_dsets = [data_utils.TensorDataset(subset.dataset.data[subset.indices], subset.dataset.targets[subset.indices]) for subset in train_data_split]
-        valid_list_dsets = [data_utils.TensorDataset(subset.dataset.data[subset.indices], subset.dataset.targets[subset.indices]) for subset in valid_data_split]
-    # For cifar, iterate through indices manually
-    elif dataset_name == 'cifar10':
-        train_list_dsets = [data_utils.TensorDataset(torch.tensor(np.array([subset.dataset.data[i] for i in subset.indices])),
-                                                    torch.tensor(np.array([subset.dataset.targets[i] for i in subset.indices])))
-                            for subset in train_data_split]
+    train_list_dsets = iid_split(train_data, total_data_containers, dataset_name)
+    valid_list_dsets = iid_split(validation_data, total_data_containers, dataset_name)
 
-        valid_list_dsets = [data_utils.TensorDataset(torch.tensor(np.array([subset.dataset.data[i] for i in subset.indices])),
-                                                    torch.tensor(np.array([subset.dataset.targets[i] for i in subset.indices])))
-                            for subset in valid_data_split]
     return train_list_dsets, valid_list_dsets
 
 # Split data betweeen clients iid
@@ -77,27 +80,9 @@ def split_data_iid_excl_server(num_clients, dataset_name):
     else:
         print(f'Currently {dataset_name} is not supported')
         return -1
-    # Get the fractions that determine the split (i.e. what fraction of the dataset each split will have)
-    data_split_fractions = [1 / num_clients for i in range(num_clients)]
-    if sum(data_split_fractions) != 1:
-        data_split_fractions[num_clients - 1] = 1 - sum(data_split_fractions[0:num_clients - 1])
-    # Get the shuffled indecies for each client from training and validation datasets
-    train_data_split = data_utils.random_split(train_data, data_split_fractions, torch.Generator())
-    valid_data_split = data_utils.random_split(validation_data, data_split_fractions, torch.Generator())
-    # Get the datasets for each client
-    # For mnist and fmnist I can just use the indices method
-    if dataset_name == 'mnist' or dataset_name == 'fmnist':
-        train_list_dsets = [data_utils.TensorDataset(subset.dataset.data[subset.indices], subset.dataset.targets[subset.indices]) for subset in train_data_split]
-        valid_list_dsets = [data_utils.TensorDataset(subset.dataset.data[subset.indices], subset.dataset.targets[subset.indices]) for subset in valid_data_split]
-    # For cifar, iterate through indices manually
-    elif dataset_name == 'cifar10':
-        train_list_dsets = [data_utils.TensorDataset(torch.tensor(np.array([subset.dataset.data[i] for i in subset.indices])),
-                                                    torch.tensor(np.array([subset.dataset.targets[i] for i in subset.indices])))
-                            for subset in train_data_split]
-
-        valid_list_dsets = [data_utils.TensorDataset(torch.tensor(np.array([subset.dataset.data[i] for i in subset.indices])),
-                                                    torch.tensor(np.array([subset.dataset.targets[i] for i in subset.indices])))
-                            for subset in valid_data_split]
+    
+    train_list_dsets = iid_split(train_data, num_clients, dataset_name)
+    valid_list_dsets = iid_split(validation_data, num_clients, dataset_name)
 
     return train_list_dsets, valid_list_dsets
 
@@ -276,7 +261,7 @@ def split_data_non_iid_incl_server(num_servers, num_clients, dataset_name):
         return -1
     # Split the training and validation data
     train_list_dsets, client_class_split = non_iid_incl_split(train_data, num_servers, num_clients)
-    valid_list_dsets, _ = non_iid_incl_split(validation_data, num_servers, num_clients, client_class_split)
+    valid_list_dsets = iid_split(validation_data, num_servers + num_clients, dataset_name)
     # Return the split datasets
     return train_list_dsets, valid_list_dsets
 
@@ -299,6 +284,6 @@ def split_data_non_iid_excl_server(num_clients, dataset_name):
         return -1
     # Split the training and validation data
     train_list_dsets, client_class_split = non_iid_excl_split(train_data, num_clients)
-    valid_list_dsets, _ = non_iid_excl_split(validation_data, num_clients, client_class_split) # Cant do that
+    valid_list_dsets = iid_split(validation_data, num_clients, dataset_name)
     # Return the split datasets
     return train_list_dsets, valid_list_dsets

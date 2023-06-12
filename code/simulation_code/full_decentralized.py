@@ -210,17 +210,6 @@ if __name__ == "__main__":
 # How far the attack goes based on centrality - epidemic spread, epidemic modelling over networks, topology specific epidemic modelling
 # Infocomm sigcomm, graph theory
 
-# Increase local epoch number - try 2, 5
-# See what happens when incresase number of communications rounds try 500
-# Try semi-decentralized first
-# See different topologies, how the adjacency matrix affects the process, discuss with shryiar
-# Consider different kinds of centralities (for simulations), eigenvector centrality for theoretical (also the only one closely relating )
-# Generate networks at random (random adjacency matrices) look at corresponding graphs for every node find all 4 centralities
-# Rank the nodes in order of centrality for every measure of centrality, focus on top k central nodes and attack them 
-# Then look at the effect on the convergence rate/accuracy decrease
-# Identify if there is a critical number of nodes that need to be attack to reduce testing accuracy 
-# Plot degredation of the testing accuracy as the number of attack nodes (top k nodes)
-# Also look about the epidemic spread (accuracy loss spread over the network)
 
 
 
