@@ -18,7 +18,7 @@ sed -i "s/iid_type = '$prev_iid_style'/iid_type = '$init_iid_style'/g" full_dece
 
 for iid_style in 'iid' 'non_iid'
 do
-    for seed in 0 1 2
+    for seed in 0
     do 
         for power in 0
         do

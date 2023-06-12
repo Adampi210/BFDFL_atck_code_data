@@ -267,6 +267,9 @@ class client_FL():
 
 
 if __name__ == "__main__":
+    from graphviz import Digraph
+    def save_graph(node_list, fig_name):
+        pass # TODO
     client_list = []
     for i in range(10):
         client_list.append(client_FL(i))

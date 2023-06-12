@@ -1,14 +1,29 @@
-# Use FMNIST and CIFAR10 -> DONE (both datasets can now be imported)
-# Implement non-iid split -> DONE 
-# Fix non-iid case -> DONE  + Checked with all MNIST, FMNIST, CIFAR10
-# Implement FCN for centralized FMNIST -> Done FMNIST (although using CNN w/ 2 conv layers)
-# Implement CNN for CIFAR10 -> DONE (need to use Adam optimizer though)
-# Implement attacks centralized -> DONE
-# Run simulations -> TODO (ongoing)
-# Implement decentralized -> TODO
-# Add graphviz for decentralized -> TODO
-# Finish writing proofs in notebook -> TODO WIP
-# Look at centrality + attacks -> TODO WIP
-# Continue writing literature review on Overleaf -> TODO WIP
-# Look over other proofs -> TODO WIP
-# Decentralized + 1 adversarial + consider centrality + undirected + DFedAvg (assume matrix to be doubly stochastic) -> TODO
+Use FMNIST and CIFAR10 -> DONE (both datasets can now be imported)
+Implement non-iid split -> DONE 
+Fix non-iid case -> DONE  + Checked with all MNIST, FMNIST, CIFAR10
+Implement FCN for centralized FMNIST -> Done FMNIST (although using CNN w/ 2 conv layers)
+Implement CNN for CIFAR10 -> DONE (need to use Adam optimizer though)
+Implement attacks centralized -> DONE
+Run simulations -> TODO (ongoing)
+Implement decentralized -> DONE (but need to fix non-iid)
+    - Increase local epoch number - try 2, 5
+    - See what happens when incresase number of communications rounds try 500
+Finish writing proofs in notebook -> DONE
+Look at centrality + attacks -> TODO WIP
+Continue writing literature review on Overleaf -> DONE
+Look over other proofs -> TODO WIP
+Decentralized + 1 adversarial + consider centrality + undirected + DFedAvg (assume matrix to be doubly stochastic) -> TODO
+Implement the changes to centrality:
+- Firstly, save as folders on files -> TODO
+- Save the adjacency matrix -> TODO (also random adjacency matrix generation)
+- Save the accuracy for all clients
+- Check different centralities (for simulations, do that first) and which one affects the accuracy most for all clients
+    - Consider different kinds of centralities (for simulations), eigenvector centrality for theoretical (also the only one closely relating )
+    - Generate networks at random (random adjacency matrices) look at corresponding graphs for every node find all 4 centralities
+    - Rank the nodes in order of centrality for every measure of centrality, focus on top k central nodes and attack them 
+    - Then look at the effect on the convergence rate/accuracy decrease
+    - Identify if there is a critical number of nodes that need to be attack to reduce testing accuracy 
+    - Plot degredation of the testing accuracy as the number of attack nodes (top k nodes)
+- Look at the epidemic spread (accuracy loss spread over the network)
+- See different topologies, how the adjacency matrix affects the process, discuss with shryiar
+
