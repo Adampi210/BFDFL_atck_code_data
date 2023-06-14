@@ -14,16 +14,18 @@ Continue writing literature review on Overleaf -> DONE
 Look over other proofs -> TODO WIP
 Decentralized + 1 adversarial + consider centrality + undirected + DFedAvg (assume matrix to be doubly stochastic) -> TODO
 Implement the changes to centrality:
-- Firstly, save as folders on files -> TODO
-- Save the adjacency matrix -> TODO (also random adjacency matrix generation)
-- Save the accuracy for all clients
-- Check different centralities (for simulations, do that first) and which one affects the accuracy most for all clients
-    - Consider different kinds of centralities (for simulations), eigenvector centrality for theoretical (also the only one closely relating )
-    - Generate networks at random (random adjacency matrices) look at corresponding graphs for every node find all 4 centralities
-    - Rank the nodes in order of centrality for every measure of centrality, focus on top k central nodes and attack them 
-    - Then look at the effect on the convergence rate/accuracy decrease
-    - Identify if there is a critical number of nodes that need to be attack to reduce testing accuracy 
-    - Plot degredation of the testing accuracy as the number of attack nodes (top k nodes)
+- Firstly, save as folders on files -> DONE
+- Save the adjacency matrix -> DONE (also random adjacency matrix generation)
+- Save the accuracy for all clients -> DONE
+- Check different centralities
+    - Implement measuring different centralities -> DONE, using networkx
+    - Generate networks at random -> DONE for iid, for non-iid depends on the sizes of other dsets (still random)
+    - See which centrality affects the accuracy most for all clients -> TODO
+        - Consider different kinds of centralities (for simulations), eigenvector centrality for theoretical (also the only one closely relating )
+        - Rank the nodes in order of centrality for every measure of centrality, focus on top k central nodes and attack them 
+        - Then look at the effect on the convergence rate/accuracy decrease
+        - Identify if there is a critical number of nodes that need to be attack to reduce testing accuracy 
+        - Plot degredation of the testing accuracy as the number of attack nodes (top k nodes)
 - Look at the epidemic spread (accuracy loss spread over the network)
 - See different topologies, how the adjacency matrix affects the process, discuss with shryiar
 

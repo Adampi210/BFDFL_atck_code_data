@@ -1,5 +1,9 @@
 import csv
 import matplotlib.pyplot as plt
+import numpy as np
+
+# Read parameters
+seed = 0 # Seed for PRNGs 
 
 def plot_acc_loss_data(csv_file_name):
     epochs, loss_data, acc_data = [], [], []
@@ -28,3 +32,9 @@ def plot_acc_loss_data(csv_file_name):
     ax2.grid(True)
     plt.savefig(csv_file_name[:-4] + '.png')
 
+def print_adj_matrix(npy_filenme):
+    adj_matrix = np.load(npy_filenme)
+    print(adj_matrix)
+
+if __name__ == '__main__':
+    

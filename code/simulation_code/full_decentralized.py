@@ -1,5 +1,5 @@
 import sys
-sys.path.append("../plot_data/")
+import os
 
 import torch
 import torch.nn as nn
@@ -9,6 +9,7 @@ import torch.utils.data as data_utils
 import torchvision
 import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
+import networkx as nx
 
 import random
 
@@ -20,7 +21,7 @@ from cleverhans.torch.attacks.noise import noise # Basic uniform noise perturbat
 
 # User defined
 from split_data import *
-from nn_FL import *
+from nn_FL_1 import *
 
 # Device configuration
 # Always check first if GPU is avaialble
@@ -41,8 +42,8 @@ N_LOCAL_EPOCHS  = 1   # Number of epochs for local training
 N_GLOBAL_EPOCHS = 100 # Number of epochs for global training
 N_SERVERS  = 0        # Number of servers
 N_CLIENTS  = 10       # Number of clients
-dataset_name = 'cifar10' # 'fmnist' or 'cifar10'
-
+dataset_name = 'fmnist' # 'fmnist' or 'cifar10'
+aggregation_mechanism = 0 # Aggregation mechanism used
 # Adversarial parameters
 attacks = ('none', 'FGSM', 'PGD', 'noise')      # Available attacks
 architectures = ('star', 'full_decentralized')  # Architecture used
@@ -57,11 +58,8 @@ attack_time = 0                                 # Global epoch at which the atta
 eps_iter = 0.1 # Learning rate for PGD attack
 nb_iter = 15   # Number of epochs for PGD attack
 # Filename for the saved data
-filename = '../../data/full_decentralized/%s/' % (dataset_name) + 'atk_%s_advs_%d_adv_pow_%s_clients_%d_atk_time_%d_arch_%s_seed_%d_iid_type_%s' % (attacks[attack_used], adv_number, str(adv_pow), N_CLIENTS, attack_time, architectures[0], seed, iid_type)
-
-print(f'Servers: {N_SERVERS}, Clients: {N_CLIENTS}, Adversaries: {adv_number}')
-print(f'iid-type: {iid_type}, seed: {seed}')
-print(f'Attack used: {attacks[attack_used]}, Architecture: {architectures[1]}')
+dir_name = '../../data/full_decentralized/%s/' % (dataset_name) + 'atk_%s_advs_%d_adv_pow_%s_clients_%d_atk_time_%d_arch_%s_seed_%d_iid_type_%s/' % (attacks[attack_used], adv_number, str(adv_pow), N_CLIENTS, attack_time, architectures[0], seed, iid_type)
+os.makedirs(dir_name, exist_ok = True)
 
 # Next, create a class for the neural net that will be used
 class FashionMNIST_Classifier(nn.Module):
@@ -166,6 +164,7 @@ elif dataset_name == 'cifar10':
 
 # Initialize list storing all the nodes
 node_list = []
+acc_clients = [0] * N_CLIENTS
 
 # Create nodes in the graph
 for i in range(N_CLIENTS):
@@ -174,15 +173,31 @@ for i in range(N_CLIENTS):
     temp_node.init_compiled_model(NetBasic())
     node_list.append(temp_node)
 
-# Add neigbors, for now just do the circle 
-for i in range(N_CLIENTS - 1):
-    node_list[i].add_neighbor(node_list[i + 1])
-node_list[N_CLIENTS - 1].add_neighbor(node_list[0])
+# Add neigbors, random graph
+random_plain_adj_list = gen_rand_adj_matrix(N_CLIENTS)
+adj_matrix, graph_representation = create_clients_graph(node_list, random_plain_adj_list, 0)
+# Save the adjacency matrix
+adj_matrix_figname = dir_name + 'adj_matrix_' + str(hash_np_arr(adj_matrix))
+np.savetxt(adj_matrix_figname, adj_matrix)
+centrality_data = calc_centralities(node_list, graph_representation)
 
+print('Col sum')
+print(adj_matrix.sum(axis = 0))
+print('Row sum')
+print(adj_matrix.sum(axis = 1))
+
+with open(dir_name + 'centrality_clients_' + str(hash_np_arr(adj_matrix)) + '.csv', 'w', newline = '') as centrality_data_file:
+    writer = csv.writer(centrality_data_file)
+    for client_id in centrality_data.keys():
+        data_cent_client = [client_id]
+        data_cent_client.extend(centrality_data[client_id])
+        writer.writerow(data_cent_client)
+exit()
 
 # Train and test
 if __name__ == "__main__":
     global_loss, global_acc = 0, 0
+    filename = dir_name + 'accuracy_data_clients' + str(hash_np_arr(adj_matrix))
     with open(filename + '.csv', 'w', newline = '') as file_data:
         # Setup a writer
         writer = csv.writer(file_data)
@@ -198,14 +213,17 @@ if __name__ == "__main__":
             for node in node_list:
                 node.train_client(BATCH_SIZE, N_LOCAL_EPOCHS, show_progress = False, eps_iter = eps_iter, nb_iter = nb_iter)
             for node in node_list:
-                node.aggregate_d_fed_avg()
+                if aggregation_mechanism == 0:
+                    node.aggregate_0() # TODO add different options here
+            # This ensures the older models are always used
+            for node in node_list:
+                node.update_params()
             global_acc = 1.0
             for node in node_list:
                 curr_loss, curr_acc = node.validate_client(True)
-                if curr_acc < global_acc:
-                    global_loss, global_acc = curr_loss, curr_acc
+                acc_clients[node.client_id] = curr_acc
 
-            writer.writerow([i, global_loss.item(), global_acc])
+            writer.writerow([i, acc_clients])
 
 # How far the attack goes based on centrality - epidemic spread, epidemic modelling over networks, topology specific epidemic modelling
 # Infocomm sigcomm, graph theory
