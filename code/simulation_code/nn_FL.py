@@ -8,6 +8,10 @@ import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
 import random
 import hashlib
+import numpy as np
+import networkx as nx
+import csv
+
 
 from cleverhans.torch.attacks.fast_gradient_method import fast_gradient_method # FGSM
 from cleverhans.torch.attacks.projected_gradient_descent import projected_gradient_descent # PGD
@@ -164,7 +168,7 @@ class client_FL():
         self.adv_pow = adv_pow
         self.out_neighbors = {}
         self.in_neighbors = {}
-
+        self.new_params = None
     # Get client data from training and validation dataloaders
     # Client data should be local to the client
     def get_data(self, train_dataset, valid_dataset):
@@ -264,7 +268,10 @@ class client_FL():
 
         model_update_parameters = [sum(layers) for layers in zip(*scaled_neighbor_weights)]
         new_model_parameters = [curr_layer + new_layer for curr_layer, new_layer in zip(self.client_model.get_params(), model_update_parameters)]
-        self.client_model.set_params(new_model_parameters)
+        self.new_params = new_model_parameters
+    
+    def update_params(self):
+        self.client_model.set_params(self.new_params)
 
 def hash_np_arr(np_arr):
     # Convert to a string of bytes
@@ -274,19 +281,90 @@ def hash_np_arr(np_arr):
     # Create hex representation
     hex_hash_arr = hash_arr.hexdigest()
     return hex_hash_arr
-def save_data():
-    pass
 
+def gen_rand_adj_matrix(n_clients):
+    # The created graph must be fully connected
+    is_strongly_connected = False
+    while is_strongly_connected == False:
+        # Choose random number of edges
+        num_edges = random.randint(n_clients, n_clients ** 2)
+        # Choose the random clients
+        chosen_edges = random.choices(range(0, n_clients ** 2), k = num_edges)
+        # Convert to matrix coords
+        for i, edge in enumerate(chosen_edges):
+            chosen_edges[i] = (edge // n_clients, edge % n_clients)
 
+        plain_adj_matrix = np.zeros((n_clients, n_clients))
+        # Create the matrix (binary)
+        for coord in chosen_edges:
+            i, j = coord[0], coord[1]
+            if i != j:
+                plain_adj_matrix[i][j] = 1
+        # Create the graph, make sure it's strongly connected
+        graph = nx.from_numpy_matrix(plain_adj_matrix, create_using = nx.DiGraph)
+        is_strongly_connected = nx.is_strongly_connected(graph)
+    # Only return fully connected graph
+    return plain_adj_matrix
+
+def create_clients_graph(node_list, plain_adj_matrix, aggregation_mechanism):
+    # First add neighbors
+    for device in node_list:
+        i = device.client_id
+        for j in range(len(node_list)):
+            if plain_adj_matrix[i][j]:
+                device.add_out_neighbor(node_list[j])
+    
+    # Then create the adjacency matrix
+    adj_matrix = np.zeros((len(node_list), len(node_list)))
+    for device in node_list:
+        # Connection goes from i to j, not 0 if that happens
+        # This is actually specific to the aggregation mechanism used
+        # This aggregation mechanism depends on the size of datasets of in neighbors
+        if aggregation_mechanism == 0:
+            i = device.client_id
+            i_neigbor_sum = sum([neighbor.dset_size for neighbor in device.in_neighbors.values()])
+        for j in device.in_neighbors.keys():
+            adj_matrix[j][i] = device.in_neighbors[j].dset_size / i_neigbor_sum
+    # ALso make the graph
+    graph = nx.from_numpy_matrix(adj_matrix, create_using = nx.DiGraph)
+    return adj_matrix, graph
+
+def calc_centralities(node_list, graph_representation):
+    # The format is a dict, where the key is client id, and value is a list of centralities in this order:
+    # id:[in_deg_centrality, out_deg_centrality, closeness_centrality, betweeness_centrality, eigenvector_centrality]
+    centralities_data = {node.client_id:[] for node in node_list}
+    # Calculate centralities
+    in_deg_centrality = nx.in_degree_centrality(graph_representation)
+    out_deg_centrality = nx.out_degree_centrality(graph_representation)
+    closeness_centrality = nx.closeness_centrality(graph_representation)
+    betweeness_centrality = nx.betweenness_centrality(graph_representation)
+    eigenvector_centrality = nx.eigenvector_centrality(graph_representation, max_iter = 1000)
+    # Assign centralities
+    for node in centralities_data.keys():
+        centralities_data[node].extend([in_deg_centrality[node], out_deg_centrality[node], closeness_centrality[node], betweeness_centrality[node], eigenvector_centrality[node]])
+        
+    return centralities_data
+
+def sort_by_centrality(centrality_data_file):
+    # Read centrality data
+    node_centralities = []
+    with open(centrality_data_file, 'r') as centrality_data:
+        reader = csv.reader(centrality_data)
+        for row in reader:
+            row_float = [float(j) if i > 0 else int(j) for i, j in enumerate(row)]
+            row_float[0] = int(row_float[0])
+            node_centralities.append(row_float)
+    node_centralities = np.array(node_centralities)
+    # Sort centralities
+    in_deg_sort = node_centralities[node_centralities[:, 1].argsort()[::-1]][:, 0]
+    out_deg_sort = node_centralities[node_centralities[:, 2].argsort()[::-1]][:, 0]
+    closeness_sort = node_centralities[node_centralities[:, 3].argsort()[::-1]][:, 0]
+    betweeness_sort = node_centralities[node_centralities[:, 4].argsort()[::-1]][:, 0]
+    eigenvector_sort = node_centralities[node_centralities[:, 5].argsort()[::-1]][:, 0]
+
+    node_sorted_centrality = np.array([in_deg_sort ,  out_deg_sort, closeness_sort, betweeness_sort, eigenvector_sort])
+    return node_sorted_centrality
 if __name__ == "__main__":
-    from graphviz import Digraph
-    def save_graph(node_list, fig_name):
-        pass # TODO
-    client_list = []
-    for i in range(10):
-        client_list.append(client_FL(i))
-    for i in range(1, 10):
-        client_list[i].add_neighbor(client_list[i - 1])
-    client_list[0].add_neighbor(client_list[9])
-
-    [print(client.out_neighbors) for client in client_list]
+    
+    a = sort_by_centrality('../../data/full_decentralized/fmnist/atk_none_advs_1_adv_pow_1_clients_10_atk_time_0_arch_star_seed_0_iid_type_iid/centrality_clients_fb5507dc8f227c762865a6f14daa2358a0003fff.csv')
+    print(a)

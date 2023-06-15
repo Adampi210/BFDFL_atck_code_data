@@ -28,4 +28,7 @@ Implement the changes to centrality:
         - Plot degredation of the testing accuracy as the number of attack nodes (top k nodes)
 - Look at the epidemic spread (accuracy loss spread over the network)
 - See different topologies, how the adjacency matrix affects the process, discuss with shryiar
-
+- Implement new aggregation algorithm (push-sum algorithm)
+- Compare in_deg, out_deg and eigenvector centralities
+- Derive the lower bound on the convergence rate (of the network as a whole), rate at which the max error (optimality gap between global model (sum of local loss functions) - optimal model) across in terms of the eigenvector centrality of the node attacker
+- 

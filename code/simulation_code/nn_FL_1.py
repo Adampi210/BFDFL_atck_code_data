@@ -347,6 +347,7 @@ def calc_centralities(node_list, graph_representation):
 
 def sort_by_centrality(centrality_data_file):
     # Read centrality data
+    node_centralities = []
     with open(centrality_data_file, 'r') as centrality_data:
         reader = csv.reader(centrality_data)
         for row in reader:

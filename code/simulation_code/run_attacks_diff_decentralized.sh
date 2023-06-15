@@ -1,7 +1,7 @@
 #!/bin/bash
-init_power=1
+init_power=0
 init_clients=10
-init_adv_perc=1
+init_adv_perc=0
 init_seed=0
 init_iid_style='iid'
 prev_power=$init_power
@@ -18,14 +18,14 @@ sed -i "s/iid_type = '$prev_iid_style'/iid_type = '$init_iid_style'/g" full_dece
 
 for iid_style in 'iid' 'non_iid'
 do
-    for seed in 0
-    do 
-        for power in 0
+    for clients in 10 30 50
+    do
+        for power in 200
         do
-            for adv_prec in 0
+            for adv_prec in 1 3 5
             do
-                for clients in 10 20 30 40 50
-                do
+                for seed in 0
+                do 
                     sed -i "s/seed = $prev_seed/seed = $seed/g" full_decentralized.py
                     sed -i "s/iid_type = '$prev_iid_style'/iid_type = '$iid_style'/g" full_decentralized.py
                     sed -i "s/N_CLIENTS  = $prev_clients/N_CLIENTS  = $clients/g" full_decentralized.py
@@ -34,13 +34,13 @@ do
 
                     python3 full_decentralized.py
                     wait
-                    prev_clients=$clients
+                    prev_seed=$seed
                 done
                 prev_adv_perc=$adv_prec
             done
             prev_power=$power
         done
-        prev_seed=$seed
+        prev_clients=$clients
     done
     prev_iid_style=$iid_style
 done

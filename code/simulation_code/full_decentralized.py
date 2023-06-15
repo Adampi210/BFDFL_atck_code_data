@@ -36,7 +36,7 @@ random.seed(seed)
 torch.manual_seed(seed)
 np.random.seed(seed)
 # Training parameters
-iid_type = 'iid'      # 'iid' or 'non_iid'
+iid_type = 'non_iid'      # 'iid' or 'non_iid'
 BATCH_SIZE = 100      # Batch size while training
 N_LOCAL_EPOCHS  = 1   # Number of epochs for local training
 N_GLOBAL_EPOCHS = 100 # Number of epochs for global training
@@ -44,22 +44,29 @@ N_SERVERS  = 0        # Number of servers
 N_CLIENTS  = 10       # Number of clients
 dataset_name = 'fmnist' # 'fmnist' or 'cifar10'
 aggregation_mechanism = 0 # Aggregation mechanism used
+# 0: 
+#   First all local train with Adam
+#   Then all aggregate from neigbors (without changing model params)
+#   Then all update model params
 # Adversarial parameters
 attacks = ('none', 'FGSM', 'PGD', 'noise')      # Available attacks
 architectures = ('star', 'full_decentralized')  # Architecture used
-attack_used = 0                                 # Which attack from the list was used
+attack_used = 1                                 # Which attack from the list was used
 attack = attacks[0]                             # Always start with no attack (attack at some point)
-adv_pow = 1                                     # Power of the attack
-adv_percent = 0.1                               # Percentage of adversaries
+adv_pow = 200                                     # Power of the attack
+adv_percent = 0.5                               # Percentage of adversaries
 adv_number = int(adv_percent * N_CLIENTS)       # Number of adversaries
-adv_list = random.sample(list(range(N_CLIENTS)), adv_number) # Choose the adversaries at random
-attack_time = 0                                 # Global epoch at which the attack activates
+# adv_list = list(range(adv_number))
+# adv_list = random.sample(list(range(N_CLIENTS)), adv_number) # Choose the adversaries at random
+attack_time = 25                                 # Global epoch at which the attack activates
 # PGD attack parameters
 eps_iter = 0.1 # Learning rate for PGD attack
 nb_iter = 15   # Number of epochs for PGD attack
 # Filename for the saved data
 dir_name = '../../data/full_decentralized/%s/' % (dataset_name) + 'atk_%s_advs_%d_adv_pow_%s_clients_%d_atk_time_%d_arch_%s_seed_%d_iid_type_%s/' % (attacks[attack_used], adv_number, str(adv_pow), N_CLIENTS, attack_time, architectures[0], seed, iid_type)
 os.makedirs(dir_name, exist_ok = True)
+
+centralities = ('in_deg_centrality', 'out_deg_centrality', 'closeness_centrality', 'betweeness_centrality', 'eigenvector_centrality')
 
 # Next, create a class for the neural net that will be used
 class FashionMNIST_Classifier(nn.Module):
@@ -168,7 +175,7 @@ acc_clients = [0] * N_CLIENTS
 
 # Create nodes in the graph
 for i in range(N_CLIENTS):
-    temp_node = client_FL(client_id = i, if_adv_client = True if i in adv_list else False)
+    temp_node = client_FL(client_id = i, if_adv_client = False)
     temp_node.get_data(train_dset_split[i], valid_dset_split[i])
     temp_node.init_compiled_model(NetBasic())
     node_list.append(temp_node)
@@ -176,15 +183,12 @@ for i in range(N_CLIENTS):
 # Add neigbors, random graph
 random_plain_adj_list = gen_rand_adj_matrix(N_CLIENTS)
 adj_matrix, graph_representation = create_clients_graph(node_list, random_plain_adj_list, 0)
+
 # Save the adjacency matrix
 adj_matrix_figname = dir_name + 'adj_matrix_' + str(hash_np_arr(adj_matrix))
 np.savetxt(adj_matrix_figname, adj_matrix)
 centrality_data = calc_centralities(node_list, graph_representation)
-
-print('Col sum')
-print(adj_matrix.sum(axis = 0))
-print('Row sum')
-print(adj_matrix.sum(axis = 1))
+# In aggregation 0 this will be column stochastic, but the actual matrix in the equation X(t+1) = X(t) - A(t) X_diff(t) is row stochastic
 
 with open(dir_name + 'centrality_clients_' + str(hash_np_arr(adj_matrix)) + '.csv', 'w', newline = '') as centrality_data_file:
     writer = csv.writer(centrality_data_file)
@@ -192,7 +196,7 @@ with open(dir_name + 'centrality_clients_' + str(hash_np_arr(adj_matrix)) + '.cs
         data_cent_client = [client_id]
         data_cent_client.extend(centrality_data[client_id])
         writer.writerow(data_cent_client)
-exit()
+nodes_to_atk_centrality = sort_by_centrality(dir_name + 'centrality_clients_' + str(hash_np_arr(adj_matrix)) + '.csv')
 
 # Train and test
 if __name__ == "__main__":
@@ -201,29 +205,50 @@ if __name__ == "__main__":
     with open(filename + '.csv', 'w', newline = '') as file_data:
         # Setup a writer
         writer = csv.writer(file_data)
-        # Training
-        for i in range(N_GLOBAL_EPOCHS):
-            if i == attack_time:
-                attack = attacks[attack_used]
-                for node in node_list:
-                    if node.if_adv_client:
-                        node.attack = attack
-                        node.adv_pow = adv_pow
-            print(f'global epoch: {i}')
+        for centrality_idx in range(len(centralities)):
+            # Training
+            # Reset attack values, set adversaries
+            attack = attacks[0]
+            adv_list = nodes_to_atk_centrality[centrality_idx][0:adv_number]
             for node in node_list:
-                node.train_client(BATCH_SIZE, N_LOCAL_EPOCHS, show_progress = False, eps_iter = eps_iter, nb_iter = nb_iter)
-            for node in node_list:
-                if aggregation_mechanism == 0:
-                    node.aggregate_0() # TODO add different options here
-            # This ensures the older models are always used
-            for node in node_list:
-                node.update_params()
-            global_acc = 1.0
-            for node in node_list:
-                curr_loss, curr_acc = node.validate_client(True)
-                acc_clients[node.client_id] = curr_acc
+                node.attack = attack
+                node.adv_pow = adv_pow
+                node.if_adv_client = False
+                node.client_model = None
+                node.init_compiled_model(NetBasic())
+                if node.client_id in adv_list:
+                    node.if_adv_client = True
+            # Specify centrality and nodes attacked
+            writer.writerow([centralities[centrality_idx], adv_list])
 
-            writer.writerow([i, acc_clients])
+            # Train the net
+            for i in range(N_GLOBAL_EPOCHS):
+                # Update values if attacking
+                if i == attack_time:
+                    attack = attacks[attack_used]
+                    for node in node_list:
+                        if node.if_adv_client:
+                            node.attack = attack
+                            node.adv_pow = adv_pow
+                # Train and aggregate
+                print(f'global epoch: {i}')
+                # Will attack automatically
+                for node in node_list:
+                    node.train_client(BATCH_SIZE, N_LOCAL_EPOCHS, show_progress = False, eps_iter = eps_iter, nb_iter = nb_iter)
+                # Aggregations might differ
+                for node in node_list:
+                    if aggregation_mechanism == 0:
+                        node.aggregate_0() # TODO add different options here
+                # This ensures the older models are always used for aggregation (so order of aggregation doesn't matter)
+                for node in node_list:
+                    node.update_params()
+                # Save accuracies
+                for node in node_list:
+                    curr_loss, curr_acc = node.validate_client()
+                    acc_clients[node.client_id] = curr_acc
+
+                writer.writerow([i, acc_clients])
+
 
 # How far the attack goes based on centrality - epidemic spread, epidemic modelling over networks, topology specific epidemic modelling
 # Infocomm sigcomm, graph theory
