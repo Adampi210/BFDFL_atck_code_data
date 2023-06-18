@@ -36,7 +36,7 @@ random.seed(seed)
 torch.manual_seed(seed)
 np.random.seed(seed)
 # Training parameters
-iid_type = 'non_iid'      # 'iid' or 'non_iid'
+iid_type = 'iid'      # 'iid' or 'non_iid'
 BATCH_SIZE = 100      # Batch size while training
 N_LOCAL_EPOCHS  = 1   # Number of epochs for local training
 N_GLOBAL_EPOCHS = 100 # Number of epochs for global training
@@ -53,8 +53,8 @@ attacks = ('none', 'FGSM', 'PGD', 'noise')      # Available attacks
 architectures = ('star', 'full_decentralized')  # Architecture used
 attack_used = 1                                 # Which attack from the list was used
 attack = attacks[0]                             # Always start with no attack (attack at some point)
-adv_pow = 200                                     # Power of the attack
-adv_percent = 0.5                               # Percentage of adversaries
+adv_pow = 0                                     # Power of the attack
+adv_percent = 0.0                               # Percentage of adversaries
 adv_number = int(adv_percent * N_CLIENTS)       # Number of adversaries
 # adv_list = list(range(adv_number))
 # adv_list = random.sample(list(range(N_CLIENTS)), adv_number) # Choose the adversaries at random
