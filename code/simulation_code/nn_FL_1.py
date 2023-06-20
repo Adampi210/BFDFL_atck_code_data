@@ -11,7 +11,7 @@ import hashlib
 import numpy as np
 import networkx as nx
 import csv
-
+import copy
 
 from cleverhans.torch.attacks.fast_gradient_method import fast_gradient_method # FGSM
 from cleverhans.torch.attacks.projected_gradient_descent import projected_gradient_descent # PGD
@@ -24,7 +24,9 @@ class CompiledModel():
         self.model = model          # Set the class model attribute to passed mode
         self.optimizer = optimizer  # Set optimizer attribute to passed optimizer
         self.loss_func = loss_func  # Set loss function attribute to passed loss function
-    
+        self.local_z_model = copy.deepcopy(self.model)  # Create a copy of the model that will store the z model for push-sum training
+        self.local_z_model_loss = nn.CrossEntropyLoss() # Loss for local z model
+        self.local_z_model_optim = optim.Adam(self.local_z_model.parameters())
     # Training method
     def train(self, train_data, train_labels, train_batch_size, n_epoch, show_progress = False):
         self.model.train() # Put the model in training mode
@@ -90,6 +92,41 @@ class CompiledModel():
         # First get the new state dictionary
         new_state_dict = {key: new_weights for key, new_weights in zip(self.model.state_dict(), param_list)}
         self.model.load_state_dict(new_state_dict)
+
+    # Training method in the push-sum algorithm (since it's different)
+    def train_push_sum(self, train_data, train_labels, train_batch_size, n_epoch, show_progress = False, local_model_z_params = None):
+        self.model.train() # Put the model in training mode
+        # Set parameters of the local z model
+        new_z_state_dict = {key: new_weights for key, new_weights in zip(self.local_z_model.state_dict(), local_model_z_params)}
+        self.local_z_model.load_state_dict(new_z_state_dict)
+        self.local_z_model.train() # Put the local z model in training mode
+        
+        # Create a dataloader for training
+        data   = train_data.clone().detach()    # Represent data as a tensor
+        labels = train_labels.clone().detach()  # Represent labels as a tensor
+        train_dataset = data_utils.TensorDataset(data, labels) # Create the training dataset
+        # Create the train dataloader
+        train_dataloader = DataLoader(dataset = train_dataset, batch_size = train_batch_size, shuffle = True)
+
+        # Next fit the model by running the training loop
+        # Run for specified number of epochs
+        for epoch in range(n_epoch):
+            # Then for each batch of specified batch size, train the model
+            for x, y in train_dataloader:
+                self.optimizer.zero_grad()                # Reset the gradients
+                self.local_z_model_optim.zero_grad()      # Reset the gradients of the local z model
+                output = self.local_z_model(x)            # Calculate the outputs for batch inputs
+                loss = self.local_z_model_loss(output, y) # Calculate the loss for local z model
+                loss.backward()                           # Calculate gradients
+                # Copy the gradients
+                for model_param, z_param in zip(self.model.parameters(), self.local_z_model.parameters()):
+                    if z_param.grad is not None:
+                        model_param.grad = z_param.grad.clone()
+                self.optimizer.step()            # Update the parameters of original model
+                self.local_z_model_optim.step()  # Update local z model parameters
+                # Print batch loss 
+                if show_progress: 
+                    print(f'Epoch: {epoch}, Batch loss: {loss}')
 
 # A class for every server object
 class Server_FL():
@@ -166,9 +203,14 @@ class client_FL():
         self.if_adv_client = if_adv_client    # If a client is an adversarial client
         self.attack = attack
         self.adv_pow = adv_pow
+        self.eps_iter = 0
+        self.nb_iter = 0
         self.out_neighbors = {}
         self.in_neighbors = {}
-        self.new_params = None
+        self.y_t = 1
+        self.y_t_next = 1
+        self.z_t_next = None
+        self.w_t_next = None
     # Get client data from training and validation dataloaders
     # Client data should be local to the client
     def get_data(self, train_dataset, valid_dataset):
@@ -196,7 +238,7 @@ class client_FL():
             pass
 
     # Train the client model for a specified number of epochs on local data
-    def train_client(self, batch_s, n_epoch, show_progress = False, eps_iter = 0, nb_iter = 0):
+    def train_client(self, batch_s, n_epoch, show_progress = False):
         if self.if_adv_client == False or (self.if_adv_client and self.attack == 'none'):
             if self.client_model == None:
                 print("Model was not initialized!")
@@ -219,7 +261,7 @@ class client_FL():
                     print("Model was not initialized!")
                 # Create posioned dataset
                 new_adv_data = projected_gradient_descent(model_fn = self.client_model.model, x = self.x_train, 
-                    eps = self.adv_pow, eps_iter = eps_iter, nb_iter = nb_iter, norm = 2)
+                    eps = self.adv_pow, eps_iter = self.eps_iter, nb_iter = self.nb_iter, norm = 2)
                 # Train on the posioned dataset
                 self.client_model.train(train_data = new_adv_data,  train_labels = self.y_train, train_batch_size = batch_s, n_epoch = n_epoch, show_progress = show_progress)
                 return
@@ -231,6 +273,44 @@ class client_FL():
                 new_adv_data = noise(x = self.x_train, eps = self.adv_pow)
                 # Train on the posioned dataset
                 self.client_model.train(train_data = new_adv_data,  train_labels = self.y_train, train_batch_size = batch_s, n_epoch = n_epoch, show_progress = show_progress)
+                return
+    
+    # Train the client model for a specified number of epochs on local data using the push sum algorithm
+    def train_client_push_sum(self, batch_s, n_epoch, show_progress = False, local_model_z_params = None):
+        if self.if_adv_client == False or (self.if_adv_client and self.attack == 'none'):
+            if self.client_model == None:
+                print("Model was not initialized!")
+            # Train the compiled model for a specified number of epochs
+            self.client_model.train_push_sum(train_data = self.x_train, train_labels = self.y_train, train_batch_size = batch_s, n_epoch = n_epoch, show_progress = show_progress, local_model_z_params = local_model_z_params)
+            return
+        else:
+            if self.attack == 'FGSM':
+                print('FGSM - attacking dataset')
+                if self.client_model == None:
+                    print("Model was not initialized!")
+                # Create posioned dataset
+                new_adv_data = fast_gradient_method(model_fn = self.client_model.model, x = self.x_train, eps = self.adv_pow, norm = 2)
+                # Train on the posioned dataset
+                self.client_model.train_push_sum(train_data = new_adv_data,  train_labels = self.y_train, train_batch_size = batch_s, n_epoch = n_epoch, show_progress = show_progress, local_model_z_params = local_model_z_params)
+                return
+            elif self.attack == 'PGD':
+                print('PGD - attacking dataset')
+                if self.client_model == None:
+                    print("Model was not initialized!")
+                # Create posioned dataset
+                new_adv_data = projected_gradient_descent(model_fn = self.client_model.model, x = self.x_train, 
+                    eps = self.adv_pow, eps_iter = self.eps_iter, nb_iter = self.nb_iter, norm = 2)
+                # Train on the posioned dataset
+                self.client_model.train_push_sum(train_data = new_adv_data,  train_labels = self.y_train, train_batch_size = batch_s, n_epoch = n_epoch, show_progress = show_progress, local_model_z_params = local_model_z_params)
+                return
+            elif self.attack == 'noise':
+                print('noise - attacking dataset')
+                if self.client_model == None:
+                    print("Model was not initialized!")
+                # Create posioned dataset
+                new_adv_data = noise(x = self.x_train, eps = self.adv_pow)
+                # Train on the posioned dataset
+                self.client_model.train_push_sum(train_data = new_adv_data,  train_labels = self.y_train, train_batch_size = batch_s, n_epoch = n_epoch, show_progress = show_progress, local_model_z_params = local_model_z_params)
                 return
     
     # Test the accuracy and loss for a client's model
@@ -257,21 +337,30 @@ class client_FL():
         neighbor_object.out_neighbors[self.client_id] = self
         neighbor_object.in_neighbors[self.client_id] = self
 
-    # Aggregate using dfedaverage (meaning scaling current model by neighbor models)
-    def aggregate_0(self):
-        # Calculate sum of dataset sizes for each client
-        neighbor_dset_sum = sum([neighbor.dset_size for neighbor in self.in_neighbors.values()])
-        # Calculate scaled weighted layers for neighbors
-        scaled_neighbor_weights = [[(neighbor_layer - curr_model_layer) * neighbor.dset_size / neighbor_dset_sum 
-            for curr_model_layer, neighbor_layer in zip(self.client_model.get_params(), neighbor.client_model.get_params())] for neighbor in self.in_neighbors.values()]
-        # Calculate new model
+    # I need 2 methods for that, first to exchange the parameters for consensus, then for training and setting parameters
+    # Exchange values using a subgradient-push method from https://ieeexplore.ieee.org/abstract/document/6930814
+    def exchange_values_push_sum(self):
+        old_model_parameters = self.client_model.get_params()
+        # Calculate w_i(t + 1), need to add 1 to account for itself
+        # Calculate for current node
+        scaled_curr_weights = [layer / (len(self.out_neighbors) + 1) for layer in old_model_parameters]
+        # Calculate for in-neighbors
+        scaled_neighbor_weights = [[layer / (len(neighbor.out_neighbors) + 1) for layer in neighbor.client_model.get_params()] \
+            for neighbor in self.in_neighbors.values()]
+        # Combine
+        scaled_neighbor_weights.append(scaled_curr_weights)
+        # Calculate the final value as the sum of scaled layers
+        self.w_t_next = [sum(layers) for layers in zip(*scaled_neighbor_weights)]
 
-        model_update_parameters = [sum(layers) for layers in zip(*scaled_neighbor_weights)]
-        new_model_parameters = [curr_layer + new_layer for curr_layer, new_layer in zip(self.client_model.get_params(), model_update_parameters)]
-        self.new_params = new_model_parameters
-    
-    def update_params(self):
-        self.client_model.set_params(self.new_params)
+        # Calculate y_i(t + 1) - the scaling value
+        self.y_t_next = sum([neighbor.y_t / (len(neighbor.out_neighbors) + 1) for neighbor in self.in_neighbors.values()]) + self.y_t / (len(self.out_neighbors) + 1) 
+        # Finally, z_i(t + 1) is the new model summed from the clients scaled by y_i(t + 1)
+        self.z_t_next = [layer / self.y_t_next for layer in self.w_t_next]
+
+    def train_and_aggregate_push_sum(self, batch_s, n_epoch, show_progress = False):
+        self.client_model.set_params(self.w_t_next)
+        self.y_t = self.y_t_next
+        self.train_client_push_sum(batch_s = batch_s, n_epoch = n_epoch, show_progress = show_progress, local_model_z_params = self.z_t_next)
 
 def hash_np_arr(np_arr):
     # Convert to a string of bytes
@@ -364,6 +453,7 @@ def sort_by_centrality(centrality_data_file):
 
     node_sorted_centrality = np.array([in_deg_sort ,  out_deg_sort, closeness_sort, betweeness_sort, eigenvector_sort])
     return node_sorted_centrality
+
 if __name__ == "__main__":
     a = sort_by_centrality('../../data/full_decentralized/fmnist/atk_none_advs_1_adv_pow_1_clients_10_atk_time_0_arch_star_seed_0_iid_type_iid/centrality_clients_fb5507dc8f227c762865a6f14daa2358a0003fff.csv')
     print(a)

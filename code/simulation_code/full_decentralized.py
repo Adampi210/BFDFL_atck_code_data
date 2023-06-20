@@ -25,13 +25,13 @@ from nn_FL_1 import *
 
 # Device configuration
 # Always check first if GPU is avaialble
-device_used = torch.device('cuda:1' if torch.cuda.is_available() else 'cpu')
+device_used = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 # If CUDA is not avaialbe, print message that CPU will be used
-if device_used != torch.device('cuda:1'):
+if device_used != torch.device('cuda'):
     print(f'CUDA not available, have to use {device_used}')
 
 # Set hyperparameters
-seed = 0 # Seed for PRNGs 
+seed = 10 # Seed for PRNGs 
 random.seed(seed)
 torch.manual_seed(seed)
 np.random.seed(seed)
@@ -39,7 +39,7 @@ np.random.seed(seed)
 iid_type = 'iid'      # 'iid' or 'non_iid'
 BATCH_SIZE = 100      # Batch size while training
 N_LOCAL_EPOCHS  = 1   # Number of epochs for local training
-N_GLOBAL_EPOCHS = 100 # Number of epochs for global training
+N_GLOBAL_EPOCHS = 10 # Number of epochs for global training
 N_SERVERS  = 0        # Number of servers
 N_CLIENTS  = 10       # Number of clients
 dataset_name = 'fmnist' # 'fmnist' or 'cifar10'
@@ -51,19 +51,19 @@ aggregation_mechanism = 0 # Aggregation mechanism used
 # Adversarial parameters
 attacks = ('none', 'FGSM', 'PGD', 'noise')      # Available attacks
 architectures = ('star', 'full_decentralized')  # Architecture used
-attack_used = 1                                 # Which attack from the list was used
+attack_used = 0                                 # Which attack from the list was used
 attack = attacks[0]                             # Always start with no attack (attack at some point)
 adv_pow = 0                                     # Power of the attack
 adv_percent = 0.0                               # Percentage of adversaries
 adv_number = int(adv_percent * N_CLIENTS)       # Number of adversaries
 # adv_list = list(range(adv_number))
 # adv_list = random.sample(list(range(N_CLIENTS)), adv_number) # Choose the adversaries at random
-attack_time = 25                                 # Global epoch at which the attack activates
+attack_time = 25 if attack_used != 0 else 0      # Global epoch at which the attack activates
 # PGD attack parameters
 eps_iter = 0.1 # Learning rate for PGD attack
 nb_iter = 15   # Number of epochs for PGD attack
 # Filename for the saved data
-dir_name = '../../data/full_decentralized/%s/' % (dataset_name) + 'atk_%s_advs_%d_adv_pow_%s_clients_%d_atk_time_%d_arch_%s_seed_%d_iid_type_%s/' % (attacks[attack_used], adv_number, str(adv_pow), N_CLIENTS, attack_time, architectures[0], seed, iid_type)
+dir_name = '../../data/full_decentralized/%s/' % (dataset_name) + 'atk_%s_advs_%d_adv_pow_%s_clients_%d_atk_time_%d_arch_%s_seed_%d_iid_type_%s_push_sum/' % (attacks[attack_used], adv_number, str(adv_pow), N_CLIENTS, attack_time, architectures[0], seed, iid_type)
 os.makedirs(dir_name, exist_ok = True)
 
 centralities = ('in_deg_centrality', 'out_deg_centrality', 'closeness_centrality', 'betweeness_centrality', 'eigenvector_centrality')
@@ -212,9 +212,15 @@ if __name__ == "__main__":
             adv_list = nodes_to_atk_centrality[centrality_idx][0:adv_number]
             for node in node_list:
                 node.attack = attack
-                node.adv_pow = adv_pow
+                node.adv_pow = adv_pow * len(node.in_neighbors)
                 node.if_adv_client = False
                 node.client_model = None
+                node.eps_iter = 0
+                node.nb_iter = 0
+                node.y_t = 1
+                node.y_t_next = 1
+                node.z_t_next = None
+                node.w_t_next = None
                 node.init_compiled_model(NetBasic())
                 if node.client_id in adv_list:
                     node.if_adv_client = True
@@ -230,18 +236,19 @@ if __name__ == "__main__":
                         if node.if_adv_client:
                             node.attack = attack
                             node.adv_pow = adv_pow
+                            node.eps_iter = eps_iter
+                            node.nb_iter = nb_iter
                 # Train and aggregate
                 print(f'global epoch: {i}')
                 # Will attack automatically
                 for node in node_list:
-                    node.train_client(BATCH_SIZE, N_LOCAL_EPOCHS, show_progress = False, eps_iter = eps_iter, nb_iter = nb_iter)
+                    node.exchange_values_push_sum()
                 # Aggregations might differ
                 for node in node_list:
                     if aggregation_mechanism == 0:
-                        node.aggregate_0() # TODO add different options here
-                # This ensures the older models are always used for aggregation (so order of aggregation doesn't matter)
-                for node in node_list:
-                    node.update_params()
+                        node.train_and_aggregate_push_sum(BATCH_SIZE, N_LOCAL_EPOCHS, show_progress = False)
+                    else:
+                        pass # TODO add different options here
                 # Save accuracies
                 for node in node_list:
                     curr_loss, curr_acc = node.validate_client()
