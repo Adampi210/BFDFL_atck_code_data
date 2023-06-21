@@ -31,7 +31,7 @@ if device_used != torch.device('cuda'):
     print(f'CUDA not available, have to use {device_used}')
 
 # Set hyperparameters
-seed = 10 # Seed for PRNGs 
+seed = 0 # Seed for PRNGs 
 random.seed(seed)
 torch.manual_seed(seed)
 np.random.seed(seed)
@@ -39,7 +39,7 @@ np.random.seed(seed)
 iid_type = 'iid'      # 'iid' or 'non_iid'
 BATCH_SIZE = 100      # Batch size while training
 N_LOCAL_EPOCHS  = 1   # Number of epochs for local training
-N_GLOBAL_EPOCHS = 10 # Number of epochs for global training
+N_GLOBAL_EPOCHS = 100 # Number of epochs for global training
 N_SERVERS  = 0        # Number of servers
 N_CLIENTS  = 10       # Number of clients
 dataset_name = 'fmnist' # 'fmnist' or 'cifar10'
@@ -51,7 +51,7 @@ aggregation_mechanism = 0 # Aggregation mechanism used
 # Adversarial parameters
 attacks = ('none', 'FGSM', 'PGD', 'noise')      # Available attacks
 architectures = ('star', 'full_decentralized')  # Architecture used
-attack_used = 0                                 # Which attack from the list was used
+attack_used = 1                                 # Which attack from the list was used
 attack = attacks[0]                             # Always start with no attack (attack at some point)
 adv_pow = 0                                     # Power of the attack
 adv_percent = 0.0                               # Percentage of adversaries
@@ -63,7 +63,7 @@ attack_time = 25 if attack_used != 0 else 0      # Global epoch at which the att
 eps_iter = 0.1 # Learning rate for PGD attack
 nb_iter = 15   # Number of epochs for PGD attack
 # Filename for the saved data
-dir_name = '../../data/full_decentralized/%s/' % (dataset_name) + 'atk_%s_advs_%d_adv_pow_%s_clients_%d_atk_time_%d_arch_%s_seed_%d_iid_type_%s_push_sum/' % (attacks[attack_used], adv_number, str(adv_pow), N_CLIENTS, attack_time, architectures[0], seed, iid_type)
+dir_name = '../../data/full_decentralized/%s/' % (dataset_name) + 'atk_%s_advs_%d_adv_pow_%s_clients_%d_atk_time_%d_arch_%s_seed_%d_iid_type_%s_push_sum_adv/' % (attacks[attack_used], adv_number, str(adv_pow), N_CLIENTS, attack_time, architectures[0], seed, iid_type)
 os.makedirs(dir_name, exist_ok = True)
 
 centralities = ('in_deg_centrality', 'out_deg_centrality', 'closeness_centrality', 'betweeness_centrality', 'eigenvector_centrality')
@@ -248,7 +248,7 @@ if __name__ == "__main__":
                     if aggregation_mechanism == 0:
                         node.train_and_aggregate_push_sum(BATCH_SIZE, N_LOCAL_EPOCHS, show_progress = False)
                     else:
-                        pass # TODO add different options here
+                        node.train_and_aggregate_push_sum_adv(BATCH_SIZE, N_LOCAL_EPOCHS, show_progress = False)
                 # Save accuracies
                 for node in node_list:
                     curr_loss, curr_acc = node.validate_client()

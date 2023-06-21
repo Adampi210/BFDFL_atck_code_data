@@ -357,11 +357,22 @@ class client_FL():
         # Finally, z_i(t + 1) is the new model summed from the clients scaled by y_i(t + 1)
         self.z_t_next = [layer / self.y_t_next for layer in self.w_t_next]
 
+    # Train and aggregate using the push sum method, where first parameters are set to w_i(t + 1), and then gradients from z added
     def train_and_aggregate_push_sum(self, batch_s, n_epoch, show_progress = False):
+        # Set new parameters to w_i(t + 1)
         self.client_model.set_params(self.w_t_next)
         self.y_t = self.y_t_next
+        # Train using push_sum algorithm (calculate gradients on the z model)
         self.train_client_push_sum(batch_s = batch_s, n_epoch = n_epoch, show_progress = show_progress, local_model_z_params = self.z_t_next)
 
+    # Version above for explicit adversarial attack where adversaries don't use aggregated models (just train on themselves)
+    def train_and_aggregate_push_sum_adv(self, batch_s, n_epoch, show_progress = False):
+        if self.if_adv_client:
+            self.train_client()
+        else:
+            self.train_and_aggregate_push_sum(batch_s = batch_s, n_epoch = n_epoch, show_progress = show_progress)
+
+# Hash a numpy array
 def hash_np_arr(np_arr):
     # Convert to a string of bytes
     byte_str = np_arr.tobytes()
@@ -371,6 +382,8 @@ def hash_np_arr(np_arr):
     hex_hash_arr = hash_arr.hexdigest()
     return hex_hash_arr
 
+# Generate random adjacency matrix for a random graph
+# TODO aggregation changes the weights, see how that affects centralities
 def gen_rand_adj_matrix(n_clients):
     # The created graph must be fully connected
     is_strongly_connected = False

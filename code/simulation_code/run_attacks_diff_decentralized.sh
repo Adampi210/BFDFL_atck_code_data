@@ -18,11 +18,11 @@ sed -i "s/iid_type = '$prev_iid_style'/iid_type = '$init_iid_style'/g" full_dece
 
 for iid_style in 'iid' 'non_iid'
 do
-    for clients in 10 30 50
+    for clients in 10
     do
         for power in 200
         do
-            for adv_prec in 1 3 5
+            for adv_prec in 0 1 3 
             do
                 for seed in 0
                 do 
