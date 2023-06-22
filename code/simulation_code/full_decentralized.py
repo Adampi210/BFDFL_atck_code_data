@@ -43,7 +43,7 @@ N_GLOBAL_EPOCHS = 100 # Number of epochs for global training
 N_SERVERS  = 0        # Number of servers
 N_CLIENTS  = 10       # Number of clients
 dataset_name = 'fmnist' # 'fmnist' or 'cifar10'
-aggregation_mechanism = 0 # Aggregation mechanism used
+aggregation_mechanism = 1 # Aggregation mechanism used
 # 0: 
 #   First all local train with Adam
 #   Then all aggregate from neigbors (without changing model params)
@@ -247,7 +247,7 @@ if __name__ == "__main__":
                 for node in node_list:
                     if aggregation_mechanism == 0:
                         node.train_and_aggregate_push_sum(BATCH_SIZE, N_LOCAL_EPOCHS, show_progress = False)
-                    else:
+                    elif aggregation_mechanism == 1:
                         node.train_and_aggregate_push_sum_adv(BATCH_SIZE, N_LOCAL_EPOCHS, show_progress = False)
                 # Save accuracies
                 for node in node_list:
@@ -261,7 +261,8 @@ if __name__ == "__main__":
 # Infocomm sigcomm, graph theory
 
 
-
+# Run noise attack, make sure the noise is significant in comparison to the information being aggregated
+# Noise is chosen to be a function of the aggregated gradients, function chosen to be proportional to the gradients without randomness
 
 
 
