@@ -372,6 +372,10 @@ class client_FL():
         else:
             self.train_and_aggregate_push_sum(batch_s = batch_s, n_epoch = n_epoch, show_progress = show_progress)
 
+    # train for testing
+    def train_test(self, batch_s, n_epoch, show_progress = False):
+        self.client_model.set_params(self.w_t_next)
+        self.train_client(batch_s = batch_s, n_epoch = n_epoch, show_progress = show_progress)
 # Hash a numpy array
 def hash_np_arr(np_arr):
     # Convert to a string of bytes
