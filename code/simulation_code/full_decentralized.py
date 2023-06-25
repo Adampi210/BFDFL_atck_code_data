@@ -10,6 +10,7 @@ import torchvision
 import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
 import networkx as nx
+import matplotlib.pyplot as plt
 
 import random
 
@@ -190,8 +191,11 @@ adj_matrix, graph_representation = create_clients_graph(node_list, random_plain_
 adj_matrix_figname = dir_name + 'adj_matrix_' + str(hash_np_arr(adj_matrix))
 np.savetxt(adj_matrix_figname, adj_matrix)
 centrality_data = calc_centralities(node_list, graph_representation)
+graph_plot = nx.draw_networkx(graph_representation, with_labels = True)
+plt.savefig(dir_name + 'graph_' + str(hash_np_arr(adj_matrix)) + '.png')
 # In aggregation 0 this will be column stochastic, but the actual matrix in the equation X(t+1) = X(t) - A(t) X_diff(t) is row stochastic
-
+print(adj_matrix)
+exit()
 with open(dir_name + 'centrality_clients_' + str(hash_np_arr(adj_matrix)) + '.csv', 'w', newline = '') as centrality_data_file:
     writer = csv.writer(centrality_data_file)
     for client_id in centrality_data.keys():

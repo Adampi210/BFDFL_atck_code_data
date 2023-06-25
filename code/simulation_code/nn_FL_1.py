@@ -413,27 +413,29 @@ def gen_rand_adj_matrix(n_clients):
     return plain_adj_matrix
 
 def create_clients_graph(node_list, plain_adj_matrix, aggregation_mechanism):
-    # First add neighbors
+    # First add neighbors, create graph concurrently
+    graph = nx.DiGraph()
     for device in node_list:
         i = device.client_id
         for j in range(len(node_list)):
             if plain_adj_matrix[i][j]:
                 device.add_out_neighbor(node_list[j])
-    
+                graph.add_edge(i, j)
     # Then create the adjacency matrix
     adj_matrix = np.zeros((len(node_list), len(node_list)))
-    for device in node_list:
+    # for device in node_list:
         # Connection goes from i to j, not 0 if that happens
         # This is actually specific to the aggregation mechanism used
         # This aggregation mechanism depends on the size of datasets of in neighbors
-        if aggregation_mechanism == 0:
-            i = device.client_id
-            i_neigbor_sum = sum([neighbor.dset_size for neighbor in device.in_neighbors.values()])
-        for j in device.in_neighbors.keys():
-            adj_matrix[j][i] = device.in_neighbors[j].dset_size / i_neigbor_sum
+        #if aggregation_mechanism == 'base':
+        #    i = device.client_id
+        #    i_neigbor_sum = sum([neighbor.dset_size for neighbor in device.in_neighbors.values()])
+        
+        # for j in device.in_neighbors.keys():
+        #    adj_matrix[j][i] = device.in_neighbors[j].dset_size / i_neigbor_sum
+        
     # ALso make the graph
-    graph = nx.from_numpy_matrix(adj_matrix, create_using = nx.DiGraph)
-    return adj_matrix, graph
+    return plain_adj_matrix, graph
 
 def calc_centralities(node_list, graph_representation):
     # The format is a dict, where the key is client id, and value is a list of centralities in this order:
