@@ -412,6 +412,7 @@ class client_FL():
         neighbor_object.out_neighbors[self.client_id] = self
         neighbor_object.in_neighbors[self.client_id] = self
     
+    # Get the models from in-neighbors
     def exchange_models(self):
         old_model_parameters = self.client_model.get_params()
         # Calculate w_i(t + 1), need to add 1 to account for itself
@@ -445,6 +446,7 @@ class client_FL():
         self.grad_est_curr = self.grad_est_next
         # Set the parameters to current version
         self.client_model.set_params(self.global_model_curr)
+        # Need to fix this tomorrow. Follow basic steps, and rememeber the debug process. Go one by one, see what works and what doesn't. Check different solution
         
     '''
     # I need 2 methods for that, first to exchange the parameters for consensus, then for training and setting parameters

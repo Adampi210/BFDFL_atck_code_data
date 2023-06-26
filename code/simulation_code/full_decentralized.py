@@ -262,7 +262,7 @@ if __name__ == "__main__":
                     elif aggregation_mechanism == 'test':
                         node.train_test(BATCH_SIZE, N_LOCAL_EPOCHS, show_progress = False)
                     elif aggregation_mechanism == 'sab':
-                        node.aggregate_SAB(BATCH_SIZE, N_LOCAL_EPOCHS, show_progress = False, lr = 1)
+                        node.aggregate_SAB(BATCH_SIZE, N_LOCAL_EPOCHS, show_progress = False, lr = 0.1)
                 # Save accuracies
                 for node in node_list:
                     curr_loss, curr_acc = node.validate_client()
