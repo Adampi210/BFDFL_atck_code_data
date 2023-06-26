@@ -52,6 +52,30 @@ class CompiledModel():
                 if show_progress: 
                     print(f'Epoch: {epoch}, Batch loss: {loss}')
 
+    # Calculate gradients
+    def calc_grads(self, train_data, train_labels, train_batch_size, n_epoch, show_progress = False):
+        self.model.train() # Put the model in training mode
+        
+        # Create a dataloader for training
+        data   = train_data.clone().detach()    # Represent data as a tensor
+        labels = train_labels.clone().detach()  # Represent labels as a tensor
+        train_dataset = data_utils.TensorDataset(data, labels) # Create the training dataset
+        # Create the train dataloader
+        train_dataloader = DataLoader(dataset = train_dataset, batch_size = train_batch_size, shuffle = True)
+        for x, y in train_dataloader:
+            self.optimizer.zero_grad()  # Reset the gradients
+            output = self.model(x)      # Calculate the outputs for batch inputs
+            loss = self.loss_func(output, y)  # Calculate the loss
+            loss.backward()  # Calculate gradients
+            # Get the gradients
+            gradients = [param.grad.detach().clone() for param in self.model.parameters()]
+
+            break
+        # Print batch loss
+        if show_progress:
+            print(f'Epoch: {epoch}, Batch loss: {loss}')
+
+        return gradients
     # Validate the model method
     def validate(self, valid_data, valid_labels):
         self.model.eval() # Set model in the evaluation mode
@@ -92,7 +116,8 @@ class CompiledModel():
         # First get the new state dictionary
         new_state_dict = {key: new_weights for key, new_weights in zip(self.model.state_dict(), param_list)}
         self.model.load_state_dict(new_state_dict)
-
+    
+    '''
     # Training method in the push-sum algorithm (since it's different)
     def train_push_sum(self, train_data, train_labels, train_batch_size, n_epoch, show_progress = False, local_model_z_params = None):
         self.model.train() # Put the model in training mode
@@ -127,7 +152,7 @@ class CompiledModel():
                 # Print batch loss 
                 if show_progress: 
                     print(f'Epoch: {epoch}, Batch loss: {loss}')
-
+    '''
 # A class for every server object
 class Server_FL():
     def __init__(self, init_model_compiled = None):
@@ -199,6 +224,7 @@ class Server_FL():
 class client_FL():
     def __init__(self, client_id, init_model_client = None, if_adv_client = False, attack = 'none', adv_pow = 0):
         self.client_model = init_model_client # Set the model of the client to be 
+        self.moving_model = None
         self.client_id = client_id            # Each client should have a distinct id (can be just a number, or address, etc.)
         self.if_adv_client = if_adv_client    # If a client is an adversarial client
         self.attack = attack
@@ -207,10 +233,10 @@ class client_FL():
         self.nb_iter = 0
         self.out_neighbors = {}
         self.in_neighbors = {}
-        self.y_t = 1
-        self.y_t_next = 1
-        self.z_t_next = None
-        self.w_t_next = None
+        self.global_model_curr = None        # Corresp to x_i(k)
+        self.grad_est_curr = None # Corresp to y_i(k)
+        self.global_model_next = None        # Corresp to x_i(k + 1)
+        self.grad_est_next = None # Corresp to y_i(k + 1)
     # Get client data from training and validation dataloaders
     # Client data should be local to the client
     def get_data(self, train_dataset, valid_dataset):
@@ -234,6 +260,17 @@ class client_FL():
             local_client_optimizer = optim.Adam(local_client_raw_model.parameters())
             # Initialize the compiled model
             self.client_model = CompiledModel(model = local_client_raw_model, optimizer = local_client_optimizer, loss_func = local_client_loss_function)
+            self.moving_model = CompiledModel(model = local_client_raw_model, optimizer = local_client_optimizer, loss_func = local_client_loss_function)
+            
+            # Need the data for the exchange, so if none, initialize
+            # Set current model parameters
+            if self.global_model_curr is None:
+                self.global_model_curr = self.client_model.get_params()
+                self.client_model.set_params(self.global_model_curr)
+            # Calculate init gradients if not present
+            if self.grad_est_curr is None:
+                self.grad_est_curr = self.calc_client_grads(100, 1 , False, self.client_model)
+              
         else:
             pass
 
@@ -313,6 +350,44 @@ class client_FL():
                 self.client_model.train_push_sum(train_data = new_adv_data,  train_labels = self.y_train, train_batch_size = batch_s, n_epoch = n_epoch, show_progress = show_progress, local_model_z_params = local_model_z_params)
                 return
     
+    # Calculate client gradients
+    def calc_client_grads(self, batch_s, n_epoch, show_progress = False, model_used = None):
+        if self.if_adv_client == False or (self.if_adv_client and self.attack == 'none'):
+            if model_used == None:
+                print("Model was not initialized!")
+            # Train the compiled model for a specified number of epochs
+            gradients = model_used.calc_grads(train_data = self.x_train, train_labels = self.y_train, train_batch_size = batch_s, n_epoch = n_epoch, show_progress = show_progress)
+            return gradients
+        else:
+            if self.attack == 'FGSM':
+                print('FGSM - attacking dataset')
+                if model_used == None:
+                    print("Model was not initialized!")
+                # Create posioned dataset
+                new_adv_data = fast_gradient_method(model_fn = model_used.model, x = self.x_train, eps = self.adv_pow, norm = 2)
+                # Train on the posioned dataset
+                gradients = model_used.calc_grads(train_data = new_adv_data,  train_labels = self.y_train, train_batch_size = batch_s, n_epoch = n_epoch, show_progress = show_progress)
+                return gradients
+            elif self.attack == 'PGD':
+                print('PGD - attacking dataset')
+                if model_used == None:
+                    print("Model was not initialized!")
+                # Create posioned dataset
+                new_adv_data = projected_gradient_descent(model_fn = model_used.model, x = self.x_train, 
+                    eps = self.adv_pow, eps_iter = self.eps_iter, nb_iter = self.nb_iter, norm = 2)
+                # Train on the posioned dataset
+                gradients = model_used.calc_grads(train_data = new_adv_data,  train_labels = self.y_train, train_batch_size = batch_s, n_epoch = n_epoch, show_progress = show_progress)
+                return gradients
+            elif self.attack == 'noise':
+                print('noise - attacking dataset')
+                if model_used == None:
+                    print("Model was not initialized!")
+                # Create posioned dataset
+                new_adv_data = noise(x = self.x_train, eps = self.adv_pow)
+                # Train on the posioned dataset
+                gradients = model_used.calc_grads(train_data = new_adv_data,  train_labels = self.y_train, train_batch_size = batch_s, n_epoch = n_epoch, show_progress = show_progress)
+                return gradients
+    
     # Test the accuracy and loss for a client's model
     def validate_client(self, show_progress = False):
         client_loss, client_accuracy = self.client_model.validate(valid_data = self.x_valid, valid_labels = self.y_valid)
@@ -336,7 +411,42 @@ class client_FL():
         self.in_neighbors[neighbor_object.client_id] = neighbor_object
         neighbor_object.out_neighbors[self.client_id] = self
         neighbor_object.in_neighbors[self.client_id] = self
-
+    
+    def exchange_models(self):
+        old_model_parameters = self.client_model.get_params()
+        # Calculate w_i(t + 1), need to add 1 to account for itself
+        # Calculate for current node
+        scaled_curr_weights_w = [layer / (len(self.in_neighbors) + 1) for layer in old_model_parameters]
+        scaled_curr_weights_w_moving = [layer / (len(self.out_neighbors) + 1) for layer in self.grad_est_curr]
+        # Calculate for in-neighbors (row-stochastic)
+        # This is using the current x_i's, so aggregate the models from neighbors
+        scaled_neighbor_weights_w = [[layer / (len(neighbor.in_neighbors) + 1) for layer in neighbor.client_model.get_params()] \
+            for neighbor in self.in_neighbors.values()]
+        # Calculate for out-neighbors (column-stochastic)
+        scaled_neighbor_weights_w_moving = [[layer / (len(neighbor.out_neighbors) + 1) for layer in neighbor.grad_est_curr] \
+            for neighbor in self.in_neighbors.values()]
+        # Combine
+        scaled_neighbor_weights_w.append(scaled_curr_weights_w)
+        scaled_neighbor_weights_w_moving.append(scaled_curr_weights_w_moving)
+        # Calculate the final value as the sum of scaled layers
+        self.global_model_next = [sum(layers) for layers in zip(*scaled_neighbor_weights_w)]
+        self.grad_est_next = [sum(layers) for layers in zip(*scaled_neighbor_weights_w_moving)]
+        
+    def aggregate_SAB(self, batch_s, n_epoch, show_progress = False, lr = 0.01):        
+        # Update next model parameters
+        # self.global_model_next = [x - lr * y for x, y in zip(self.global_model_next, self.grad_est_curr)] # From the paper
+        self.global_model_next = [x - lr * y for x, y in zip(self.global_model_next, self.calc_client_grads(batch_s, n_epoch, show_progress, self.client_model))] # Testing
+        # The moving model gets the next parameters
+        self.moving_model.set_params(self.global_model_next)
+        # Calculate w_moving as follows
+        self.grad_est_next = [x + y - z for x, y, z in zip(self.grad_est_curr, self.calc_client_grads(batch_s, n_epoch, show_progress, self.moving_model), self.calc_client_grads(batch_s, n_epoch, show_progress, self.client_model))]
+        # Update current values
+        self.global_model_curr = self.global_model_next
+        self.grad_est_curr = self.grad_est_next
+        # Set the parameters to current version
+        self.client_model.set_params(self.global_model_curr)
+        
+    '''
     # I need 2 methods for that, first to exchange the parameters for consensus, then for training and setting parameters
     # Exchange values using a subgradient-push method from https://ieeexplore.ieee.org/abstract/document/6930814
     def exchange_values_push_sum(self):
@@ -376,6 +486,7 @@ class client_FL():
     def train_test(self, batch_s, n_epoch, show_progress = False):
         self.client_model.set_params(self.w_t_next)
         self.train_client(batch_s = batch_s, n_epoch = n_epoch, show_progress = show_progress)
+    '''
 # Hash a numpy array
 def hash_np_arr(np_arr):
     # Convert to a string of bytes

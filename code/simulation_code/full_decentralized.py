@@ -38,14 +38,14 @@ torch.manual_seed(seed)
 np.random.seed(seed)
 # Training parameters
 iid_type = 'iid'      # 'iid' or 'non_iid'
-BATCH_SIZE = 100      # Batch size while training
+BATCH_SIZE = 1000     # Batch size while training
 N_LOCAL_EPOCHS  = 1   # Number of epochs for local training
 N_GLOBAL_EPOCHS = 100 # Number of epochs for global training
 N_SERVERS  = 0        # Number of servers
 N_CLIENTS  = 10       # Number of clients
 dataset_name = 'fmnist' # 'fmnist' or 'cifar10'
-aggreg_schemes = ('push_sum', 'belief_secure_push_sum', 'test')
-aggregation_mechanism = aggreg_schemes[2]
+aggreg_schemes = ('push_sum', 'sab', 'belief_secure_push_sum', 'test')
+aggregation_mechanism = aggreg_schemes[1]
 # 0: 
 #   First all local train with Adam
 #   Then all aggregate from neigbors (without changing model params)
@@ -69,8 +69,8 @@ dir_name = '../../data/full_decentralized/%s/' % (dataset_name) + \
     'atk_%s_advs_%d_adv_pow_%s_clients_%d_atk_time_%d_arch_%s_seed_%d_iid_type_%s_%s/' % (attacks[attack_used], adv_number, str(adv_pow), N_CLIENTS, attack_time, architectures[0], seed, iid_type, aggregation_mechanism)
 os.makedirs(dir_name, exist_ok = True)
 
-centralities = ('in_deg_centrality', 'out_deg_centrality', 'closeness_centrality', 'betweeness_centrality', 'eigenvector_centrality')
-
+# centralities = ('in_deg_centrality', 'out_deg_centrality', 'closeness_centrality', 'betweeness_centrality', 'eigenvector_centrality')
+centralities = ('in_deg_centrality')
 # Next, create a class for the neural net that will be used
 class FashionMNIST_Classifier(nn.Module):
     def __init__(self):
@@ -194,8 +194,7 @@ centrality_data = calc_centralities(node_list, graph_representation)
 graph_plot = nx.draw_networkx(graph_representation, with_labels = True)
 plt.savefig(dir_name + 'graph_' + str(hash_np_arr(adj_matrix)) + '.png')
 # In aggregation 0 this will be column stochastic, but the actual matrix in the equation X(t+1) = X(t) - A(t) X_diff(t) is row stochastic
-print(adj_matrix)
-exit()
+
 with open(dir_name + 'centrality_clients_' + str(hash_np_arr(adj_matrix)) + '.csv', 'w', newline = '') as centrality_data_file:
     writer = csv.writer(centrality_data_file)
     for client_id in centrality_data.keys():
@@ -248,7 +247,10 @@ if __name__ == "__main__":
                 print(f'global epoch: {i}')
                 # Will attack automatically
                 for node in node_list:
-                    node.exchange_values_push_sum()
+                    if aggregation_mechanism == 'push_sum':
+                        node.exchange_values_push_sum()
+                    elif aggregation_mechanism == 'sab':
+                        node.exchange_models()
                 # Aggregations might differ
                 for node in node_list:
                     if aggregation_mechanism == 'push_sum':
@@ -259,6 +261,8 @@ if __name__ == "__main__":
                         pass
                     elif aggregation_mechanism == 'test':
                         node.train_test(BATCH_SIZE, N_LOCAL_EPOCHS, show_progress = False)
+                    elif aggregation_mechanism == 'sab':
+                        node.aggregate_SAB(BATCH_SIZE, N_LOCAL_EPOCHS, show_progress = False, lr = 1)
                 # Save accuracies
                 for node in node_list:
                     curr_loss, curr_acc = node.validate_client()
