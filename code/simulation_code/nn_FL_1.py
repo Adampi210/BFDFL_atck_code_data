@@ -24,9 +24,9 @@ class CompiledModel():
         self.model = model          # Set the class model attribute to passed mode
         self.optimizer = optimizer  # Set optimizer attribute to passed optimizer
         self.loss_func = loss_func  # Set loss function attribute to passed loss function
-        self.local_z_model = copy.deepcopy(self.model)  # Create a copy of the model that will store the z model for push-sum training
-        self.local_z_model_loss = nn.CrossEntropyLoss() # Loss for local z model
-        self.local_z_model_optim = optim.Adam(self.local_z_model.parameters())
+        # self.local_z_model = copy.deepcopy(self.model)  # Create a copy of the model that will store the z model for push-sum training
+        # self.local_z_model_loss = nn.CrossEntropyLoss() # Loss for local z model
+        # self.local_z_model_optim = optim.Adam(self.local_z_model.parameters())
     # Training method
     def train(self, train_data, train_labels, train_batch_size, n_epoch, show_progress = False):
         self.model.train() # Put the model in training mode
@@ -55,27 +55,38 @@ class CompiledModel():
     # Calculate gradients
     def calc_grads(self, train_data, train_labels, train_batch_size, n_epoch, show_progress = False):
         self.model.train() # Put the model in training mode
-        
+        local_loss = nn.CrossEntropyLoss()
+        local_optim = optim.Adam(self.model.parameters())
         # Create a dataloader for training
         data   = train_data.clone().detach()    # Represent data as a tensor
         labels = train_labels.clone().detach()  # Represent labels as a tensor
         train_dataset = data_utils.TensorDataset(data, labels) # Create the training dataset
         # Create the train dataloader
         train_dataloader = DataLoader(dataset = train_dataset, batch_size = train_batch_size, shuffle = True)
-        for x, y in train_dataloader:
-            self.optimizer.zero_grad()  # Reset the gradients
-            output = self.model(x)      # Calculate the outputs for batch inputs
-            loss = self.loss_func(output, y)  # Calculate the loss
-            loss.backward()  # Calculate gradients
-            # Get the gradients
-            gradients = [param.grad.detach().clone() for param in self.model.parameters()]
-
-            break
-        # Print batch loss
-        if show_progress:
-            print(f'Epoch: {epoch}, Batch loss: {loss}')
+        # Get the batch
+        x, y = next(iter(train_dataloader))
+        local_optim.zero_grad() # Reset the gradients for optimizer
+        self.model.zero_grad()     # Reset the gradients for model 
+        output = self.model(x)     # Calculate the outputs for batch inputs
+        loss = local_loss(output, y) # Calculate the loss
+        loss.backward()                  # Calculate gradients
+        # Get the gradients
+        gradients = [param.grad.detach().clone() for param in self.model.parameters()]
 
         return gradients
+
+    def set_grads_and_step(self, gradients, step_size):
+        self.model.train() # Put the model in training mode
+        local_optim = optim.SGD(self.model.parameters(), lr = step_size)
+        # Reset the gradients for optimizer and model
+        local_optim.zero_grad() 
+        self.model.zero_grad()   
+        # Set new gradients
+        for model_param, grad_new in zip(self.model.parameters(), gradients):
+            model_param.grad = grad_new.clone()
+        # Update model
+        local_optim.step()
+        
     # Validate the model method
     def validate(self, valid_data, valid_labels):
         self.model.eval() # Set model in the evaluation mode
@@ -109,13 +120,14 @@ class CompiledModel():
 
     # Return parameters of the network
     def get_params(self):
-        return [self.model.state_dict()[layer] for layer in self.model.state_dict()]
+        return list(self.model.parameters())
 
     # Set parameters of the network to some specified parameters of the same network type (i.e. all layers match shapes)
     def set_params(self, param_list):
-        # First get the new state dictionary
-        new_state_dict = {key: new_weights for key, new_weights in zip(self.model.state_dict(), param_list)}
-        self.model.load_state_dict(new_state_dict)
+        # Iterate over new parameters and copy into current ones
+        with torch.no_grad():
+            for param_curr, param_new in zip(self.model.parameters(), param_list):
+                param_curr.data.copy_(param_new)
     
     '''
     # Training method in the push-sum algorithm (since it's different)
@@ -225,6 +237,7 @@ class client_FL():
     def __init__(self, client_id, init_model_client = None, if_adv_client = False, attack = 'none', adv_pow = 0):
         self.client_model = init_model_client # Set the model of the client to be 
         self.moving_model = None
+        self.temp_model = None
         self.client_id = client_id            # Each client should have a distinct id (can be just a number, or address, etc.)
         self.if_adv_client = if_adv_client    # If a client is an adversarial client
         self.attack = attack
@@ -233,10 +246,10 @@ class client_FL():
         self.nb_iter = 0
         self.out_neighbors = {}
         self.in_neighbors = {}
-        self.global_model_curr = None        # Corresp to x_i(k)
-        self.grad_est_curr = None # Corresp to y_i(k)
-        self.global_model_next = None        # Corresp to x_i(k + 1)
-        self.grad_est_next = None # Corresp to y_i(k + 1)
+        self.global_model_curr = None  # Corresp to x_i(k)
+        self.grad_est_curr = None      # Corresp to y_i(k)
+        self.global_model_next = None  # Corresp to x_i(k + 1)
+        self.grad_est_next = None      # Corresp to y_i(k + 1)
     # Get client data from training and validation dataloaders
     # Client data should be local to the client
     def get_data(self, train_dataset, valid_dataset):
@@ -255,13 +268,17 @@ class client_FL():
     def init_compiled_model(self, net_arch_class):
         # This will always run, but will only initialize the model if the clients model has not been specified
         if self.client_model == None:
-            local_client_raw_model = net_arch_class # Note that the architecture can be changed as necessary (also can import model architecture from other file)
-            local_client_loss_function = nn.CrossEntropyLoss() # Again, adjustable here for each client, or can pass a model
-            local_client_optimizer = optim.Adam(local_client_raw_model.parameters())
+            local_client_raw_model_0 = copy.deepcopy(net_arch_class) # Note that the architecture can be changed as necessary (also can import model architecture from other file)
+            local_client_raw_model_1 = copy.deepcopy(net_arch_class) # Note that the architecture can be changed as necessary
+            # local_client_loss_function_0 = nn.CrossEntropyLoss() # Again, adjustable here for each client, or can pass a model
+            # local_client_loss_function_1 = nn.CrossEntropyLoss()
+            local_client_optimizer_0 = optim.Adam(local_client_raw_model_0.parameters())
+            local_client_optimizer_1 = optim.Adam(local_client_raw_model_1.parameters())
             # Initialize the compiled model
-            self.client_model = CompiledModel(model = local_client_raw_model, optimizer = local_client_optimizer, loss_func = local_client_loss_function)
-            self.moving_model = CompiledModel(model = local_client_raw_model, optimizer = local_client_optimizer, loss_func = local_client_loss_function)
-            
+            self.client_model = CompiledModel(model = local_client_raw_model_0, optimizer = local_client_optimizer_0, loss_func = nn.CrossEntropyLoss())
+            self.moving_model = CompiledModel(model = local_client_raw_model_1, optimizer = local_client_optimizer_1, loss_func = nn.CrossEntropyLoss())
+
+            self.moving_model.set_params(self.client_model.get_params())
             # Need the data for the exchange, so if none, initialize
             # Set current model parameters
             if self.global_model_curr is None:
@@ -269,7 +286,7 @@ class client_FL():
                 self.client_model.set_params(self.global_model_curr)
             # Calculate init gradients if not present
             if self.grad_est_curr is None:
-                self.grad_est_curr = self.calc_client_grads(100, 1 , False, self.client_model)
+                self.grad_est_curr = self.calc_client_grads(1000, 1 , False, self.client_model)
               
         else:
             pass
@@ -414,40 +431,68 @@ class client_FL():
     
     # Get the models from in-neighbors
     def exchange_models(self):
+        # Get current parameters
         old_model_parameters = self.client_model.get_params()
-        # Calculate w_i(t + 1), need to add 1 to account for itself
-        # Calculate for current node
-        scaled_curr_weights_w = [layer / (len(self.in_neighbors) + 1) for layer in old_model_parameters]
-        scaled_curr_weights_w_moving = [layer / (len(self.out_neighbors) + 1) for layer in self.grad_est_curr]
-        # Calculate for in-neighbors (row-stochastic)
-        # This is using the current x_i's, so aggregate the models from neighbors
-        scaled_neighbor_weights_w = [[layer / (len(neighbor.in_neighbors) + 1) for layer in neighbor.client_model.get_params()] \
-            for neighbor in self.in_neighbors.values()]
-        # Calculate for out-neighbors (column-stochastic)
-        scaled_neighbor_weights_w_moving = [[layer / (len(neighbor.out_neighbors) + 1) for layer in neighbor.grad_est_curr] \
-            for neighbor in self.in_neighbors.values()]
-        # Combine
-        scaled_neighbor_weights_w.append(scaled_curr_weights_w)
-        scaled_neighbor_weights_w_moving.append(scaled_curr_weights_w_moving)
+        # Calculate scaling weights a_ij, b_ij for the model aggregation
+        # Since A is row-stochastic, the scaling is by the in-degree of the current node
+        # Since B is column-stochastic, the scaling is by the out-degree of each in-neighbor
+        # Also always include itself
+        global_model_param_weights = [1 / (len(self.in_neighbors) + 1) for _ in range(len(self.in_neighbors) + 1)]
+        gradient_estimate_weights = [1 / (len(neighbor.out_neighbors) + 1) for neighbor in self.in_neighbors.values()]
+        gradient_estimate_weights.append(1 / (len(self.out_neighbors) + 1))
+        # Create parameter lists for global model and gradient estimate
+        global_model_list = [neighbor.client_model.get_params() for neighbor in self.in_neighbors.values()]
+        global_model_list.append(old_model_parameters)
+        gradient_estimate_list = [neighbor.grad_est_curr for neighbor in self.in_neighbors.values()]
+        gradient_estimate_list.append(self.grad_est_curr)
+        # Aggregate models
+        # Get the parameter lists
+        global_model_next_params = copy.deepcopy(global_model_list[0])
+        gradient_estimate_next_params = copy.deepcopy(gradient_estimate_list[0])
+        # Reset the parameters to 0 and aggregate the neighbor parameters
+        for param_new in global_model_next_params:
+            param_new.data *= 0
+        # Aggregate the neighbors
+        for neighbor_model, neighbor_weight in zip(global_model_list, global_model_param_weights):
+            for param_new, param_neighbor in zip(global_model_next_params, neighbor_model):
+                param_new.data += neighbor_weight * param_neighbor.data
+        # Reset the gradients to 0
+        for grad_new in gradient_estimate_next_params:
+            grad_new.data *= 0
+        # Aggregate the neighbors
+        for neighbor_grad, neighbor_weight in zip(gradient_estimate_list, gradient_estimate_weights):
+            for grad_new, grad_neighbor in zip(gradient_estimate_next_params, neighbor_grad):
+                grad_new.data += neighbor_weight * grad_neighbor.data
+
         # Calculate the final value as the sum of scaled layers
-        self.global_model_next = [sum(layers) for layers in zip(*scaled_neighbor_weights_w)]
-        self.grad_est_next = [sum(layers) for layers in zip(*scaled_neighbor_weights_w_moving)]
+        self.global_model_next = global_model_next_params
+        self.grad_est_next = gradient_estimate_next_params
         
     def aggregate_SAB(self, batch_s, n_epoch, show_progress = False, lr = 0.01):        
         # Update next model parameters
-        # self.global_model_next = [x - lr * y for x, y in zip(self.global_model_next, self.grad_est_curr)] # From the paper
-        self.global_model_next = [x - lr * y for x, y in zip(self.global_model_next, self.calc_client_grads(batch_s, n_epoch, show_progress, self.client_model))] # Testing
-        # The moving model gets the next parameters
+        # Subtract the estimated gradients
         self.moving_model.set_params(self.global_model_next)
-        # Calculate w_moving as follows
-        self.grad_est_next = [x + y - z for x, y, z in zip(self.grad_est_curr, self.calc_client_grads(batch_s, n_epoch, show_progress, self.moving_model), self.calc_client_grads(batch_s, n_epoch, show_progress, self.client_model))]
+        self.moving_model.set_grads_and_step(self.grad_est_curr, step_size = lr) 
+        #self.moving_model.set_grads_and_step(self.calc_client_grads(batch_s, n_epoch, show_progress, self.client_model), step_size = lr)
+        # for params_weighted, grads_est in zip(self.global_model_next, self.grad_est_curr):
+        # for params_weighted, grads_est in zip(self.global_model_next, self.calc_client_grads(batch_s, n_epoch, show_progress, self.client_model)):
+        #    params_weighted.data.sub_(lr * grads_est)
+        # self.global_model_next = [x - lr * y for x, y in zip(self.global_model_next, self.calc_client_grads(batch_s, n_epoch, show_progress, self.client_model))] # Testing
+        # The moving model gets the next parameters
+        # self.moving_model.set_params(self.global_model_next) # = x_i(k + 1)
+        self.global_model_next = self.moving_model.get_params()
+        # Calculate new estimated gradients as follows
+        est_grad_diff = [next_grad - curr_grad for next_grad, curr_grad in zip(self.calc_client_grads(batch_s, n_epoch, show_progress, self.moving_model), self.calc_client_grads(batch_s, n_epoch, show_progress, self.client_model))]
+
+        for grad_weighted, grad_next_model in zip(self.grad_est_next, est_grad_diff):
+            grad_weighted.data.add_(grad_next_model)
+        
         # Update current values
         self.global_model_curr = self.global_model_next
         self.grad_est_curr = self.grad_est_next
         # Set the parameters to current version
         self.client_model.set_params(self.global_model_curr)
-        # Need to fix this tomorrow. Follow basic steps, and rememeber the debug process. Go one by one, see what works and what doesn't. Check different solution
-        
+    
     '''
     # I need 2 methods for that, first to exchange the parameters for consensus, then for training and setting parameters
     # Exchange values using a subgradient-push method from https://ieeexplore.ieee.org/abstract/document/6930814
@@ -559,7 +604,7 @@ def calc_centralities(node_list, graph_representation):
     out_deg_centrality = nx.out_degree_centrality(graph_representation)
     closeness_centrality = nx.closeness_centrality(graph_representation)
     betweeness_centrality = nx.betweenness_centrality(graph_representation)
-    eigenvector_centrality = nx.eigenvector_centrality(graph_representation, max_iter = 1000)
+    eigenvector_centrality = nx.eigenvector_centrality(graph_representation.reverse(), max_iter = 1000) # Reverse for out-edges eigenvector centrality
     # Assign centralities
     for node in centralities_data.keys():
         centralities_data[node].extend([in_deg_centrality[node], out_deg_centrality[node], closeness_centrality[node], betweeness_centrality[node], eigenvector_centrality[node]])
@@ -589,3 +634,14 @@ def sort_by_centrality(centrality_data_file):
 if __name__ == "__main__":
     a = sort_by_centrality('../../data/full_decentralized/fmnist/atk_none_advs_1_adv_pow_1_clients_10_atk_time_0_arch_star_seed_0_iid_type_iid/centrality_clients_fb5507dc8f227c762865a6f14daa2358a0003fff.csv')
     print(a)
+
+# Increase number of epochs 3-5 times the current one, check different learning rates
+# Decrease step size significantly, increase the sizes of minibatchs
+# Use strongly convex loss (different loss functions)
+# For lower-bound the optimality gap: 
+# Assume high t = 0 optimality gap, upperbound the difference between w_i(t+1) and w_i(t)
+# Assume w_i(0) - w* > Beta, find E||w_i(t + 1) - w_i(t)|| <= some func. Then traig + Jensen inequality
+# Relate the centralities of nodes to the attacks - try to relate centralities to the optimality gap and attackers
+# Simulations 10, 30, 50 clients, 5-10/20% adversaries
+# If time left: 2 cases if adversaries cooperate/dont cooperate
+# Find the signal to noise ratio that guarantees the adversarial clients to not converge 

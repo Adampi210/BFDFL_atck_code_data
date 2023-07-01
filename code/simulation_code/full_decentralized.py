@@ -32,7 +32,7 @@ if device_used != torch.device('cuda'):
     print(f'CUDA not available, have to use {device_used}')
 
 # Set hyperparameters
-seed = 0 # Seed for PRNGs 
+seed = 1 # Seed for PRNGs 
 random.seed(seed)
 torch.manual_seed(seed)
 np.random.seed(seed)
@@ -69,8 +69,8 @@ dir_name = '../../data/full_decentralized/%s/' % (dataset_name) + \
     'atk_%s_advs_%d_adv_pow_%s_clients_%d_atk_time_%d_arch_%s_seed_%d_iid_type_%s_%s/' % (attacks[attack_used], adv_number, str(adv_pow), N_CLIENTS, attack_time, architectures[0], seed, iid_type, aggregation_mechanism)
 os.makedirs(dir_name, exist_ok = True)
 
-# centralities = ('in_deg_centrality', 'out_deg_centrality', 'closeness_centrality', 'betweeness_centrality', 'eigenvector_centrality')
-centralities = ('in_deg_centrality')
+centralities = ('in_deg_centrality', 'out_deg_centrality', 'closeness_centrality', 'betweeness_centrality', 'eigenvector_centrality')
+# centralities = ('in_deg_centrality')
 # Next, create a class for the neural net that will be used
 class FashionMNIST_Classifier(nn.Module):
     def __init__(self):
@@ -262,10 +262,11 @@ if __name__ == "__main__":
                     elif aggregation_mechanism == 'test':
                         node.train_test(BATCH_SIZE, N_LOCAL_EPOCHS, show_progress = False)
                     elif aggregation_mechanism == 'sab':
-                        node.aggregate_SAB(BATCH_SIZE, N_LOCAL_EPOCHS, show_progress = False, lr = 0.1)
+                        node.aggregate_SAB(BATCH_SIZE, N_LOCAL_EPOCHS, show_progress = False, lr = 0.5)
                 # Save accuracies
                 for node in node_list:
                     curr_loss, curr_acc = node.validate_client()
+                    print(curr_loss)
                     acc_clients[node.client_id] = curr_acc
 
                 writer.writerow([i, acc_clients])
@@ -277,9 +278,3 @@ if __name__ == "__main__":
 
 # Run noise attack, make sure the noise is significant in comparison to the information being aggregated
 # Noise is chosen to be a function of the aggregated gradients, function chosen to be proportional to the gradients without randomness
-
-
-
-
-
-

@@ -68,9 +68,9 @@ def plot_average_clients(csv_file_name):
         ax.grid(True)
         plt.savefig(csv_file_name[:-4] + '_averaged_' + centrality + '.png')
 if __name__ == '__main__':
-
-    plot_acc_dec_data('/root/programming/Purdue-Research-Programs-Notes/data/full_decentralized/fmnist/atk_none_advs_0_adv_pow_0_clients_10_atk_time_0_arch_star_seed_0_iid_type_iid_test/accuracy_data_clientscc44f2e37c946852f085faaf2fd8a351a3bf5c49.csv')
-    plot_average_clients('/root/programming/Purdue-Research-Programs-Notes/data/full_decentralized/fmnist/atk_none_advs_0_adv_pow_0_clients_10_atk_time_0_arch_star_seed_0_iid_type_iid_test/accuracy_data_clientscc44f2e37c946852f085faaf2fd8a351a3bf5c49.csv')
+    path_acc_file = '/root/programming/Purdue-Research-Programs-Notes/data/full_decentralized/fmnist/atk_none_advs_0_adv_pow_0_clients_10_atk_time_0_arch_star_seed_1_iid_type_iid_sab/accuracy_data_clientsb78a4fe989ffd83f8ca3e908d0a6efae3d1d11a9.csv'
+    # plot_acc_dec_data(path_acc_file)
+    plot_average_clients(path_acc_file)
     # /root/programming/Purdue-Research-Programs-Notes/data/full_decentralized/fmnist/atk_none_advs_0_adv_pow_0_clients_10_atk_time_0_arch_star_seed_0_iid_type_iid_test/accuracy_data_clientscc44f2e37c946852f085faaf2fd8a351a3bf5c49.csv
     # /root/programming/Purdue-Research-Programs-Notes/data/full_decentralized/fmnist/atk_FGSM_advs_3_adv_pow_200_clients_10_atk_time_25_arch_star_seed_0_iid_type_non_iid_push_sum_adv/accuracy_data_clients1710217a6a88f0484ee0985af749fd93f15f3af6.csv
     # /root/programming/Purdue-Research-Programs-Notes/data/full_decentralized/fmnist/atk_FGSM_advs_3_adv_pow_200_clients_10_atk_time_25_arch_star_seed_0_iid_type_non_iid_push_sum/accuracy_data_clients1710217a6a88f0484ee0985af749fd93f15f3af6.csv

@@ -144,7 +144,7 @@ class Server_FL():
 
     # Method to aggregate client models into a global model:
     def aggregate_client_models_fed_avg(self):
-        scaled_client_weights = [[layer * self.client_scale_dictionary[client.client_id] / self.total_clients_weights \
+        scaled_client_weights = [[layer / len(self.list_clients) \
                                     for layer in client.client_model.get_params()] for client in self.list_clients]
 
         new_model_parameters = [sum(layers) for layers in zip(*scaled_client_weights)]
