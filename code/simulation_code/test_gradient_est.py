@@ -28,8 +28,7 @@ device_used = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 if device_used != torch.device('cuda'):
     print(f'CUDA not available, have to use {device_used}')
 # Set hyperparameters
-seed = 1 # Seed for PRNGs 
-N_CLIENTS = 1 # Number of clients
+seed = 0 # Seed for PRNGs 
 random.seed(seed)
 torch.manual_seed(seed)
 np.random.seed(seed)
@@ -397,15 +396,67 @@ class client_FL():
         # This is x(t) now, since client_model has current model
         self.moving_model.set_params(self.client_model.get_params())
 
+
+def gen_rand_adj_matrix(n_clients):
+    # The created graph must be fully connected
+    is_strongly_connected = False
+    while is_strongly_connected == False:
+        # Choose random number of edges
+        num_edges = random.randint(n_clients, n_clients ** 2)
+        # Choose the random clients
+        chosen_edges = random.choices(range(0, n_clients ** 2), k = num_edges)
+        # Convert to matrix coords
+        for i, edge in enumerate(chosen_edges):
+            chosen_edges[i] = (edge // n_clients, edge % n_clients)
+
+        plain_adj_matrix = np.zeros((n_clients, n_clients))
+        # Create the matrix (binary)
+        for coord in chosen_edges:
+            i, j = coord[0], coord[1]
+            if i != j:
+                plain_adj_matrix[i][j] = 1
+        # Create the graph, make sure it's strongly connected
+        graph = nx.from_numpy_matrix(plain_adj_matrix, create_using = nx.DiGraph)
+        is_strongly_connected = nx.is_strongly_connected(graph)
+    # Only return fully connected graph
+    return plain_adj_matrix
+
+def create_clients_graph(node_list, plain_adj_matrix, aggregation_mechanism):
+    # First add neighbors, create graph concurrently
+    graph = nx.DiGraph()
+    for device in node_list:
+        i = device.client_id
+        for j in range(len(node_list)):
+            if plain_adj_matrix[i][j]:
+                device.add_out_neighbor(node_list[j])
+                graph.add_edge(i, j)
+    # Then create the adjacency matrix
+    adj_matrix = np.zeros((len(node_list), len(node_list)))
+    # for device in node_list:
+        # Connection goes from i to j, not 0 if that happens
+        # This is actually specific to the aggregation mechanism used
+        # This aggregation mechanism depends on the size of datasets of in neighbors
+        #if aggregation_mechanism == 'base':
+        #    i = device.client_id
+        #    i_neigbor_sum = sum([neighbor.dset_size for neighbor in device.in_neighbors.values()])
+        
+        # for j in device.in_neighbors.keys():
+        #    adj_matrix[j][i] = device.in_neighbors[j].dset_size / i_neigbor_sum
+        
+    # ALso make the graph
+    return plain_adj_matrix, graph
+
+
 if __name__ == '__main__':
     acc_list = []
     client_list = [client_FL(i) for i in range(N_CLIENTS)]
     [x.get_data(train_dset_split[i], valid_dset_split[i]) for x, i in zip(client_list, range(N_CLIENTS))]
     [x.init_compiled_model(NetBasic()) for x in client_list]
     [client_list[i].add_neighbor(client_list[i - 1]) for i in range(1, len(client_list))]
-    client_list[len(client_list) - 1].add_neighbor(client_list[0])
+    adj_matrix = gen_rand_adj_matrix(N_CLIENTS)
+    create_clients_graph(client_list, adj_matrix, None)
 
-    for i in range(300):
+    for i in range(100):
         [x.exchange_models() for x in client_list]
         [x.aggregate_SAB(500, 5, False) for x in client_list]
         print(f'Epoch {i}')

@@ -545,7 +545,6 @@ def hash_np_arr(np_arr):
     return hex_hash_arr
 
 # Generate random adjacency matrix for a random graph
-# TODO aggregation changes the weights, see how that affects centralities
 def gen_rand_adj_matrix(n_clients):
     # The created graph must be fully connected
     is_strongly_connected = False
