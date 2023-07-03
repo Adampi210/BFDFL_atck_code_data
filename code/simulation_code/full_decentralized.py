@@ -203,6 +203,11 @@ with open(dir_name + 'centrality_clients_' + str(hash_np_arr(adj_matrix)) + '.cs
         writer.writerow(data_cent_client)
 nodes_to_atk_centrality = sort_by_centrality(dir_name + 'centrality_clients_' + str(hash_np_arr(adj_matrix)) + '.csv')
 
+
+def run_sims(attack_used = None, centrality_used = None):
+    # TODO: Implement the current setup but as a function
+    pass
+
 # Train and test
 if __name__ == "__main__":
     global_loss, global_acc = 0, 0
