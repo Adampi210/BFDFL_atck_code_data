@@ -16,15 +16,16 @@ sed -i "s/adv_percent = 0.$prev_adv_perc/adv_percent = 0.$init_adv_perc/g" full_
 sed -i "s/adv_pow = $prev_power/adv_pow = $init_power/g" full_decentralized.py
 sed -i "s/iid_type = '$prev_iid_style'/iid_type = '$init_iid_style'/g" full_decentralized.py
 
+
 for iid_style in 'iid' 'non_iid'
 do
-    for clients in 10
+    for clients in 10 30 50
     do
-        for power in 200
+        for power in 0
         do
-            for adv_prec in 0 1 3 
+            for adv_prec in 0
             do
-                for seed in 0
+                for seed in 0 1 2
                 do 
                     sed -i "s/seed = $prev_seed/seed = $seed/g" full_decentralized.py
                     sed -i "s/iid_type = '$prev_iid_style'/iid_type = '$iid_style'/g" full_decentralized.py

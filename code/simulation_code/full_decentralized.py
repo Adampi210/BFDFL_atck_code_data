@@ -32,14 +32,14 @@ if device_used != torch.device('cuda'):
     print(f'CUDA not available, have to use {device_used}')
 
 # Set hyperparameters
-seed = 1 # Seed for PRNGs 
+seed = 0 # Seed for PRNGs 
 random.seed(seed)
 torch.manual_seed(seed)
 np.random.seed(seed)
 # Training parameters
 iid_type = 'iid'      # 'iid' or 'non_iid'
-BATCH_SIZE = 1000     # Batch size while training
-N_LOCAL_EPOCHS  = 1   # Number of epochs for local training
+BATCH_SIZE = 100      # Batch size while training
+N_LOCAL_EPOCHS  = 25  # Number of epochs for local training
 N_GLOBAL_EPOCHS = 100 # Number of epochs for global training
 N_SERVERS  = 0        # Number of servers
 N_CLIENTS  = 10       # Number of clients
@@ -70,8 +70,8 @@ dir_name = '../../data/full_decentralized/%s/' % (dataset_name) + \
 os.makedirs(dir_name, exist_ok = True)
 
 centralities = ('in_deg_centrality', 'out_deg_centrality', 'closeness_centrality', 'betweeness_centrality', 'eigenvector_centrality')
-# centralities = ('in_deg_centrality')
-# Next, create a class for the neural net that will be used
+
+# Testing the gradient estimate method
 class FashionMNIST_Classifier(nn.Module):
     def __init__(self):
         # Inherit the __init__() method from nn.Module (call __init__() from the parent class of FashionMNIST_Classifier)
@@ -116,50 +116,6 @@ class FashionMNIST_Classifier(nn.Module):
 
         return x
 
-class CIFAR10_Classifier(nn.Module):
-    def __init__(self):
-        # Inherit __init__ from nn.Module
-        super(CIFAR10_Classifier, self).__init__()
-
-        # Define layers for CIFAR10_Classifier
-        self.conv0 = nn.Sequential(
-            nn.Conv2d(in_channels = 3, out_channels = 32, kernel_size = (3, 3), stride = (1, 1), padding = 1),
-            nn.ReLU(),
-            nn.BatchNorm2d(32),
-            nn.Conv2d(in_channels = 32, out_channels = 32, kernel_size = (3, 3), stride = (1, 1), padding = 1),
-            nn.ReLU(),
-            nn.BatchNorm2d(32),
-            nn.MaxPool2d(kernel_size = (2, 2), stride = (2, 2)),
-            nn.Dropout(p = 0.5)
-        )
-
-        self.conv1 = nn.Sequential(
-            nn.Conv2d(in_channels = 32, out_channels = 64, kernel_size = (3, 3), stride = (1, 1), padding = 1),
-            nn.ReLU(),
-            nn.BatchNorm2d(64),
-            nn.Conv2d(in_channels = 64, out_channels = 64, kernel_size = (3, 3), stride = (1, 1), padding = 1),
-            nn.ReLU(),
-            nn.BatchNorm2d(64),
-            nn.MaxPool2d(kernel_size = (2, 2), stride = (2, 2)),
-            nn.Dropout(p = 0.5)
-        )
-
-        self.fcls = nn.Sequential(
-            nn.Linear(in_features = 64 * 8 * 8, out_features = 256),
-            nn.ReLU(),
-            nn.Linear(in_features = 256, out_features = 10)
-        )
-
-    def forward(self, x):
-        x = x.view(x.shape[0], x.shape[3], x.shape[1], x.shape[2]) 
-
-        x = self.conv0(x)
-        x = self.conv1(x)
-        x = x.view(x.size(0), -1) # Flatten the tensor, except the batch dimension
-        x = self.fcls(x)
-
-        return x
-
 # Split the data for the specified number of clients and servers
 if iid_type == 'iid':
     train_dset_split, valid_dset_split = split_data_iid_excl_server(N_CLIENTS, dataset_name)
@@ -172,72 +128,73 @@ if dataset_name == 'fmnist':
 elif dataset_name == 'cifar10':
     NetBasic = CIFAR10_Classifier
 
-# Initialize list storing all the nodes
-node_list = []
-acc_clients = [0] * N_CLIENTS
+def run_and_save_simulation(train_split, valid_split, centrality_measure = None):
+    # Initialize list storing all the nodes
+    node_list = []
+    acc_clients = [0] * N_CLIENTS
+    loss_clients = [0] * N_CLIENTS
+    
+    # Create nodes in the graph
+    node_list = [client_FL(i) for i in range(N_CLIENTS)]
+    [node.get_data(train_split[i], valid_split[i]) for node, i in zip(node_list, range(N_CLIENTS))]
+    [node.init_compiled_model(NetBasic()) for node in node_list]
 
-# Create nodes in the graph
-for i in range(N_CLIENTS):
-    temp_node = client_FL(client_id = i, if_adv_client = False)
-    temp_node.get_data(train_dset_split[i], valid_dset_split[i])
-    temp_node.init_compiled_model(NetBasic())
-    node_list.append(temp_node)
+    # Add neigbors, random graph
+    random_plain_adj_list = gen_rand_adj_matrix(N_CLIENTS)
+    adj_matrix, graph_representation = create_clients_graph(node_list, random_plain_adj_list, 0)
+    
+    # Save the adjacency matrix
+    adj_matrix_figname = dir_name + 'adj_matrix_' + str(hash_np_arr(adj_matrix))
+    np.savetxt(adj_matrix_figname, adj_matrix)
+    centrality_data = calc_centralities(node_list, graph_representation)
+    graph_plot = nx.draw_networkx(graph_representation, with_labels = True)
+    plt.savefig(dir_name + 'graph_' + str(hash_np_arr(adj_matrix)) + '.png')
 
-# Add neigbors, random graph
-random_plain_adj_list = gen_rand_adj_matrix(N_CLIENTS)
-adj_matrix, graph_representation = create_clients_graph(node_list, random_plain_adj_list, 0)
+    # Save network centralities
+    with open(dir_name + 'centrality_clients_' + str(hash_np_arr(adj_matrix)) + '.csv', 'w', newline = '') as centrality_data_file:
+        writer = csv.writer(centrality_data_file)
+        for node_id in centrality_data.keys():
+            data_cent_node = [node_id]
+            data_cent_node.extend(centrality_data[node_id])
+            writer.writerow(data_cent_node)
 
-# Save the adjacency matrix
-adj_matrix_figname = dir_name + 'adj_matrix_' + str(hash_np_arr(adj_matrix))
-np.savetxt(adj_matrix_figname, adj_matrix)
-centrality_data = calc_centralities(node_list, graph_representation)
-graph_plot = nx.draw_networkx(graph_representation, with_labels = True)
-plt.savefig(dir_name + 'graph_' + str(hash_np_arr(adj_matrix)) + '.png')
-# In aggregation 0 this will be column stochastic, but the actual matrix in the equation X(t+1) = X(t) - A(t) X_diff(t) is row stochastic
+    nodes_to_atk_centrality = sort_by_centrality(dir_name + 'centrality_clients_' + str(hash_np_arr(adj_matrix)) + '.csv')
 
-with open(dir_name + 'centrality_clients_' + str(hash_np_arr(adj_matrix)) + '.csv', 'w', newline = '') as centrality_data_file:
-    writer = csv.writer(centrality_data_file)
-    for client_id in centrality_data.keys():
-        data_cent_client = [client_id]
-        data_cent_client.extend(centrality_data[client_id])
-        writer.writerow(data_cent_client)
-nodes_to_atk_centrality = sort_by_centrality(dir_name + 'centrality_clients_' + str(hash_np_arr(adj_matrix)) + '.csv')
-
-
-def run_sims(attack_used = None, centrality_used = None):
-    # TODO: Implement the current setup but as a function
-    pass
-
-# Train and test
-if __name__ == "__main__":
-    global_loss, global_acc = 0, 0
-    filename = dir_name + 'accuracy_data_clients' + str(hash_np_arr(adj_matrix))
-    with open(filename + '.csv', 'w', newline = '') as file_data:
-        # Setup a writer
-        writer = csv.writer(file_data)
-        for centrality_idx in range(len(centralities)):
+    # Init accuracy and loss values and files
+    curr_loss, curr_acc = 0, 0
+    centrality_used = 'none' if centrality_measure == None else centralities[centrality_measure]
+    file_acc_name = dir_name + 'acc_%s' % centrality_used + '_' + str(hash_np_arr(adj_matrix))
+    file_loss_name = dir_name + 'loss_%s' % centrality_used + '_' + str(hash_np_arr(adj_matrix))
+    with open(file_acc_name + '.csv', 'w', newline = '') as file_acc:
+        with open(file_loss_name + '.csv', 'w', newline = '') as file_loss:
+            # Setup writers
+            writer_acc = csv.writer(file_acc)
+            writer_loss = csv.writer(file_loss)
             # Training
-            # Reset attack values, set adversaries
+            # Setup attack values
             attack = attacks[0]
-            adv_list = nodes_to_atk_centrality[centrality_idx][0:adv_number]
+            if centrality_used == 'none':
+                adv_list = []
+                writer_acc.writerow(['none', adv_list])
+                writer_loss.writerow(['none', adv_list])
+            else: 
+                adv_list = nodes_to_atk_centrality[centrality_measure][0:adv_number]
+                writer_acc.writerow([centralities[centrality_measure], adv_list])
+                writer_loss.writerow([centralities[centrality_measure], adv_list])
+
+            # Setup nodes
             for node in node_list:
                 node.attack = attack
-                node.adv_pow = adv_pow * len(node.in_neighbors)
+                node.adv_pow = adv_pow
                 node.if_adv_client = False
-                node.client_model = None
-                node.eps_iter = 0
-                node.nb_iter = 0
-                node.y_t = 1
-                node.y_t_next = 1
-                node.z_t_next = None
-                node.w_t_next = None
-                node.init_compiled_model(NetBasic())
+                # Only for adversarial clients
                 if node.client_id in adv_list:
                     node.if_adv_client = True
-            # Specify centrality and nodes attacked
-            writer.writerow([centralities[centrality_idx], adv_list])
+                    node.eps_iter = eps_iter
+                    node.nb_iter = nb_iter
 
-            # Train the net
+
+            # Run the training
             for i in range(N_GLOBAL_EPOCHS):
                 # Update values if attacking
                 if i == attack_time:
@@ -250,32 +207,26 @@ if __name__ == "__main__":
                             node.nb_iter = nb_iter
                 # Train and aggregate
                 print(f'global epoch: {i}')
-                # Will attack automatically
-                for node in node_list:
-                    if aggregation_mechanism == 'push_sum':
-                        node.exchange_values_push_sum()
-                    elif aggregation_mechanism == 'sab':
-                        node.exchange_models()
-                # Aggregations might differ
-                for node in node_list:
-                    if aggregation_mechanism == 'push_sum':
-                        node.train_and_aggregate_push_sum(BATCH_SIZE, N_LOCAL_EPOCHS, show_progress = False)
-                    elif aggregation_mechanism == 'push_sum_adv':
-                        node.train_and_aggregate_push_sum_adv(BATCH_SIZE, N_LOCAL_EPOCHS, show_progress = False)
-                    elif aggregation_mechanism == 'belief_secure_push_sum':
-                        pass
-                    elif aggregation_mechanism == 'test':
-                        node.train_test(BATCH_SIZE, N_LOCAL_EPOCHS, show_progress = False)
-                    elif aggregation_mechanism == 'sab':
-                        node.aggregate_SAB(BATCH_SIZE, N_LOCAL_EPOCHS, show_progress = False, lr = 0.5)
+                # Exchange models and aggregate, MAIN PART
+                [node.exchange_models() for node in node_list]
+                [node.aggregate_SAB(BATCH_SIZE, N_LOCAL_EPOCHS, False) for node in node_list]
                 # Save accuracies
                 for node in node_list:
                     curr_loss, curr_acc = node.validate_client()
-                    print(curr_loss)
                     acc_clients[node.client_id] = curr_acc
+                    loss_clients[node.client_id] = curr_loss
+                
+                # Save data
+                writer_acc.writerow([i, acc_clients])
+                writer_loss.writerow([i, loss_clients])
 
-                writer.writerow([i, acc_clients])
 
+if __name__ == '__main__':
+    if attack_used == 0:
+        run_and_save_simulation(train_dset_split, valid_dset_split, None)
+    else:
+        for i in range(len(centralities)):
+            run_and_save_simulation(train_dset_split, valid_dset_split, i)
 
 # How far the attack goes based on centrality - epidemic spread, epidemic modelling over networks, topology specific epidemic modelling
 # Infocomm sigcomm, graph theory
