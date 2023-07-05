@@ -42,7 +42,12 @@ class CompiledModel():
         # Get the batch
         # Iterate for the specified number of epochs (i.e. this is how many diff batches will be used to evaluate the gradients)
         for i in range(n_epoch):
-            x, y = next(dataloader_iterator) # Get next batch
+            try:
+                x, y = next(dataloader_iterator) # Get next batch
+            except StopIteration:
+                train_dataloader = DataLoader(dataset = train_dataset, batch_size = train_batch_size, shuffle = True)
+                dataloader_iterator = iter(train_dataloader)
+                x, y = next(dataloader_iterator)
             self.model.zero_grad()           # Reset the gradients for model 
             output = self.model(x)           # Calculate the outputs for batch inputs
             loss = local_loss(output, y) # Calculate the loss
@@ -254,7 +259,7 @@ class client_FL():
                 self.client_model.set_params(self.global_model_curr)
             # Calculate init gradients if not present
             if self.grad_est_curr is None:
-                self.grad_est_curr = self.client_model.calc_grads(train_data = self.x_train, train_labels = self.y_train, train_batch_size = 1000, n_epoch = 2, show_progress = False)
+                self.grad_est_curr = self.client_model.calc_grads(train_data = self.x_train, train_labels = self.y_train, train_batch_size = len(self.x_train), n_epoch = 2, show_progress = False)
               
         else:
             pass
