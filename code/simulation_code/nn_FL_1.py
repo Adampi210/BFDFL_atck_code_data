@@ -435,10 +435,22 @@ def create_clients_graph(node_list, plain_adj_matrix, aggregation_mechanism):
     # ALso make the graph
     return plain_adj_matrix, graph
 
-def calc_centralities(node_list, graph_representation):
+def create_graph(adj_matrix):
+    # First add neighbors, create graph concurrently
+    graph = nx.DiGraph()
+    n_clients = len(adj_matrix[0])
+    for i in range(n_clients):
+        for j in range(n_clients):
+            if adj_matrix[i][j]:
+                graph.add_edge(i, j)
+
+    # Make the graph
+    return graph
+
+def calc_centralities(n_clients, graph_representation):
     # The format is a dict, where the key is client id, and value is a list of centralities in this order:
     # id:[in_deg_centrality, out_deg_centrality, closeness_centrality, betweeness_centrality, eigenvector_centrality]
-    centralities_data = {node.client_id:[] for node in node_list}
+    centralities_data = {i:[] for i in range(n_clients)}
     # Calculate centralities
     in_deg_centrality = nx.in_degree_centrality(graph_representation)
     out_deg_centrality = nx.out_degree_centrality(graph_representation)
@@ -485,3 +497,7 @@ if __name__ == "__main__":
 # Simulations 10, 30, 50 clients, 5-10/20% adversaries
 # If time left: 2 cases if adversaries cooperate/dont cooperate
 # Find the signal to noise ratio that guarantees the adversarial clients to not converge 
+
+
+# Find real-world graph types for wireless and use them
+# For theoretical analysis good idea to start general, then maybe look at specific types of graphs

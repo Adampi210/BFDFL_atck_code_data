@@ -1,7 +1,10 @@
+import os
 import csv
 import matplotlib.pyplot as plt
 import numpy as np
 import ast
+from nn_FL_1 import *
+
 # Read parameters
 seed = 0 # Seed for PRNGs 
 
@@ -67,20 +70,38 @@ def plot_average_clients(csv_file_name):
         #ax.view_init(elev=60, azim=290)  # Adjust the angles to rotate the plot
         ax.grid(True)
         plt.savefig(csv_file_name[:-4] + '_averaged_' + centrality + '.png')
+
+def calc_diff_attack(csv_original_name, csv_attacked_name):
+    total_diff = 0
+    with open(csv_original_name, 'r') as original_data:
+        reader_orig = csv.reader(original_data)
+        with open(csv_attacked_name, 'r') as attacked_data:
+            reader_attck = csv.reader(attacked_data)
+            i = 0
+            for row_orig, row_attck in zip(reader_orig, reader_attck):
+                if i == 0:
+                    attacked_nodes = ast.literal_eval(row_attck[1])
+                    attacked_nodes = [int(_) for _ in attacked_nodes]
+                elif i > 25:
+                    acc_orig = ast.literal_eval(row_orig[1])
+                    acc_orig = sum(acc_orig) / len(acc_orig)
+                    acc_attck = ast.literal_eval(row_attck[1])
+                    acc_honest = [_ for i, _ in enumerate(acc_attck) if i not in attacked_nodes]
+                    acc_honest = sum(acc_honest) / len(acc_honest)
+                    total_diff += acc_orig - acc_honest
+                    print(acc_orig, acc_honest)
+                i += 1
+
+        return total_diff
+
+def plot_acc_diff(dataset_name = 'fmnist'):
+    dir_networks = '/root/programming/Purdue-Research-Programs-Notes/data/full_decentralized/network_topologies'
+    dir_data = '/root/programming/Purdue-Research-Programs-Notes/data/full_decentralized/%s/' % dataset_name
+    for network_topology in os.listdir(dir_networks):
+        file_network_toplogy = os.path.join(dir_networks, network_topology)
+        adj_matrix = np.loadtxt(file_network_toplogy)
+        hash_adj_matrix = hash_np_arr(adj_matrix)
+        data_dir_name = dir_data + str(hash_adj_matrix) + '/' 
+        print(data_dir_name)
 if __name__ == '__main__':
-    path_acc_file = '/root/programming/Purdue-Research-Programs-Notes/data/full_decentralized/fmnist/atk_none_advs_0_adv_pow_0_clients_10_atk_time_0_arch_star_seed_1_iid_type_iid_sab/accuracy_data_clientsb78a4fe989ffd83f8ca3e908d0a6efae3d1d11a9.csv'
-    # plot_acc_dec_data(path_acc_file)
-    plot_average_clients(path_acc_file)
-    # /root/programming/Purdue-Research-Programs-Notes/data/full_decentralized/fmnist/atk_none_advs_0_adv_pow_0_clients_10_atk_time_0_arch_star_seed_0_iid_type_iid_test/accuracy_data_clientscc44f2e37c946852f085faaf2fd8a351a3bf5c49.csv
-    # /root/programming/Purdue-Research-Programs-Notes/data/full_decentralized/fmnist/atk_FGSM_advs_3_adv_pow_200_clients_10_atk_time_25_arch_star_seed_0_iid_type_non_iid_push_sum_adv/accuracy_data_clients1710217a6a88f0484ee0985af749fd93f15f3af6.csv
-    # /root/programming/Purdue-Research-Programs-Notes/data/full_decentralized/fmnist/atk_FGSM_advs_3_adv_pow_200_clients_10_atk_time_25_arch_star_seed_0_iid_type_non_iid_push_sum/accuracy_data_clients1710217a6a88f0484ee0985af749fd93f15f3af6.csv
-    # /root/programming/Purdue-Research-Programs-Notes/data/full_decentralized/fmnist/atk_FGSM_advs_3_adv_pow_200_clients_10_atk_time_25_arch_star_seed_0_iid_type_iid_push_sum_adv/accuracy_data_clientscc44f2e37c946852f085faaf2fd8a351a3bf5c49.csv
-    # /root/programming/Purdue-Research-Programs-Notes/data/full_decentralized/fmnist/atk_FGSM_advs_3_adv_pow_200_clients_10_atk_time_25_arch_star_seed_0_iid_type_iid_push_sum/accuracy_data_clientscc44f2e37c946852f085faaf2fd8a351a3bf5c49.csv
-    # /root/programming/Purdue-Research-Programs-Notes/data/full_decentralized/fmnist/atk_FGSM_advs_1_adv_pow_200_clients_10_atk_time_25_arch_star_seed_0_iid_type_non_iid_push_sum_adv/accuracy_data_clients1710217a6a88f0484ee0985af749fd93f15f3af6.csv
-    # /root/programming/Purdue-Research-Programs-Notes/data/full_decentralized/fmnist/atk_FGSM_advs_1_adv_pow_200_clients_10_atk_time_25_arch_star_seed_0_iid_type_non_iid_push_sum/accuracy_data_clients1710217a6a88f0484ee0985af749fd93f15f3af6.csv
-    # /root/programming/Purdue-Research-Programs-Notes/data/full_decentralized/fmnist/atk_FGSM_advs_1_adv_pow_200_clients_10_atk_time_25_arch_star_seed_0_iid_type_iid_push_sum_adv/accuracy_data_clientscc44f2e37c946852f085faaf2fd8a351a3bf5c49.csv
-    # /root/programming/Purdue-Research-Programs-Notes/data/full_decentralized/fmnist/atk_FGSM_advs_1_adv_pow_200_clients_10_atk_time_25_arch_star_seed_0_iid_type_iid_push_sum/accuracy_data_clientscc44f2e37c946852f085faaf2fd8a351a3bf5c49.csv
-    # /root/programming/Purdue-Research-Programs-Notes/data/full_decentralized/fmnist/atk_FGSM_advs_0_adv_pow_200_clients_10_atk_time_25_arch_star_seed_0_iid_type_non_iid_push_sum_adv/accuracy_data_clients1710217a6a88f0484ee0985af749fd93f15f3af6.csv
-    # /root/programming/Purdue-Research-Programs-Notes/data/full_decentralized/fmnist/atk_FGSM_advs_0_adv_pow_200_clients_10_atk_time_25_arch_star_seed_0_iid_type_iid_push_sum_adv/accuracy_data_clientscc44f2e37c946852f085faaf2fd8a351a3bf5c49.csv
-    # /root/programming/Purdue-Research-Programs-Notes/data/full_decentralized/fmnist/atk_FGSM_advs_3_adv_pow_200_clients_10_atk_time_25_arch_star_seed_0_iid_type_iid/accuracy_data_clientscc44f2e37c946852f085faaf2fd8a351a3bf5c49.csv
-    # /root/programming/Purdue-Research-Programs-Notes/data/full_decentralized/fmnist/atk_FGSM_advs_3_adv_pow_200_clients_30_atk_time_25_arch_star_seed_0_iid_type_iid/accuracy_data_clientsb5eedee3462c80d48f214640d04d09452fe83e58.csv
+    plot_acc_diff()
