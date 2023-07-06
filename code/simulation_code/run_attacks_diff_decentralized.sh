@@ -12,26 +12,26 @@ prev_iid_style=$init_iid_style
 prev_cent_used=$init_cent_used
 
 sed -i "s/seed = $prev_seed/seed = $init_seed/g" full_decentralized.py
-sed -i "s/N_CLIENTS  = $prev_clients/N_CLIENTS  = $init_clients/g" full_decentralized.py
+sed -i "s/network_topology = 'random_graph_c_10_p_05_seed_$prev_seed.txt'/network_topology = 'random_graph_c_10_p_05_seed_$init_seed.txt'/g" full_decentralized.py
 sed -i "s/adv_percent = 0.$prev_adv_perc/adv_percent = 0.$init_adv_perc/g" full_decentralized.py
 sed -i "s/adv_pow = $prev_power/adv_pow = $init_power/g" full_decentralized.py
 sed -i "s/iid_type = '$prev_iid_style'/iid_type = '$init_iid_style'/g" full_decentralized.py
 sed -i "s/cent_measure_used = $prev_cent_used/cent_measure_used = $init_cent_used/g" full_decentralized.py
 
 
-for iid_style in 'iid'
+for iid_style in 'iid' 'non_iid'
 do
-    for power in 100
+    for power in 100 300
     do
-        for adv_prec in 1
+        for adv_prec in 1 2
         do
-            for seed in 0
+            for seed in 1 2
             do 
-                for cent_used in 1 2 3 4 5
+                for cent_used in 0 1 2 3 4 5
                 do
                     sed -i "s/seed = $prev_seed/seed = $seed/g" full_decentralized.py
+                    sed -i "s/network_topology = 'random_graph_c_10_p_05_seed_$prev_seed.txt'/network_topology = 'random_graph_c_10_p_05_seed_$seed.txt'/g" full_decentralized.py
                     sed -i "s/iid_type = '$prev_iid_style'/iid_type = '$iid_style'/g" full_decentralized.py
-                    sed -i "s/N_CLIENTS  = $prev_clients/N_CLIENTS  = $clients/g" full_decentralized.py
                     sed -i "s/adv_percent = 0.$prev_adv_perc/adv_percent = 0.$adv_prec/g" full_decentralized.py
                     sed -i "s/adv_pow = $prev_power/adv_pow = $power/g" full_decentralized.py
                     sed -i "s/cent_measure_used = $prev_cent_used/cent_measure_used = $cent_used/g" full_decentralized.py
@@ -51,8 +51,8 @@ done
 
 
 sed -i "s/seed = $prev_seed/seed = $init_seed/g" full_decentralized.py
+sed -i "s/network_topology = 'random_graph_c_10_p_05_seed_$prev_seed.txt'/network_topology = 'random_graph_c_10_p_05_seed_$init_seed.txt'/g" full_decentralized.py
 sed -i "s/iid_type = '$prev_iid_style'/iid_type = '$init_iid_style'/g" full_decentralized.py
-sed -i "s/N_CLIENTS  = $prev_clients/N_CLIENTS  = $init_clients/g" full_decentralized.py
 sed -i "s/adv_percent = 0.$prev_adv_perc/adv_percent = 0.$init_adv_perc/g" full_decentralized.py
 sed -i "s/adv_pow = $prev_power/adv_pow = $init_power/g" full_decentralized.py
 sed -i "s/cent_measure_used = $prev_cent_used/cent_measure_used = $init_cent_used/g" full_decentralized.py

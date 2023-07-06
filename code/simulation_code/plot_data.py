@@ -82,14 +82,13 @@ def calc_diff_attack(csv_original_name, csv_attacked_name):
                 if i == 0:
                     attacked_nodes = ast.literal_eval(row_attck[1])
                     attacked_nodes = [int(_) for _ in attacked_nodes]
-                elif i > 25:
+                elif i >= 25:
                     acc_orig = ast.literal_eval(row_orig[1])
                     acc_orig = sum(acc_orig) / len(acc_orig)
                     acc_attck = ast.literal_eval(row_attck[1])
                     acc_honest = [_ for i, _ in enumerate(acc_attck) if i not in attacked_nodes]
                     acc_honest = sum(acc_honest) / len(acc_honest)
                     total_diff += acc_orig - acc_honest
-                    print(acc_orig, acc_honest)
                 i += 1
 
         return total_diff
@@ -97,11 +96,51 @@ def calc_diff_attack(csv_original_name, csv_attacked_name):
 def plot_acc_diff(dataset_name = 'fmnist'):
     dir_networks = '/root/programming/Purdue-Research-Programs-Notes/data/full_decentralized/network_topologies'
     dir_data = '/root/programming/Purdue-Research-Programs-Notes/data/full_decentralized/%s/' % dataset_name
+    centralities = ('none', 'in_deg_centrality', 'out_deg_centrality', 'closeness_centrality', 'betweeness_centrality', 'eigenvector_centrality')
+    acc_data = {cent:None for cent in centralities}
     for network_topology in os.listdir(dir_networks):
+        dist_filenames = set()
         file_network_toplogy = os.path.join(dir_networks, network_topology)
         adj_matrix = np.loadtxt(file_network_toplogy)
         hash_adj_matrix = hash_np_arr(adj_matrix)
         data_dir_name = dir_data + str(hash_adj_matrix) + '/' 
-        print(data_dir_name)
+        # First get distinct plot types
+        for root, dirs, files in os.walk(data_dir_name):
+            for filename in files:
+                if "acc_" in filename:
+                    dist_filenames.add(filename)
+        for filename_data in dist_filenames:
+            print(filename_data)
+            for root, dirs, files in os.walk(data_dir_name):
+                for filename in files:
+                    if filename == filename_data:
+                        acc_data[centralities[[cent in root for cent in centralities].index(True)]] = []
+                        with open(root + '/' + filename, 'r') as acc_data_file:
+                            reader = csv.reader(acc_data_file)
+                            i = 0
+                            for row in reader:
+                                if i == 0:
+                                    attacked_nodes = ast.literal_eval(row[1])
+                                    attacked_nodes = [int(_) for _ in attacked_nodes]
+                                else:
+                                    acc = ast.literal_eval(row[1])
+                                    acc_honest = [_ for i, _ in enumerate(acc) if i not in attacked_nodes]
+                                    acc_honest = sum(acc_honest) / len(acc_honest)
+                                    acc_data[centralities[[cent in root for cent in centralities].index(True)]].append(acc_honest)
+                                i += 1
+
+            # Plot the accuracies
+            plt.figure(figsize=(10, 6))
+
+            for cent, acc_aver in acc_data.items():
+                plt.plot(range(len(acc_aver)), acc_aver, label = cent)
+
+            plt.xlabel('Epoch') 
+            plt.ylabel('Accuracy') 
+
+            plt.grid(True)
+            plt.legend()
+            plt.savefig(data_dir_name + filename_data[:-4] + '.png')
+        
 if __name__ == '__main__':
     plot_acc_diff()

@@ -1,4 +1,4 @@
-out_deg_centrality,[8.]
+betweeness_centrality,[8.]
 0,"[tensor(2.3021), tensor(2.3030), tensor(2.3022), tensor(2.2989), tensor(2.2963), tensor(2.3005), tensor(2.3015), tensor(2.2992), tensor(2.3023), tensor(2.3020)]"
 1,"[tensor(2.3012), tensor(2.3021), tensor(2.3021), tensor(2.2986), tensor(2.3000), tensor(2.2998), tensor(2.3011), tensor(2.3000), tensor(2.3027), tensor(2.3030)]"
 2,"[tensor(2.2972), tensor(2.2984), tensor(2.3011), tensor(2.2994), tensor(2.2986), tensor(2.2978), tensor(2.2991), tensor(2.3018), tensor(2.3003), tensor(2.3015)]"
