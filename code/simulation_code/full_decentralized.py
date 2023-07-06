@@ -33,7 +33,7 @@ if device_used != torch.device('cuda'):
     print(f'CUDA not available, have to use {device_used}')
 
 # Set hyperparameters
-seed = 1 # Seed for PRNGs 
+seed = 2 # Seed for PRNGs 
 random.seed(seed)
 torch.manual_seed(seed)
 np.random.seed(seed)
@@ -48,7 +48,7 @@ aggregation_mechanism = aggreg_schemes[1]
 dir_networks = '/root/programming/Purdue-Research-Programs-Notes/data/full_decentralized/network_topologies'
 dir_data = '/root/programming/Purdue-Research-Programs-Notes/data/full_decentralized/%s/' % dataset_name
 # This is the source for network topology
-network_topology = 'random_graph_c_10_p_05_seed_1.txt'
+network_topology = 'random_graph_c_10_p_05_seed_2.txt'
 network_topology_filepath = os.path.join(dir_networks, network_topology)
 adj_matrix = np.loadtxt(network_topology_filepath)
 hash_adj_matrix = hash_np_arr(adj_matrix)
@@ -83,7 +83,7 @@ attacks = ('none', 'FGSM', 'PGD', 'noise')      # Available attacks
 architectures = ('star', 'full_decentralized')  # Architecture used
 attack_used = 1                                 # Which attack from the list was used
 attack = attacks[0]                             # Always start with no attack (attack at some point)
-adv_pow = 100                                     # Power of the attack
+adv_pow = 300                                     # Power of the attack
 adv_percent = 0.1                               # Percentage of adversaries
 adv_number = int(adv_percent * N_CLIENTS)       # Number of adversaries
 # adv_list = list(range(adv_number))
