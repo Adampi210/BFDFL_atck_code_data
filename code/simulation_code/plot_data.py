@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import ast
 from nn_FL_1 import *
+import networkx as nx
 
 # Read parameters
 seed = 0 # Seed for PRNGs 
@@ -144,6 +145,31 @@ def plot_acc_diff(dataset_name = 'fmnist'):
         plt.grid(True)
         plt.legend()
         plt.savefig(data_dir_name + filename_data[:-4] + '.png')
-        
+
+
+# Used to generate ER graphs
+def gen_ER_graph(n_clients, prob_conn = 0.5, graph_name = '', seed = 0):
+    dir_networks = '/root/programming/Purdue-Research-Programs-Notes/data/full_decentralized/network_topologies/'
+    graph = None
+    is_strongly_connected = False
+    while is_strongly_connected == False:
+        if prob_conn <= 0.3:
+            graph = nx.fast_gnp_random_graph(n = n_clients, p = prob_conn, seed = seed, directed = True) 
+        else:
+            graph = nx.gnp_random_graph(n = n_clients, p = prob_conn, seed = seed, directed = True) 
+        is_strongly_connected = nx.is_strongly_connected(graph)
+        print(is_strongly_connected)
+    adj_matrix = nx.adjacency_matrix(graph)
+    np.savetxt(dir_networks + graph_name, adj_matrix.todense(), fmt='%d')
+    
+    return graph, adj_matrix
+
 if __name__ == '__main__':
-    plot_acc_diff()
+    # plot_acc_diff()
+    dir_networks = '/root/programming/Purdue-Research-Programs-Notes/data/full_decentralized/network_topologies/'
+    for p in [0.3, 0.5, 0.7]:
+        for seed in range(10):
+            graph_name = 'ER_graph_c_20_p_0%d_seed_%d.txt' % (int(p * 10), seed)
+            graph, adj_matrix = gen_ER_graph(20, p, graph_name, seed = seed)
+
+
