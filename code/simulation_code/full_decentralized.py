@@ -31,6 +31,7 @@ device_used = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 if device_used != torch.device('cuda'):
     print(f'CUDA not available, have to use {device_used}')
 
+start_time = time.time()
 # Set hyperparameters
 seed = 4 # Seed for PRNGs 
 random.seed(seed)
@@ -47,7 +48,7 @@ aggregation_mechanism = aggreg_schemes[1]
 dir_networks = '/root/programming/Purdue-Research-Programs-Notes/data/full_decentralized/network_topologies'
 dir_data = '/root/programming/Purdue-Research-Programs-Notes/data/full_decentralized/%s/' % dataset_name
 # This is the source for network topology
-network_topology = 'random_graph_c_10_p_05_seed_0.txt'
+network_topology = 'ER_graph_c_50_p_05_seed_0.txt'
 network_topology_filepath = os.path.join(dir_networks, network_topology)
 adj_matrix = np.loadtxt(network_topology_filepath)
 hash_adj_matrix = hash_np_arr(adj_matrix)
@@ -71,8 +72,8 @@ with open(data_dir_name + 'node_centrality'+ '.csv', 'w', newline = '') as centr
 
 # Training parameters
 iid_type = 'iid'      # 'iid' or 'non_iid'
-BATCH_SIZE = 100      # Batch size while training
-N_LOCAL_EPOCHS  = 25  # Number of epochs for local training
+BATCH_SIZE = 500      # Batch size while training
+N_LOCAL_EPOCHS  = 5   # Number of epochs for local training
 N_GLOBAL_EPOCHS = 100 # Number of epochs for global training
 N_SERVERS  = 0        # Number of servers
 N_CLIENTS = len(adj_matrix[0]) # Number of clients
@@ -176,15 +177,14 @@ def run_and_save_simulation(train_split, valid_split, adj_matrix, centrality_mea
                 # Train and aggregate
                 print(f'global epoch: {i}')
                 # Exchange models and aggregate, MAIN PART
-                #[node.exchange_models() for node in node_list]  TODO
-                #[node.aggregate_SAB(BATCH_SIZE, N_LOCAL_EPOCHS, False) for node in node_list] TODO
+                [node.exchange_models() for node in node_list]
+                [node.aggregate_SAB(BATCH_SIZE, N_LOCAL_EPOCHS, False) for node in node_list]
+                
                 # Save accuracies
-                start_time = time.time()
                 for node in node_list:
                     curr_loss, curr_acc = node.validate_client()
                     acc_clients[node.client_id] = curr_acc
                     loss_clients[node.client_id] = curr_loss
-                print('Validation: %lfs\n' % ((time.time() - start_time)))
 
                 # Save data
                 writer_acc.writerow([i, acc_clients])
@@ -196,6 +196,7 @@ if __name__ == '__main__':
     print(f'iid_type: {iid_type}')
     print(f'Centrality: {centralities[cent_measure_used]}')
     run_and_save_simulation(train_dset_split, valid_dset_split, adj_matrix, cent_measure_used)
+    print('Total time %lfs' % (time.time() - start_time))
     
 
 

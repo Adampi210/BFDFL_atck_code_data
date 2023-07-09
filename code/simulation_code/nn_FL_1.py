@@ -25,42 +25,46 @@ class CompiledModel():
         self.model = model          # Set the class model attribute to passed mode
         self.optimizer = optimizer  # Set optimizer attribute to passed optimizer
         self.loss_func = loss_func  # Set loss function attribute to passed loss function
+        self.loss_grad = nn.CrossEntropyLoss() # Set the loss for the gradient calculation
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu") # Set the device to be GPU
         self.model = self.model.to(self.device)                                    # Move the model to the device (GPU)
 
     # Calculate gradients
     def calc_grads(self, train_data, train_labels, train_batch_size, n_epoch, show_progress = False):
-        self.model.train() # Put the model in training mode
-        local_loss = nn.CrossEntropyLoss()
-        cumulative_gradients = []
-        # Create a dataloader for training
-        data   = train_data.clone().detach()    # Represent data as a tensor
-        labels = train_labels.clone().detach()  # Represent labels as a tensor
-        train_dataset = data_utils.TensorDataset(data, labels) # Create the training dataset
-        # Create the train dataloader
-        train_dataloader = DataLoader(dataset = train_dataset, batch_size = train_batch_size, shuffle = True)
+        # Setup
+        self.model.train()        # Put the model in training mode
+        cumulative_gradients = [] # Will hold different averaged gradients (gradient lists)
+
+        # Create a training dataset, move data to GPU
+        train_dataset = torch.utils.data.TensorDataset(train_data.to(self.device), train_labels.to(self.device))
+
+        # Create the train dataloader and dataloader iterator
+        train_dataloader = DataLoader(dataset = train_dataset, batch_size = train_batch_size, shuffle = True, pin_memory = False)
         dataloader_iterator = iter(train_dataloader)
-        gradients_cumulative = []
-        grad_test = []
+        
         # Get the batch
         # Iterate for the specified number of epochs (i.e. this is how many diff batches will be used to evaluate the gradients)
         for i in range(n_epoch):
+            # Since the number of batches might go over dataset size, I might have to recreate the dataloader with different shuffles
             try:
                 x, y = next(dataloader_iterator) # Get next batch
+            # If couldn't find next batch, recreate the dataloder
             except StopIteration:
-                train_dataloader = DataLoader(dataset = train_dataset, batch_size = train_batch_size, shuffle = True)
+                train_dataloader = DataLoader(dataset = train_dataset, batch_size = train_batch_size, shuffle = True, pin_memory = False)
                 dataloader_iterator = iter(train_dataloader)
                 x, y = next(dataloader_iterator)
+            
+            # Calculate the gradients
             self.model.zero_grad()           # Reset the gradients for model 
             output = self.model(x)           # Calculate the outputs for batch inputs
-            loss = local_loss(output, y) # Calculate the loss
-            loss.backward()              # Calculate gradients
+            loss = self.loss_grad(output, y) # Calculate the loss
+            loss.backward()                  # Calculate gradients
 
             # Append the calculated gradients to cumulative gradients array
-            gradients_cumulative.append([param.grad.detach().clone() / n_epoch for param in self.model.parameters()])
+            cumulative_gradients.append([param.grad.detach().clone() / n_epoch for param in self.model.parameters()])
         
         # Calculate final gradients as sum of cumulative gradients for each layer
-        gradients = [sum(x) for x in zip(*gradients_cumulative)]
+        gradients = [sum(x) for x in zip(*cumulative_gradients)]
         return gradients
 
     # Set model gradients and step
@@ -263,7 +267,7 @@ class client_FL():
             # Calculate init gradients if not present
             if self.grad_est_curr is None:
                 pass
-            # TODO uncomment    self.grad_est_curr = self.client_model.calc_grads(train_data = self.x_train, train_labels = self.y_train, train_batch_size = len(self.x_train), n_epoch = 2, show_progress = False)
+            self.grad_est_curr = self.client_model.calc_grads(train_data = self.x_train, train_labels = self.y_train, train_batch_size = len(self.x_train), n_epoch = 2, show_progress = False)
               
         else:
             pass
