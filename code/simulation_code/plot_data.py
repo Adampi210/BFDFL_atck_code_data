@@ -167,9 +167,9 @@ def gen_ER_graph(n_clients, prob_conn = 0.5, graph_name = '', seed = 0):
 if __name__ == '__main__':
     # plot_acc_diff()
     dir_networks = '/root/programming/Purdue-Research-Programs-Notes/data/full_decentralized/network_topologies/'
-    for p in [0.5]:
-        for seed in range(1):
-            graph_name = 'ER_graph_c_50_p_0%d_seed_%d.txt' % (int(p * 10), seed)
-            graph, adj_matrix = gen_ER_graph(50, p, graph_name, seed = seed)
+    for p in [0.3, 0.5, 0.7]:
+        for seed in range(20):
+            graph_name = 'ER_graph_c_20_p_0%d_seed_%d.txt' % (int(p * 10), seed)
+            graph, adj_matrix = gen_ER_graph(20, p, graph_name, seed = seed)
 
 

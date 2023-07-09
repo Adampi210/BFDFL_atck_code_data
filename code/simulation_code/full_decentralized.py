@@ -40,6 +40,7 @@ np.random.seed(seed)
 
 # Aggregation and datase parameters
 dataset_name = 'fmnist' # 'fmnist' or 'cifar10'
+dataset_size = int(6e4) if dataset_name in ['fmnist', 'mnist'] else int(5e4)
 aggreg_schemes = ('push_sum', 'sab', 'belief_secure_push_sum', 'test')
 aggregation_mechanism = aggreg_schemes[1]
 
@@ -71,12 +72,12 @@ with open(data_dir_name + 'node_centrality'+ '.csv', 'w', newline = '') as centr
         writer.writerow(data_cent_node)
 
 # Training parameters
+N_CLIENTS = len(adj_matrix[0]) # Number of clients
+N_SERVERS  = 0        # Number of servers
 iid_type = 'iid'      # 'iid' or 'non_iid'
-BATCH_SIZE = 500      # Batch size while training
 N_LOCAL_EPOCHS  = 5   # Number of epochs for local training
 N_GLOBAL_EPOCHS = 100 # Number of epochs for global training
-N_SERVERS  = 0        # Number of servers
-N_CLIENTS = len(adj_matrix[0]) # Number of clients
+BATCH_SIZE = 500 # Batch size while training
 
 # Adversarial parameters
 attacks = ('none', 'FGSM', 'PGD', 'noise')      # Available attacks
