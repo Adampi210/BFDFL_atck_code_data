@@ -87,7 +87,7 @@ class CompiledModel():
         valid_dataset = torch.utils.data.TensorDataset(valid_data.to(self.device), valid_labels.to(self.device))
 
         # Create validation dataloader, pin_memory = True to speed up the transfer to GPU
-        valid_dataloader = DataLoader(dataset = valid_dataset, shuffle = True, pin_memory = False)
+        valid_dataloader = DataLoader(dataset = valid_dataset, batch_size = int(len(valid_data)), shuffle = True, pin_memory = False)
 
         # Initialize validation parameters
         total_loss    = 0 # Total loss measured
@@ -97,10 +97,9 @@ class CompiledModel():
         # Validate by checking batches
         with torch.no_grad():
             for x, y in valid_dataloader:
-                print(len(x), len(y))                                  # Fix batch size to be higher for faster calculation!!!!
                 output = self.model(x)                                 # Predict the output
                 total_loss += self.loss_func(output, y)                # Calculate loss for given datapoint and increment total loss
-                total_correct += (torch.argmax(output).item() == y.item())
+                total_correct += (torch.argmax(output, dim = 1) == y).sum().item() # Calculate total correct
         # Find loss and accuracy
         valid_loss  = total_loss / total_pts
         valid_accur = total_correct / total_pts
