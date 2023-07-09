@@ -12,6 +12,7 @@ import numpy as np
 import networkx as nx
 import csv
 import copy
+import time 
 
 from cleverhans.torch.attacks.fast_gradient_method import fast_gradient_method # FGSM
 from cleverhans.torch.attacks.projected_gradient_descent import projected_gradient_descent # PGD
@@ -24,6 +25,8 @@ class CompiledModel():
         self.model = model          # Set the class model attribute to passed mode
         self.optimizer = optimizer  # Set optimizer attribute to passed optimizer
         self.loss_func = loss_func  # Set loss function attribute to passed loss function
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu") # Set the device to be GPU
+        self.model = self.model.to(self.device)                                    # Move the model to the device (GPU)
 
     # Calculate gradients
     def calc_grads(self, train_data, train_labels, train_batch_size, n_epoch, show_progress = False):
@@ -79,24 +82,25 @@ class CompiledModel():
     # Validate the model method
     def validate(self, valid_data, valid_labels):
         self.model.eval() # Set model in the evaluation mode
-        
-        # Create validation dataloader
-        data = valid_data.clone().detach()     # Get validation data
-        labels = valid_labels.clone().detach() # Get validation labels
-        valid_dataset = torch.utils.data.TensorDataset(data, labels) # Create the validation dataset
-        # Create validation dataloader
-        valid_dataloader = DataLoader(dataset = valid_dataset, shuffle = True)
+
+        # Create validation dataset
+        valid_dataset = torch.utils.data.TensorDataset(valid_data.to(self.device), valid_labels.to(self.device))
+
+        # Create validation dataloader, pin_memory = True to speed up the transfer to GPU
+        valid_dataloader = DataLoader(dataset = valid_dataset, shuffle = True, pin_memory = False)
 
         # Initialize validation parameters
         total_loss    = 0 # Total loss measured
         total_correct = 0 # Total correct predictions
         total_pts     = len(valid_dataloader.dataset) # Total number of all points
+
+        # Validate by checking batches
         with torch.no_grad():
             for x, y in valid_dataloader:
+                print(len(x), len(y))                                  # Fix batch size to be higher for faster calculation!!!!
                 output = self.model(x)                                 # Predict the output
                 total_loss += self.loss_func(output, y)                # Calculate loss for given datapoint and increment total loss
                 total_correct += (torch.argmax(output).item() == y.item())
-
         # Find loss and accuracy
         valid_loss  = total_loss / total_pts
         valid_accur = total_correct / total_pts
@@ -259,7 +263,8 @@ class client_FL():
                 self.client_model.set_params(self.global_model_curr)
             # Calculate init gradients if not present
             if self.grad_est_curr is None:
-                self.grad_est_curr = self.client_model.calc_grads(train_data = self.x_train, train_labels = self.y_train, train_batch_size = len(self.x_train), n_epoch = 2, show_progress = False)
+                pass
+            # TODO uncomment    self.grad_est_curr = self.client_model.calc_grads(train_data = self.x_train, train_labels = self.y_train, train_batch_size = len(self.x_train), n_epoch = 2, show_progress = False)
               
         else:
             pass

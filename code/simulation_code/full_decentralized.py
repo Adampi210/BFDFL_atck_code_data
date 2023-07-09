@@ -13,7 +13,7 @@ import networkx as nx
 import matplotlib.pyplot as plt
 
 import random
-
+import time
 import csv
 
 from cleverhans.torch.attacks.fast_gradient_method import fast_gradient_method # FGSM
@@ -24,7 +24,6 @@ from cleverhans.torch.attacks.noise import noise # Basic uniform noise perturbat
 from split_data import *
 from nn_FL_1 import *
 from neural_net_architectures import *
-
 # Device configuration
 # Always check first if GPU is avaialble
 device_used = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -118,12 +117,10 @@ def run_and_save_simulation(train_split, valid_split, adj_matrix, centrality_mea
     node_list = []
     acc_clients = [0] * N_CLIENTS
     loss_clients = [0] * N_CLIENTS
-    
     # Create nodes in the graph
     node_list = [client_FL(i) for i in range(N_CLIENTS)]
     [node.get_data(train_split[i], valid_split[i]) for node, i in zip(node_list, range(N_CLIENTS))]
-    [node.init_compiled_model(NetBasic()) for node in node_list]
-
+    [node.init_compiled_model(NetBasic()) for node in node_list] # This takes 36s for 10 clients
     # Add neigbors, specified graph
     create_clients_graph(node_list, adj_matrix, 0)
 
@@ -179,13 +176,16 @@ def run_and_save_simulation(train_split, valid_split, adj_matrix, centrality_mea
                 # Train and aggregate
                 print(f'global epoch: {i}')
                 # Exchange models and aggregate, MAIN PART
-                [node.exchange_models() for node in node_list]
-                [node.aggregate_SAB(BATCH_SIZE, N_LOCAL_EPOCHS, False) for node in node_list]
+                #[node.exchange_models() for node in node_list]  TODO
+                #[node.aggregate_SAB(BATCH_SIZE, N_LOCAL_EPOCHS, False) for node in node_list] TODO
                 # Save accuracies
+                start_time = time.time()
                 for node in node_list:
                     curr_loss, curr_acc = node.validate_client()
                     acc_clients[node.client_id] = curr_acc
                     loss_clients[node.client_id] = curr_loss
+                print('Validation: %lfs\n' % ((time.time() - start_time)))
+
                 # Save data
                 writer_acc.writerow([i, acc_clients])
                 writer_loss.writerow([i, loss_clients])
