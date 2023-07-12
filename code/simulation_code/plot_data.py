@@ -146,30 +146,135 @@ def plot_acc_diff(dataset_name = 'fmnist'):
         plt.legend()
         plt.savefig(data_dir_name + filename_data[:-4] + '.png')
 
+def plot_acc_aver(graph_type_used = '', dataset_name = 'fmnist'):
+    pass
 
 # Used to generate ER graphs
 def gen_ER_graph(n_clients, prob_conn = 0.5, graph_name = '', seed = 0):
     dir_networks = '/root/programming/Purdue-Research-Programs-Notes/data/full_decentralized/network_topologies/'
     graph = None
     is_strongly_connected = False
-    while is_strongly_connected == False:
+    while not is_strongly_connected:
         if prob_conn <= 0.3:
             graph = nx.fast_gnp_random_graph(n = n_clients, p = prob_conn, seed = seed, directed = True) 
         else:
             graph = nx.gnp_random_graph(n = n_clients, p = prob_conn, seed = seed, directed = True) 
         is_strongly_connected = nx.is_strongly_connected(graph)
-        print(is_strongly_connected)
+        seed += 100
     adj_matrix = nx.adjacency_matrix(graph)
     np.savetxt(dir_networks + graph_name, adj_matrix.todense(), fmt='%d')
     
     return graph, adj_matrix
 
+# Generate scale free graphs, cannot find a way to make strongly connected
+def gen_dir_scale_free_graph(n_clients, type_graph = 'default', graph_name = '', seed = 0):
+    dir_networks = '/root/programming/Purdue-Research-Programs-Notes/data/full_decentralized/network_topologies/'
+    scale_free_configs = {
+        "default": [0.41, 0.54, 0.05, 0.2, 0],
+        "in_deg_focus": [0.6, 0.2, 0.2, 0.3, 0],
+        "out_deg_focus": [0.2, 0.2, 0.6, 0, 0.3],
+        "inter_conn_focus": [0.2, 0.6, 0.2, 0.1, 0.1],
+        "equal_pref": [0.33, 0.33, 0.34, 0.1, 0.1]
+    }
+    graph = None
+    is_strongly_connected = False
+    alpha, beta, gamma, delta_in, delta_out = scale_free_configs[type_graph]
+    graph = nx.scale_free_graph(n = n_clients, alpha = alpha, beta = beta, gamma = gamma, delta_in = delta_in, delta_out = delta_out, seed = seed) 
+
+    # TODO fix this
+    adj_matrix = nx.adjacency_matrix(graph)
+    np.savetxt(dir_networks + graph_name, adj_matrix.todense(), fmt='%d')
+    
+    return graph, adj_matrix
+
+# Used to generate geometric graphs
+def gen_dir_geom_graph(n_clients, graph_type = '2d_close_nodes', graph_name = '', seed = 0):
+    dir_networks = '/root/programming/Purdue-Research-Programs-Notes/data/full_decentralized/network_topologies/'
+    geo_graph_configs = {
+        '2d_close_nodes': [2, 0.5],
+        '2d_far_nodes': [2, 0.2],
+        '3d_close_nodes': [3, 0.6],
+        '3d_far_nodes': [3, 0.3]
+    }
+    dim, radius = geo_graph_configs[graph_type]
+    graph = None    
+    is_strongly_connected = False
+    while not is_strongly_connected:
+        graph = nx.random_geometric_graph(n = n_clients, radius = radius, dim = dim, seed = seed) 
+        graph = nx.DiGraph(graph)
+        is_strongly_connected = nx.is_strongly_connected(graph)
+        seed += 100
+    adj_matrix = nx.adjacency_matrix(graph)
+    np.savetxt(dir_networks + graph_name, adj_matrix.todense(), fmt='%d')
+    
+    return graph, adj_matrix
+
+# Used to generate k-out graphs
+def gen_k_out_graph(n_clients, k_val_percentage = 0.25, graph_name = '', seed = 0):
+    dir_networks = '/root/programming/Purdue-Research-Programs-Notes/data/full_decentralized/network_topologies/'
+    k_out_val = int(k_val_percentage * n_clients)
+    print(k_out_val)
+    graph = None    
+    is_strongly_connected = False
+    while not is_strongly_connected:
+        graph = nx.random_k_out_graph(n = n_clients, k = k_out_val, alpha = 1, self_loops = False, seed = seed)
+        seed += 100
+        is_strongly_connected = nx.is_strongly_connected(graph)
+    adj_matrix = nx.adjacency_matrix(graph)
+    np.savetxt(dir_networks + graph_name, adj_matrix.todense(), fmt='%d')
+
+    return graph, adj_matrix
+
+# Used to generate preferencial attachment graph
+def gen_pref_attach_graph(n_clients, graph_type = 'sparse', graph_name = '', seed = 0):
+    dir_networks = '/root/programming/Purdue-Research-Programs-Notes/data/full_decentralized/network_topologies/'
+    pref_attach_configs = {
+        'sparse': 1,
+        'medium': 2,
+        'dense': 3,
+    }
+    graph = None    
+    is_strongly_connected = False
+    while not is_strongly_connected:
+        graph = nx.barabasi_albert_graph(n = n_clients, m = pref_attach_configs[graph_type], seed = seed)
+        seed += 100
+        graph = nx.DiGraph(graph)
+        is_strongly_connected = nx.is_strongly_connected(graph)
+    adj_matrix = nx.adjacency_matrix(graph)
+    np.savetxt(dir_networks + graph_name, adj_matrix.todense(), fmt='%d')
+
+    return graph, adj_matrix
+
+
 if __name__ == '__main__':
     # plot_acc_diff()
     dir_networks = '/root/programming/Purdue-Research-Programs-Notes/data/full_decentralized/network_topologies/'
-    for p in [0.3, 0.5, 0.7]:
-        for seed in range(20):
-            graph_name = 'ER_graph_c_20_p_0%d_seed_%d.txt' % (int(p * 10), seed)
-            graph, adj_matrix = gen_ER_graph(20, p, graph_name, seed = seed)
+    graph_type = ('ER', 'dir_scale_free', 'dir_geom', 'k_out', 'pref_attach')
+    for graph in graph_type:
+        if graph == 'ER':
+            continue
+        elif graph == 'dir_scale_free':
+            continue
+        elif graph == 'dir_geom':
+            for geo_graph_config in ('2d_close_nodes', '2d_far_nodes', '3d_close_nodes', '3d_far_nodes'):
+                for seed in range(20):
+                    graph_name = 'dir_geom_graph_c_20_type_%s_seed_%d.txt' % (geo_graph_config, seed)
+                    gen_dir_geom_graph(20, graph_type = geo_graph_config, graph_name = graph_name, seed = seed)
+        elif graph == 'k_out':
+            for k_dec in (0.25, 0.50, 0.75):
+                for seed in range(20):
+                    graph_name = 'k_out_graph_c_20_k_%d_seed_%d.txt' % (int(20 * k_dec), seed)
+                    print(graph_name)
+                    gen_k_out_graph(20, k_val_percentage = k_dec, graph_name = graph_name, seed = seed)    
+        elif graph == 'pref_attach':
+            for graph_type in ('sparse', 'medium', 'dense'):
+                for seed in range(20):
+                    graph_name = 'pref_attach_graph_c_20_type_%s_seed_%d.txt' % (graph_type, seed)
+                    gen_pref_attach_graph(20, graph_type = graph_type, graph_name = graph_name, seed = seed)    
+
+    #for p in [0.3, 0.5, 0.7]:
+    #   for seed in range(20):
+    #      graph_name = 'ER_graph_c_20_p_0%d_seed_%d.txt' % (int(p * 10), seed)
+    #     graph, adj_matrix = gen_ER_graph(20, p, graph_name, seed = seed)
 
 

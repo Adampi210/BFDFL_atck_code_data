@@ -211,20 +211,24 @@ class client_FL():
         self.grad_est_curr = None      # Corresp to y_i(k)
         self.global_model_next = None  # Corresp to x_i(k + 1)
         self.grad_est_next = None      # Corresp to y_i(k + 1)
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu") # Set the device to be GPU
     # Get client data from training and validation dataloaders
     # Client data should be local to the client
     def get_data(self, train_dataset, valid_dataset):
         # Get the training and testing data
         x_train, self.y_train = train_dataset.tensors 
         x_valid, self.y_valid = valid_dataset.tensors 
+        self.y_train = self.y_train.to(self.device)
+        self.y_valid = self.y_valid.to(self.device)
 
         # Normalize the datasets to be between 0 and 1
         self.x_train = x_train.float() / 255
+        self.x_train = self.x_train.to(self.device)
         self.x_valid = x_valid.float() / 255
+        self.x_valid = self.x_valid.to(self.device)
 
         # Also save the dataset size
         self.dset_size = len(self.x_train)
-
         # Add out neigbor
     
     # Add out neighbor
@@ -291,7 +295,8 @@ class client_FL():
             return gradients
         else:
             if self.attack == 'FGSM':
-                print('FGSM - attacking dataset')
+                if show_progress:
+                    print('Client %d: FGSM - attacking dataset' % self.client_id)
                 if model_used == None:
                     print("Model was not initialized!")
                 # Create posioned dataset
@@ -300,7 +305,8 @@ class client_FL():
                 gradients = model_used.calc_grads(train_data = new_adv_data,  train_labels = self.y_train, train_batch_size = batch_s, n_epoch = n_epoch, show_progress = show_progress)
                 return gradients
             elif self.attack == 'PGD':
-                print('PGD - attacking dataset')
+                if show_progress:
+                    print('PGD - attacking dataset')
                 if model_used == None:
                     print("Model was not initialized!")
                 # Create posioned dataset
@@ -310,7 +316,8 @@ class client_FL():
                 gradients = model_used.calc_grads(train_data = new_adv_data,  train_labels = self.y_train, train_batch_size = batch_s, n_epoch = n_epoch, show_progress = show_progress)
                 return gradients
             elif self.attack == 'noise':
-                print('noise - attacking dataset')
+                if show_progress:
+                    print('noise - attacking dataset')
                 if model_used == None:
                     print("Model was not initialized!")
                 # Create posioned dataset
@@ -471,24 +478,19 @@ def calc_centralities(n_clients, graph_representation):
         
     return centralities_data
 
-def sort_by_centrality(centrality_data_file):
+def sort_by_centrality(centrality_data):
     # Read centrality data
-    node_centralities = []
-    with open(centrality_data_file, 'r') as centrality_data:
-        reader = csv.reader(centrality_data)
-        for row in reader:
-            row_float = [float(j) if i > 0 else int(j) for i, j in enumerate(row)]
-            row_float[0] = int(row_float[0])
-            node_centralities.append(row_float)
+    node_centralities = [[int(i)] + x for i, x in centrality_data.items()]
     node_centralities = np.array(node_centralities)
-    # Sort centralities
-    in_deg_sort = node_centralities[node_centralities[:, 1].argsort()[::-1]][:, 0]
-    out_deg_sort = node_centralities[node_centralities[:, 2].argsort()[::-1]][:, 0]
-    closeness_sort = node_centralities[node_centralities[:, 3].argsort()[::-1]][:, 0]
-    betweeness_sort = node_centralities[node_centralities[:, 4].argsort()[::-1]][:, 0]
-    eigenvector_sort = node_centralities[node_centralities[:, 5].argsort()[::-1]][:, 0]
 
-    node_sorted_centrality = np.array([in_deg_sort ,  out_deg_sort, closeness_sort, betweeness_sort, eigenvector_sort])
+    # Sort centralities
+    in_deg_sort = [int(_) for _ in node_centralities[node_centralities[:, 1].argsort()[::-1]][:, 0]]
+    out_deg_sort = [int(_) for _ in node_centralities[node_centralities[:, 2].argsort()[::-1]][:, 0]]
+    closeness_sort = [int(_) for _ in node_centralities[node_centralities[:, 3].argsort()[::-1]][:, 0]]
+    betweeness_sort = [int(_) for _ in node_centralities[node_centralities[:, 4].argsort()[::-1]][:, 0]]
+    eigenvector_sort = [int(_) for _ in node_centralities[node_centralities[:, 5].argsort()[::-1]][:, 0]]
+    node_sorted_centrality = np.array([in_deg_sort,  out_deg_sort, closeness_sort, betweeness_sort, eigenvector_sort])
+
     return node_sorted_centrality
 
 if __name__ == "__main__":

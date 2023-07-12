@@ -12,6 +12,7 @@ import numpy as np
 import networkx as nx
 import csv
 import copy
+import time 
 
 from cleverhans.torch.attacks.fast_gradient_method import fast_gradient_method # FGSM
 from cleverhans.torch.attacks.projected_gradient_descent import projected_gradient_descent # PGD
@@ -24,35 +25,46 @@ class CompiledModel():
         self.model = model          # Set the class model attribute to passed mode
         self.optimizer = optimizer  # Set optimizer attribute to passed optimizer
         self.loss_func = loss_func  # Set loss function attribute to passed loss function
+        self.loss_grad = nn.CrossEntropyLoss() # Set the loss for the gradient calculation
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu") # Set the device to be GPU
+        self.model = self.model.to(self.device)                                    # Move the model to the device (GPU)
 
     # Calculate gradients
     def calc_grads(self, train_data, train_labels, train_batch_size, n_epoch, show_progress = False):
-        self.model.train() # Put the model in training mode
-        local_loss = nn.CrossEntropyLoss()
-        cumulative_gradients = []
-        # Create a dataloader for training
-        data   = train_data.clone().detach()    # Represent data as a tensor
-        labels = train_labels.clone().detach()  # Represent labels as a tensor
-        train_dataset = data_utils.TensorDataset(data, labels) # Create the training dataset
-        # Create the train dataloader
-        train_dataloader = DataLoader(dataset = train_dataset, batch_size = train_batch_size, shuffle = True)
+        # Setup
+        self.model.train()        # Put the model in training mode
+        cumulative_gradients = [] # Will hold different averaged gradients (gradient lists)
+
+        # Create a training dataset, move data to GPU
+        train_dataset = torch.utils.data.TensorDataset(train_data.to(self.device), train_labels.to(self.device))
+
+        # Create the train dataloader and dataloader iterator
+        train_dataloader = DataLoader(dataset = train_dataset, batch_size = train_batch_size, shuffle = True, pin_memory = False)
         dataloader_iterator = iter(train_dataloader)
-        gradients_cumulative = []
-        grad_test = []
+        
         # Get the batch
         # Iterate for the specified number of epochs (i.e. this is how many diff batches will be used to evaluate the gradients)
         for i in range(n_epoch):
-            x, y = next(dataloader_iterator) # Get next batch
+            # Since the number of batches might go over dataset size, I might have to recreate the dataloader with different shuffles
+            try:
+                x, y = next(dataloader_iterator) # Get next batch
+            # If couldn't find next batch, recreate the dataloder
+            except StopIteration:
+                train_dataloader = DataLoader(dataset = train_dataset, batch_size = train_batch_size, shuffle = True, pin_memory = False)
+                dataloader_iterator = iter(train_dataloader)
+                x, y = next(dataloader_iterator)
+            
+            # Calculate the gradients
             self.model.zero_grad()           # Reset the gradients for model 
             output = self.model(x)           # Calculate the outputs for batch inputs
-            loss = local_loss(output, y) # Calculate the loss
-            loss.backward()              # Calculate gradients
+            loss = self.loss_grad(output, y) # Calculate the loss
+            loss.backward()                  # Calculate gradients
 
             # Append the calculated gradients to cumulative gradients array
-            gradients_cumulative.append([param.grad.detach().clone() / n_epoch for param in self.model.parameters()])
+            cumulative_gradients.append([param.grad.detach().clone() / n_epoch for param in self.model.parameters()])
         
         # Calculate final gradients as sum of cumulative gradients for each layer
-        gradients = [sum(x) for x in zip(*gradients_cumulative)]
+        gradients = [sum(x) for x in zip(*cumulative_gradients)]
         return gradients
 
     # Set model gradients and step
@@ -74,24 +86,24 @@ class CompiledModel():
     # Validate the model method
     def validate(self, valid_data, valid_labels):
         self.model.eval() # Set model in the evaluation mode
-        
-        # Create validation dataloader
-        data = valid_data.clone().detach()     # Get validation data
-        labels = valid_labels.clone().detach() # Get validation labels
-        valid_dataset = torch.utils.data.TensorDataset(data, labels) # Create the validation dataset
-        # Create validation dataloader
-        valid_dataloader = DataLoader(dataset = valid_dataset, shuffle = True)
+
+        # Create validation dataset
+        valid_dataset = torch.utils.data.TensorDataset(valid_data.to(self.device), valid_labels.to(self.device))
+
+        # Create validation dataloader, pin_memory = True to speed up the transfer to GPU
+        valid_dataloader = DataLoader(dataset = valid_dataset, batch_size = int(len(valid_data)), shuffle = True, pin_memory = False)
 
         # Initialize validation parameters
         total_loss    = 0 # Total loss measured
         total_correct = 0 # Total correct predictions
         total_pts     = len(valid_dataloader.dataset) # Total number of all points
+
+        # Validate by checking batches
         with torch.no_grad():
             for x, y in valid_dataloader:
                 output = self.model(x)                                 # Predict the output
                 total_loss += self.loss_func(output, y)                # Calculate loss for given datapoint and increment total loss
-                total_correct += (torch.argmax(output).item() == y.item())
-
+                total_correct += (torch.argmax(output, dim = 1) == y).sum().item() # Calculate total correct
         # Find loss and accuracy
         valid_loss  = total_loss / total_pts
         valid_accur = total_correct / total_pts
@@ -199,20 +211,24 @@ class client_FL():
         self.grad_est_curr = None      # Corresp to y_i(k)
         self.global_model_next = None  # Corresp to x_i(k + 1)
         self.grad_est_next = None      # Corresp to y_i(k + 1)
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu") # Set the device to be GPU
     # Get client data from training and validation dataloaders
     # Client data should be local to the client
     def get_data(self, train_dataset, valid_dataset):
         # Get the training and testing data
         x_train, self.y_train = train_dataset.tensors 
         x_valid, self.y_valid = valid_dataset.tensors 
+        self.y_train = self.y_train.to(self.device)
+        self.y_valid = self.y_valid.to(self.device)
 
         # Normalize the datasets to be between 0 and 1
         self.x_train = x_train.float() / 255
+        self.x_train = self.x_train.to(self.device)
         self.x_valid = x_valid.float() / 255
+        self.x_valid = self.x_valid.to(self.device)
 
         # Also save the dataset size
         self.dset_size = len(self.x_train)
-
         # Add out neigbor
     
     # Add out neighbor
@@ -254,7 +270,8 @@ class client_FL():
                 self.client_model.set_params(self.global_model_curr)
             # Calculate init gradients if not present
             if self.grad_est_curr is None:
-                self.grad_est_curr = self.client_model.calc_grads(train_data = self.x_train, train_labels = self.y_train, train_batch_size = 1000, n_epoch = 2, show_progress = False)
+                pass
+            self.grad_est_curr = self.client_model.calc_grads(train_data = self.x_train, train_labels = self.y_train, train_batch_size = len(self.x_train), n_epoch = 2, show_progress = False)
               
         else:
             pass
@@ -278,7 +295,8 @@ class client_FL():
             return gradients
         else:
             if self.attack == 'FGSM':
-                print('FGSM - attacking dataset')
+                if show_progress:
+                    print('Client %d: FGSM - attacking dataset' % self.client_id)
                 if model_used == None:
                     print("Model was not initialized!")
                 # Create posioned dataset
@@ -287,7 +305,8 @@ class client_FL():
                 gradients = model_used.calc_grads(train_data = new_adv_data,  train_labels = self.y_train, train_batch_size = batch_s, n_epoch = n_epoch, show_progress = show_progress)
                 return gradients
             elif self.attack == 'PGD':
-                print('PGD - attacking dataset')
+                if show_progress:
+                    print('PGD - attacking dataset')
                 if model_used == None:
                     print("Model was not initialized!")
                 # Create posioned dataset
@@ -297,7 +316,8 @@ class client_FL():
                 gradients = model_used.calc_grads(train_data = new_adv_data,  train_labels = self.y_train, train_batch_size = batch_s, n_epoch = n_epoch, show_progress = show_progress)
                 return gradients
             elif self.attack == 'noise':
-                print('noise - attacking dataset')
+                if show_progress:
+                    print('noise - attacking dataset')
                 if model_used == None:
                     print("Model was not initialized!")
                 # Create posioned dataset
@@ -430,10 +450,22 @@ def create_clients_graph(node_list, plain_adj_matrix, aggregation_mechanism):
     # ALso make the graph
     return plain_adj_matrix, graph
 
-def calc_centralities(node_list, graph_representation):
+def create_graph(adj_matrix):
+    # First add neighbors, create graph concurrently
+    graph = nx.DiGraph()
+    n_clients = len(adj_matrix[0])
+    for i in range(n_clients):
+        for j in range(n_clients):
+            if adj_matrix[i][j]:
+                graph.add_edge(i, j)
+
+    # Make the graph
+    return graph
+
+def calc_centralities(n_clients, graph_representation):
     # The format is a dict, where the key is client id, and value is a list of centralities in this order:
     # id:[in_deg_centrality, out_deg_centrality, closeness_centrality, betweeness_centrality, eigenvector_centrality]
-    centralities_data = {node.client_id:[] for node in node_list}
+    centralities_data = {i:[] for i in range(n_clients)}
     # Calculate centralities
     in_deg_centrality = nx.in_degree_centrality(graph_representation)
     out_deg_centrality = nx.out_degree_centrality(graph_representation)
@@ -446,24 +478,19 @@ def calc_centralities(node_list, graph_representation):
         
     return centralities_data
 
-def sort_by_centrality(centrality_data_file):
+def sort_by_centrality(centrality_data):
     # Read centrality data
-    node_centralities = []
-    with open(centrality_data_file, 'r') as centrality_data:
-        reader = csv.reader(centrality_data)
-        for row in reader:
-            row_float = [float(j) if i > 0 else int(j) for i, j in enumerate(row)]
-            row_float[0] = int(row_float[0])
-            node_centralities.append(row_float)
+    node_centralities = [[int(i)] + x for i, x in centrality_data.items()]
     node_centralities = np.array(node_centralities)
-    # Sort centralities
-    in_deg_sort = node_centralities[node_centralities[:, 1].argsort()[::-1]][:, 0]
-    out_deg_sort = node_centralities[node_centralities[:, 2].argsort()[::-1]][:, 0]
-    closeness_sort = node_centralities[node_centralities[:, 3].argsort()[::-1]][:, 0]
-    betweeness_sort = node_centralities[node_centralities[:, 4].argsort()[::-1]][:, 0]
-    eigenvector_sort = node_centralities[node_centralities[:, 5].argsort()[::-1]][:, 0]
 
-    node_sorted_centrality = np.array([in_deg_sort ,  out_deg_sort, closeness_sort, betweeness_sort, eigenvector_sort])
+    # Sort centralities
+    in_deg_sort = [int(_) for _ in node_centralities[node_centralities[:, 1].argsort()[::-1]][:, 0]]
+    out_deg_sort = [int(_) for _ in node_centralities[node_centralities[:, 2].argsort()[::-1]][:, 0]]
+    closeness_sort = [int(_) for _ in node_centralities[node_centralities[:, 3].argsort()[::-1]][:, 0]]
+    betweeness_sort = [int(_) for _ in node_centralities[node_centralities[:, 4].argsort()[::-1]][:, 0]]
+    eigenvector_sort = [int(_) for _ in node_centralities[node_centralities[:, 5].argsort()[::-1]][:, 0]]
+    node_sorted_centrality = np.array([in_deg_sort,  out_deg_sort, closeness_sort, betweeness_sort, eigenvector_sort])
+
     return node_sorted_centrality
 
 if __name__ == "__main__":
@@ -480,3 +507,7 @@ if __name__ == "__main__":
 # Simulations 10, 30, 50 clients, 5-10/20% adversaries
 # If time left: 2 cases if adversaries cooperate/dont cooperate
 # Find the signal to noise ratio that guarantees the adversarial clients to not converge 
+
+
+# Find real-world graph types for wireless and use them
+# For theoretical analysis good idea to start general, then maybe look at specific types of graphs
