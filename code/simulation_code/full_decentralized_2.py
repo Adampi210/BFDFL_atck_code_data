@@ -51,10 +51,13 @@ dir_data = '/root/programming/Purdue-Research-Programs-Notes/data/full_decentral
 graph_type = ('ER', 'dir_scale_free', 'dir_geom', 'k_out', 'pref_attach')
 graph_type_used = graph_type[0]
 # This is the source for network topology
+
+# ADJUSTABLE #####
 designated_clients = 20
-prob_conn = 7
+prob_conn = 5
 data_dir_name = dir_data + '%s_graph_c_%d_p_0%d/' % (graph_type_used, designated_clients, prob_conn)
 network_topology = '%s_graph_c_%d_p_0%d_seed_%d.txt' % (graph_type_used, designated_clients, prob_conn, seed)
+##################
 network_topology_filepath = os.path.join(dir_networks, network_topology)
 adj_matrix = np.loadtxt(network_topology_filepath)
 # os.makedirs(data_dir_name, exist_ok = True)
@@ -104,10 +107,6 @@ nb_iter = 15   # Number of epochs for PGD attack
 # Define centrality measures and directories
 centralities = ('none', 'in_deg_centrality', 'out_deg_centrality', 'closeness_centrality', 'betweeness_centrality', 'eigenvector_centrality')
 cent_measure_used = 0
-
-for cent in centralities:
-    cent_dir = data_dir_name + cent + '/' 
-    os.makedirs(cent_dir, exist_ok = True)
 
 # Split the data for the specified number of clients and servers
 if iid_type == 'iid':
