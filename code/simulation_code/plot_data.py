@@ -155,7 +155,7 @@ def plot_acc_aver(graph_type_used = '', dataset_name = 'fmnist'):
     centralities = ('none', 'in_deg_centrality', 'out_deg_centrality', 'closeness_centrality', 'betweeness_centrality', 'eigenvector_centrality')
     cent_data = {cent:[] for cent in centralities}
     aver_cent_data = {cent:[] for cent in centralities}
-    seed_range = 20
+    seed_range = 3
     acc_data = []
     root_dir = ''
     # Get distinct settings
@@ -337,5 +337,5 @@ def make_graphs():
                     gen_pref_attach_graph(20, graph_type = graph_type, graph_name = graph_name, seed = seed)
 
 if __name__ == '__main__':
-    plot_acc_aver('ER_graph_c_20_p_07', 'fmnist')
+    plot_acc_aver('pref_attach_graph_c_20_type_sparse', 'fmnist')
 
