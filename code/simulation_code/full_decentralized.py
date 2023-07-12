@@ -51,14 +51,39 @@ dir_data = '/root/programming/Purdue-Research-Programs-Notes/data/full_decentral
 graph_type = ('ER', 'dir_scale_free', 'dir_geom', 'k_out', 'pref_attach')
 graph_type_used = graph_type[0]
 # This is the source for network topology
+
+# ADJUSTABLE #####
 designated_clients = 20
-prob_conn = 5
-data_dir_name = dir_data + '%s_graph_c_%d_p_0%d/' % (graph_type_used, designated_clients, prob_conn)
-network_topology = '%s_graph_c_%d_p_0%d_seed_%d.txt' % (graph_type_used, designated_clients, prob_conn, seed)
+# ER
+if graph_type_used == 'ER':
+    prob_conn = 5
+    data_dir_name = dir_data + '%s_graph_c_%d_p_0%d/' % (graph_type_used, designated_clients, prob_conn)
+    network_topology = '%s_graph_c_%d_p_0%d_seed_%d.txt' % (graph_type_used, designated_clients, prob_conn, seed)
+# DIR GEOM
+elif graph_type_used == 'dir_geom':
+    geo_graph_configs = ('2d_close_nodes', '2d_far_nodes', '3d_close_nodes', '3d_far_nodes')
+    config_used = 0
+    data_dir_name = dir_data + '%s_graph_c_%d_type_%s/' % (graph_type_used, designated_clients, geo_graph_configs[config_used])
+    network_topology = '%s_graph_c_%d_type_%s_seed_%d.txt' % (graph_type_used, designated_clients, geo_graph_configs[config_used], seed)
+# K-OUT
+elif graph_type_used == 'k_out':
+    k_dec = 0.25
+    k_used = int(designated_clients * k_dec)
+    data_dir_name = dir_data + '%s_graph_c_%d_k_%d/' % (graph_type_used, designated_clients, k_used)
+    network_topology = '%s_graph_c_%d_k_%d_seed_%d.txt' % (graph_type_used, designated_clients, k_used, seed)
+# PREF_ATTACH
+elif graph_type_used == 'pref_attach':
+    pref_attach_configs = ('sparse', 'medium', 'dense')
+    config_used = 0
+    data_dir_name = dir_data + '%s_graph_c_%d_type_%s/' % (graph_type_used, designated_clients, pref_attach_configs[config_used])
+    network_topology = '%s_graph_c_%d_type_%s_seed_%d.txt' % (graph_type_used, designated_clients, pref_attach_configs[config_used], seed)
+
+##################
 network_topology_filepath = os.path.join(dir_networks, network_topology)
 adj_matrix = np.loadtxt(network_topology_filepath)
 # os.makedirs(data_dir_name, exist_ok = True)
-
+print(adj_matrix)
+exit()
 # Save the adjacency matrix, the graph graphical representation, and the client centralities
 # np.savetxt(data_dir_name + network_topology, adj_matrix)
 
@@ -91,8 +116,8 @@ attacks = ('none', 'FGSM', 'PGD', 'noise')      # Available attacks
 architectures = ('star', 'full_decentralized')  # Architecture used
 attack_used = 1                                 # Which attack from the list was used
 attack = attacks[0]                             # Always start with no attack (attack at some point)
-adv_pow = 100                                     # Power of the attack
-adv_percent = 0.2                               # Percentage of adversaries
+adv_pow = 0                                     # Power of the attack
+adv_percent = 0.0                               # Percentage of adversaries
 adv_number = int(adv_percent * N_CLIENTS)       # Number of adversaries
 # adv_list = list(range(adv_number))
 # adv_list = random.sample(list(range(N_CLIENTS)), adv_number) # Choose the adversaries at random
@@ -103,10 +128,7 @@ nb_iter = 15   # Number of epochs for PGD attack
 
 # Define centrality measures and directories
 centralities = ('none', 'in_deg_centrality', 'out_deg_centrality', 'closeness_centrality', 'betweeness_centrality', 'eigenvector_centrality')
-cent_measure_used = 4
-for cent in centralities:
-    cent_dir = data_dir_name + cent + '/' 
-    os.makedirs(cent_dir, exist_ok = True)
+cent_measure_used = 0
 
 # Split the data for the specified number of clients and servers
 if iid_type == 'iid':
