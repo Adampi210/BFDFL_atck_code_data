@@ -5,6 +5,7 @@ import numpy as np
 import ast
 from nn_FL_1 import *
 import networkx as nx
+import re
 
 # Read parameters
 seed = 0 # Seed for PRNGs 
@@ -146,8 +147,73 @@ def plot_acc_diff(dataset_name = 'fmnist'):
         plt.legend()
         plt.savefig(data_dir_name + filename_data[:-4] + '.png')
 
+# Plot accuracy averaged over the specified data
 def plot_acc_aver(graph_type_used = '', dataset_name = 'fmnist'):
-    pass
+    # Setup
+    dir_data = '/root/programming/Purdue-Research-Programs-Notes/data/full_decentralized/%s/' % dataset_name
+    dir_data += graph_type_used + '/'
+    centralities = ('none', 'in_deg_centrality', 'out_deg_centrality', 'closeness_centrality', 'betweeness_centrality', 'eigenvector_centrality')
+    cent_data = {cent:[] for cent in centralities}
+    aver_cent_data = {cent:[] for cent in centralities}
+    seed_range = 20
+    acc_data = []
+    root_dir = ''
+    # Get distinct settings
+    acc_diff_fnames = set()
+    for root, dirs, files in os.walk(dir_data):
+        for fname in files:
+            if fname.startswith('acc_'):
+                fname_parts = re.split('_seed', fname)
+                acc_diff_fnames.add(fname_parts[0])
+        root_dir = root        
+    
+    # Create averaged dictionary data and plot
+    for acc_fname in acc_diff_fnames:
+        for iid_type in ('iid', 'non_iid'):
+            for cent in cent_data.keys():
+                for seed in range(seed_range):
+                    acc_data_fname = acc_fname + '_seed_%d_iid_type_%s_cent_%s.csv' % (seed, iid_type, cent)
+                    acc_data = []
+                    with open(root_dir + acc_data_fname, 'r') as acc_data_file:
+                        reader = csv.reader(acc_data_file)
+                        i = 0
+                        for row in reader:
+                            if i == 0:
+                                attacked_nodes = np.fromstring(row[1].strip("[]"), sep = ' ')
+                                attacked_nodes = [int(_) for _ in attacked_nodes]
+                            else:
+                                acc = ast.literal_eval(row[1])
+                                acc_honest = [_ for i, _ in enumerate(acc) if i not in attacked_nodes]
+                                acc_honest = sum(acc_honest) / len(acc_honest)
+                                acc_data.append(acc_honest)
+                            i += 1
+                    cent_data[cent].append(acc_data)
+            # Calc averaged accuracies over different seeds
+            for cent in centralities:
+                aver_acc = []
+                for cent_diff_seeds in zip(*cent_data[cent]):
+                    aver_acc.append(sum(cent_diff_seeds) / len(cent_diff_seeds))
+                aver_cent_data[cent] = aver_acc
+
+            # Plot the accuracies
+            plt.figure(figsize=(10, 6))
+            if any([x == None for x in aver_cent_data.values()]):
+                continue
+            for cent, acc_aver in aver_cent_data.items():
+                plt.plot(range(len(acc_aver)), acc_aver, label = cent)
+
+            plt.xlabel('Epoch') 
+            plt.ylabel('Accuracy') 
+
+            plt.grid(True)
+            plt.legend()
+            plt.savefig(dir_data + acc_fname + 'iid_type_%s.png' % iid_type)
+
+            # Reset values
+            cent_data = {cent:[] for cent in cent_data.keys()}
+            aver_cent_data = {cent:[] for cent in cent_data.keys()}
+
+                    
 
 # Used to generate ER graphs
 def gen_ER_graph(n_clients, prob_conn = 0.5, graph_name = '', seed = 0):
@@ -245,9 +311,7 @@ def gen_pref_attach_graph(n_clients, graph_type = 'sparse', graph_name = '', see
 
     return graph, adj_matrix
 
-
-if __name__ == '__main__':
-    # plot_acc_diff()
+def make_graphs():
     dir_networks = '/root/programming/Purdue-Research-Programs-Notes/data/full_decentralized/network_topologies/'
     graph_type = ('ER', 'dir_scale_free', 'dir_geom', 'k_out', 'pref_attach')
     for graph in graph_type:
@@ -270,11 +334,8 @@ if __name__ == '__main__':
             for graph_type in ('sparse', 'medium', 'dense'):
                 for seed in range(20):
                     graph_name = 'pref_attach_graph_c_20_type_%s_seed_%d.txt' % (graph_type, seed)
-                    gen_pref_attach_graph(20, graph_type = graph_type, graph_name = graph_name, seed = seed)    
+                    gen_pref_attach_graph(20, graph_type = graph_type, graph_name = graph_name, seed = seed)
 
-    #for p in [0.3, 0.5, 0.7]:
-    #   for seed in range(20):
-    #      graph_name = 'ER_graph_c_20_p_0%d_seed_%d.txt' % (int(p * 10), seed)
-    #     graph, adj_matrix = gen_ER_graph(20, p, graph_name, seed = seed)
-
+if __name__ == '__main__':
+    plot_acc_aver('ER_graph_c_20_p_07', 'fmnist')
 
