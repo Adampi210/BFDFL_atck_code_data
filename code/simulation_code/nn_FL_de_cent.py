@@ -21,13 +21,13 @@ from cleverhans.torch.attacks.noise import noise # Basic uniform noise perturbat
 
 # Create a compiled model class (or learner class) that accepts a created model, optimizer, and loss function, and gives some training/testng functionality
 class CompiledModel():
-    def __init__(self, model, optimizer, loss_func):
+    def __init__(self, model, optimizer, loss_func, device):
         self.model = model          # Set the class model attribute to passed mode
         self.optimizer = optimizer  # Set optimizer attribute to passed optimizer
         self.loss_func = loss_func  # Set loss function attribute to passed loss function
-        self.loss_grad = nn.CrossEntropyLoss() # Set the loss for the gradient calculation
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu") # Set the device to be GPU
-        self.model = self.model.to(self.device)                                    # Move the model to the device (GPU)
+        self.loss_grad = nn.CrossEntropyLoss()  # Set the loss for the gradient calculation
+        self.device = device                    # Set the device to be GPU
+        self.model = self.model.to(self.device) # Move the model to the device (GPU)
 
     # Calculate gradients
     def calc_grads(self, train_data, train_labels, train_batch_size, n_epoch, show_progress = False):
@@ -125,77 +125,9 @@ class CompiledModel():
             for param_curr, param_new in zip(self.model.parameters(), param_list):
                 param_curr.data.copy_(param_new)
 
-# A class for every server object
-class Server_FL():
-    def __init__(self, init_model_compiled = None):
-        self.list_clients = [] # Initialize list of clients to empty list (Clients of the given server)
-        self.list_servers = [] # Initialize list of servers to empty list (Servers connected to the given server)
-        self.global_server_model = init_model_compiled # Initialize global model for a given server to some initial compiled model
-        self.client_scale_dictionary = dict()          # Initialzie empty dictionary of weights of each client (meaning normalized sizes of each client)
-        self.total_clients_weights = 0                 # Total size of the sum of datasets of all clients
-    
-    # Server should only validate
-    def get_data(self, valid_dataset):
-        # Get the training and testing data
-        x_valid, self.y_valid = valid_dataset.tensors 
-        # Normalize the datasets to be between 0 and 1
-        self.x_valid = x_valid.float() / 255
-
-
-    # Method to add a client to the client list for a given server
-    def add_client(self, client_object):
-        self.list_clients.append(client_object)
-        self.client_scale_dictionary[client_object.client_id] = client_object.dset_size
-        self.total_clients_weights += client_object.dset_size
-    
-    # Method to add a server to the server list for a given server
-    def add_server(self, server_object):
-        self.list_servers.append(server_object)
-
-    # Initialize compiled model (if model not initialized) with specified architecture, optimizer, and loss function (adjustable)
-    def init_compiled_model(self, net_arch_class):
-        # This will always run, but will only initialize the model if the clients model has not been specified
-        if self.global_server_model == None:
-            global_model_raw = net_arch_class # Note that the architecture can be changed as necessary (also can import model architecture from other file)
-            global_loss_function = nn.CrossEntropyLoss() # Again, adjustable here for each client, or can pass a model
-            global_optimizer = optim.Adam(global_model_raw.parameters())
-            # Initialize the compiled model
-            self.global_server_model = CompiledModel(model = global_model_raw, optimizer = global_optimizer, loss_func = global_loss_function)
-        else:
-            pass
-    
-    # Method to send the global model over to the clients of the server
-    def distribute_global_model(self):
-        # If the model is not initialized, initialize it to some default model specified in this class
-        if self.global_server_model == None:
-            self.init_compiled_model()
-
-        # Go through each client and set their models to be equal to the global model
-        # To do that, get the current state dictionary, and then distribute the dictionary to all the clients in client list
-        global_model_state_dict = self.global_server_model.get_params()
-        for client in self.list_clients:
-            client.client_model.set_params(global_model_state_dict)
-
-    # Method to aggregate client models into a global model:
-    def aggregate_client_models_fed_avg(self):
-        scaled_client_weights = [[layer * self.client_scale_dictionary[client.client_id] / self.total_clients_weights \
-                                    for layer in client.client_model.get_params()] for client in self.list_clients]
-
-        new_model_parameters = [sum(layers) for layers in zip(*scaled_client_weights)]
-
-        if self.global_server_model == None:
-            self.init_compiled_model()
-        self.global_server_model.set_params(new_model_parameters)
-
-    # Test the accuracy and loss of a global model
-    def validate_global_model(self):
-        global_loss, global_accuracy = self.global_server_model.validate(valid_data = self.x_valid, valid_labels = self.y_valid)
-        print(f'Global model parameters: Current loss: {global_loss}, Current accuracy: {global_accuracy}')
-        return global_loss, global_accuracy
-
 # Class for every client (individual device) object
 class client_FL():
-    def __init__(self, client_id, init_model_client = None, if_adv_client = False, attack = 'none', adv_pow = 0):
+    def __init__(self, client_id, init_model_client = None, if_adv_client = False, attack = 'none', adv_pow = 0, device = torch.device("cuda" if torch.cuda.is_available() else "cpu")):
         self.client_model = init_model_client # Set the model of the client to be 
         self.moving_model = None
         self.temp_model = None
@@ -211,7 +143,8 @@ class client_FL():
         self.grad_est_curr = None      # Corresp to y_i(k)
         self.global_model_next = None  # Corresp to x_i(k + 1)
         self.grad_est_next = None      # Corresp to y_i(k + 1)
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu") # Set the device to be GPU
+        self.device = device           # Set the device to be GPU
+        # TODO pass the device from the full_dec, split among cuda diff
     # Get client data from training and validation dataloaders
     # Client data should be local to the client
     def get_data(self, train_dataset, valid_dataset):
@@ -259,8 +192,8 @@ class client_FL():
             local_client_optimizer_0 = optim.Adam(local_client_raw_model_0.parameters())
             local_client_optimizer_1 = optim.Adam(local_client_raw_model_1.parameters())
             # Initialize the compiled model
-            self.client_model = CompiledModel(model = local_client_raw_model_0, optimizer = local_client_optimizer_0, loss_func = nn.CrossEntropyLoss())
-            self.moving_model = CompiledModel(model = local_client_raw_model_1, optimizer = local_client_optimizer_1, loss_func = nn.CrossEntropyLoss())
+            self.client_model = CompiledModel(model = local_client_raw_model_0, optimizer = local_client_optimizer_0, loss_func = nn.CrossEntropyLoss(), device = self.device)
+            self.moving_model = CompiledModel(model = local_client_raw_model_1, optimizer = local_client_optimizer_1, loss_func = nn.CrossEntropyLoss(), device = self.device)
 
             self.moving_model.set_params(self.client_model.get_params())
             # Need the data for the exchange, so if none, initialize

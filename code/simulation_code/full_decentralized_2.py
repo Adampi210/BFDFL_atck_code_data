@@ -22,18 +22,18 @@ from cleverhans.torch.attacks.noise import noise # Basic uniform noise perturbat
 
 # User defined
 from split_data import *
-from nn_FL_1 import *
+from nn_FL_de_cent import *
 from neural_net_architectures import *
 # Device configuration
 # Always check first if GPU is avaialble
-device_used = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+device_used = torch.device('cuda:2' if torch.cuda.is_available() else 'cpu')
 # If CUDA is not avaialbe, print message that CPU will be used
-if device_used != torch.device('cuda'):
+if device_used != torch.device('cuda:2'):
     print(f'CUDA not available, have to use {device_used}')
 
 start_time = time.time()
 # Set hyperparameters
-seed = 0 # Seed for PRNGs 
+seed = 3 # Seed for PRNGs 
 random.seed(seed)
 torch.manual_seed(seed)
 np.random.seed(seed)
@@ -148,7 +148,7 @@ def run_and_save_simulation(train_split, valid_split, adj_matrix, centrality_mea
     acc_clients = [0] * N_CLIENTS
     loss_clients = [0] * N_CLIENTS
     # Create nodes in the graph
-    node_list = [client_FL(i) for i in range(N_CLIENTS)]
+    node_list = [client_FL(i, device = device_used) for i in range(N_CLIENTS)]
     [node.get_data(train_split[i], valid_split[i]) for node, i in zip(node_list, range(N_CLIENTS))]
     [node.init_compiled_model(NetBasic()) for node in node_list] # This takes 36s for 10 clients
     # Add neigbors, specified graph

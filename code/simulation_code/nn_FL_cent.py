@@ -21,13 +21,13 @@ from cleverhans.torch.attacks.noise import noise # Basic uniform noise perturbat
 
 # Create a compiled model class (or learner class) that accepts a created model, optimizer, and loss function, and gives some training/testng functionality
 class CompiledModel():
-    def __init__(self, model, optimizer, loss_func):
+    def __init__(self, model, optimizer, loss_func, device):
         self.model = model          # Set the class model attribute to passed mode
         self.optimizer = optimizer  # Set optimizer attribute to passed optimizer
         self.loss_func = loss_func  # Set loss function attribute to passed loss function
-        self.loss_grad = nn.CrossEntropyLoss() # Set the loss for the gradient calculation
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu") # Set the device to be GPU
-        self.model = self.model.to(self.device)                                    # Move the model to the device (GPU)
+        self.loss_grad = nn.CrossEntropyLoss()  # Set the loss for the gradient calculation
+        self.device = device                    # Set the device to be GPU
+        self.model = self.model.to(self.device) # Move the model to the device (GPU)
 
     # Calculate gradients
     def calc_grads(self, train_data, train_labels, train_batch_size, n_epoch, show_progress = False):
@@ -160,7 +160,7 @@ class Server_FL():
             global_loss_function = nn.CrossEntropyLoss() # Again, adjustable here for each client, or can pass a model
             global_optimizer = optim.Adam(global_model_raw.parameters())
             # Initialize the compiled model
-            self.global_server_model = CompiledModel(model = global_model_raw, optimizer = global_optimizer, loss_func = global_loss_function)
+            self.global_server_model = CompiledModel(model = global_model_raw, optimizer = global_optimizer, loss_func = global_loss_function, device = torch.device("cuda" if torch.cuda.is_available() else "cpu"))
         else:
             pass
     
@@ -195,7 +195,7 @@ class Server_FL():
 
 # Class for every client (individual device) object
 class client_FL():
-    def __init__(self, client_id, init_model_client = None, if_adv_client = False, attack = 'none', adv_pow = 0):
+    def __init__(self, client_id, init_model_client = None, if_adv_client = False, attack = 'none', adv_pow = 0, device = torch.device("cuda" if torch.cuda.is_available() else "cpu")):
         self.client_model = init_model_client # Set the model of the client to be 
         self.moving_model = None
         self.temp_model = None
@@ -211,7 +211,8 @@ class client_FL():
         self.grad_est_curr = None      # Corresp to y_i(k)
         self.global_model_next = None  # Corresp to x_i(k + 1)
         self.grad_est_next = None      # Corresp to y_i(k + 1)
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu") # Set the device to be GPU
+        self.device = device           # Set the device to be GPU
+        # TODO pass the device from the full_dec, split among cuda diff
     # Get client data from training and validation dataloaders
     # Client data should be local to the client
     def get_data(self, train_dataset, valid_dataset):
@@ -259,8 +260,8 @@ class client_FL():
             local_client_optimizer_0 = optim.Adam(local_client_raw_model_0.parameters())
             local_client_optimizer_1 = optim.Adam(local_client_raw_model_1.parameters())
             # Initialize the compiled model
-            self.client_model = CompiledModel(model = local_client_raw_model_0, optimizer = local_client_optimizer_0, loss_func = nn.CrossEntropyLoss())
-            self.moving_model = CompiledModel(model = local_client_raw_model_1, optimizer = local_client_optimizer_1, loss_func = nn.CrossEntropyLoss())
+            self.client_model = CompiledModel(model = local_client_raw_model_0, optimizer = local_client_optimizer_0, loss_func = nn.CrossEntropyLoss(), device = self.device)
+            self.moving_model = CompiledModel(model = local_client_raw_model_1, optimizer = local_client_optimizer_1, loss_func = nn.CrossEntropyLoss(), device = self.device)
 
             self.moving_model.set_params(self.client_model.get_params())
             # Need the data for the exchange, so if none, initialize
