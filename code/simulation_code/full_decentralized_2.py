@@ -81,7 +81,7 @@ elif graph_type_used == 'pref_attach':
 ##################
 network_topology_filepath = os.path.join(dir_networks, network_topology)
 adj_matrix = np.loadtxt(network_topology_filepath)
-# os.makedirs(data_dir_name, exist_ok = True)
+os.makedirs(data_dir_name, exist_ok = True)
 
 # Save the adjacency matrix, the graph graphical representation, and the client centralities
 # np.savetxt(data_dir_name + network_topology, adj_matrix)
