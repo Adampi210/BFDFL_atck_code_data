@@ -3,7 +3,7 @@ import csv
 import matplotlib.pyplot as plt
 import numpy as np
 import ast
-from nn_FL_1 import *
+from nn_FL_de_cent import *
 import networkx as nx
 import re
 
@@ -155,7 +155,7 @@ def plot_acc_aver(graph_type_used = '', dataset_name = 'fmnist'):
     centralities = ('none', 'in_deg_centrality', 'out_deg_centrality', 'closeness_centrality', 'betweeness_centrality', 'eigenvector_centrality')
     cent_data = {cent:[] for cent in centralities}
     aver_cent_data = {cent:[] for cent in centralities}
-    seed_range = 3
+    seed_range = 20
     acc_data = []
     root_dir = ''
     # Get distinct settings
@@ -164,7 +164,9 @@ def plot_acc_aver(graph_type_used = '', dataset_name = 'fmnist'):
         for fname in files:
             if fname.startswith('acc_'):
                 fname_parts = re.split('_seed', fname)
-                acc_diff_fnames.add(fname_parts[0])
+                if '300' not in fname_parts[0]:
+                    if '.png' not in fname_parts[0]:
+                        acc_diff_fnames.add(fname_parts[0])
         root_dir = root        
     
     # Create averaged dictionary data and plot
@@ -337,5 +339,5 @@ def make_graphs():
                     gen_pref_attach_graph(20, graph_type = graph_type, graph_name = graph_name, seed = seed)
 
 if __name__ == '__main__':
-    plot_acc_aver('pref_attach_graph_c_20_type_sparse', 'fmnist')
+    plot_acc_aver('pref_attach_graph_c_20_type_dense', 'fmnist')
 
