@@ -24,6 +24,7 @@ from cleverhans.torch.attacks.noise import noise # Basic uniform noise perturbat
 from split_data import *
 from nn_FL_de_cent import *
 from neural_net_architectures import *
+
 # Device configuration
 # Always check first if GPU is avaialble
 device_used = torch.device('cuda:1' if torch.cuda.is_available() else 'cpu')
@@ -39,7 +40,7 @@ torch.manual_seed(seed)
 np.random.seed(seed)
 
 # Aggregation and datase parameters
-dataset_name = 'fmnist' # 'fmnist' or 'cifar10'
+dataset_name = 'cifar10' # 'fmnist' or 'cifar10'
 dataset_size = int(6e4) if dataset_name in ['fmnist', 'mnist'] else int(5e4)
 aggreg_schemes = ('push_sum', 'sab', 'belief_secure_push_sum', 'test')
 aggregation_mechanism = aggreg_schemes[1]
@@ -62,7 +63,7 @@ if graph_type_used == 'ER':
 # DIR GEOM
 elif graph_type_used == 'dir_geom':
     geo_graph_configs = ('2d_close_nodes', '2d_far_nodes', '3d_close_nodes', '3d_far_nodes')
-    config_used = 0
+    config_used = 1
     data_dir_name = dir_data + '%s_graph_c_%d_type_%s/' % (graph_type_used, designated_clients, geo_graph_configs[config_used])
     network_topology = '%s_graph_c_%d_type_%s_seed_%d.txt' % (graph_type_used, designated_clients, geo_graph_configs[config_used], seed)
 # K-OUT
@@ -73,7 +74,7 @@ elif graph_type_used == 'k_out':
     network_topology = '%s_graph_c_%d_k_%d_seed_%d.txt' % (graph_type_used, designated_clients, k_used, seed)
 # PREF_ATTACH
 elif graph_type_used == 'pref_attach':
-    pref_attach_configs = ('sparse', 'medium', 'dense')
+    pref_attach_configs = ('sparse', 'medium', 'dense', 'dense_1', 'dense_2')
     config_used = 1
     data_dir_name = dir_data + '%s_graph_c_%d_type_%s/' % (graph_type_used, designated_clients, pref_attach_configs[config_used])
     network_topology = '%s_graph_c_%d_type_%s_seed_%d.txt' % (graph_type_used, designated_clients, pref_attach_configs[config_used], seed)
@@ -105,7 +106,7 @@ with open(data_dir_name + 'node_centrality'+ '.csv', 'w', newline = '') as centr
 # Training parameters
 N_CLIENTS = len(adj_matrix[0]) # Number of clients
 N_SERVERS  = 0        # Number of servers
-iid_type = 'non_iid'      # 'iid' or 'non_iid'
+iid_type = 'iid'      # 'iid' or 'non_iid'
 N_LOCAL_EPOCHS  = 5   # Number of epochs for local training
 N_GLOBAL_EPOCHS = 100 # Number of epochs for global training
 BATCH_SIZE = 500 # Batch size while training

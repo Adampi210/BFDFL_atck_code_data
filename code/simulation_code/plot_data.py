@@ -150,6 +150,7 @@ def plot_acc_diff(dataset_name = 'fmnist'):
 # Plot accuracy averaged over the specified data
 def plot_acc_aver(graph_type_used = '', dataset_name = 'fmnist'):
     # Setup
+    dir_graphs = '/root/programming/Purdue-Research-Programs-Notes/data/plots/'
     dir_data = '/root/programming/Purdue-Research-Programs-Notes/data/full_decentralized/%s/' % dataset_name
     dir_data += graph_type_used + '/'
     centralities = ('none', 'in_deg_centrality', 'out_deg_centrality', 'closeness_centrality', 'betweeness_centrality', 'eigenvector_centrality')
@@ -209,7 +210,7 @@ def plot_acc_aver(graph_type_used = '', dataset_name = 'fmnist'):
 
             plt.grid(True)
             plt.legend()
-            plt.savefig(dir_data + acc_fname + 'iid_type_%s.png' % iid_type)
+            plt.savefig(dir_graphs + graph_type_used + '_' + acc_fname + 'iid_type_%s.png' % iid_type)
 
             # Reset values
             cent_data = {cent:[] for cent in cent_data.keys()}
@@ -300,6 +301,8 @@ def gen_pref_attach_graph(n_clients, graph_type = 'sparse', graph_name = '', see
         'sparse': 1,
         'medium': 2,
         'dense': 3,
+        'dense_1': 4,
+        'dense_2': 5
     }
     graph = None    
     is_strongly_connected = False
@@ -339,5 +342,9 @@ def make_graphs():
                     gen_pref_attach_graph(20, graph_type = graph_type, graph_name = graph_name, seed = seed)
 
 if __name__ == '__main__':
-    plot_acc_aver('pref_attach_graph_c_20_type_dense', 'fmnist')
+    for seed in range(20):
+        for i in ('dense_1', 'dense_2'):
+            graph_name = 'pref_attach_graph_c_20_type_%s_seed_%d.txt' % (i, seed)
+            gen_pref_attach_graph(20, i, graph_name, seed)
+    # plot_acc_aver('ER_graph_c_20_p_05', 'fmnist')
 
