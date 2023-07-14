@@ -33,13 +33,13 @@ if device_used != torch.device('cuda:0'):
 
 start_time = time.time()
 # Set hyperparameters
-seed = 0 # Seed for PRNGs 
+seed = 6 # Seed for PRNGs 
 random.seed(seed)
 torch.manual_seed(seed)
 np.random.seed(seed)
 
 # Aggregation and datase parameters
-dataset_name = 'fmnist' # 'fmnist' or 'cifar10'
+dataset_name = 'cifar10' # 'fmnist' or 'cifar10'
 dataset_size = int(6e4) if dataset_name in ['fmnist', 'mnist'] else int(5e4)
 aggreg_schemes = ('push_sum', 'sab', 'belief_secure_push_sum', 'test')
 aggregation_mechanism = aggreg_schemes[1]
@@ -127,7 +127,7 @@ nb_iter = 15   # Number of epochs for PGD attack
 
 # Define centrality measures and directories
 centralities = ('none', 'in_deg_centrality', 'out_deg_centrality', 'closeness_centrality', 'betweeness_centrality', 'eigenvector_centrality')
-cent_measure_used = 0
+cent_measure_used = 1
 
 # Split the data for the specified number of clients and servers
 if iid_type == 'iid':

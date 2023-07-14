@@ -23,7 +23,7 @@ do
     do
         for adv_prec in 2
         do
-            for seed in 0 1 2
+            for seed in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19
             do 
                 for cent_used in 0 1 2 3 4 5
                 do
