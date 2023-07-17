@@ -260,10 +260,9 @@ def gen_dir_scale_free_graph(n_clients, type_graph = 'default', graph_name = '',
 def gen_dir_geom_graph(n_clients, graph_type = '2d_close_nodes', graph_name = '', seed = 0):
     dir_networks = '/root/programming/Purdue-Research-Programs-Notes/data/full_decentralized/network_topologies/'
     geo_graph_configs = {
-        '2d_close_nodes': [2, 0.5],
-        '2d_far_nodes': [2, 0.2],
-        '3d_close_nodes': [3, 0.6],
-        '3d_far_nodes': [3, 0.3]
+        '2d_very_close_nodes': [2, 0.5],
+        '2d_close_nodes': [2, 0.3],
+        '2d_far_nodes': [2, 0.1]
     }
     dim, radius = geo_graph_configs[graph_type]
     graph = None    
@@ -301,8 +300,9 @@ def gen_pref_attach_graph(n_clients, graph_type = 'sparse', graph_name = '', see
         'sparse': 1,
         'medium': 2,
         'dense': 3,
-        'dense_1': 4,
-        'dense_2': 5
+        'dense_2': 5,
+        'dense_3': 6,
+        'dense_4': 7
     }
     graph = None    
     is_strongly_connected = False
@@ -342,9 +342,11 @@ def make_graphs():
                     gen_pref_attach_graph(20, graph_type = graph_type, graph_name = graph_name, seed = seed)
 
 if __name__ == '__main__':
-    for seed in range(20):
-        for i in ('dense_1', 'dense_2'):
+    
+    for seed in range(50):
+        for i in ('dense', 'dense_2', 'dense_4'):
             graph_name = 'pref_attach_graph_c_20_type_%s_seed_%d.txt' % (i, seed)
             gen_pref_attach_graph(20, i, graph_name, seed)
-    # plot_acc_aver('ER_graph_c_20_p_05', 'fmnist')
+    
+    # plot_acc_aver('pref_attach_graph_c_20_type_dense_1', 'fmnist')
 

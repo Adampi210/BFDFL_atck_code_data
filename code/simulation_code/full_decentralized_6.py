@@ -40,7 +40,7 @@ torch.manual_seed(seed)
 np.random.seed(seed)
 
 # Aggregation and datase parameters
-dataset_name = 'cifar10' # 'fmnist' or 'cifar10'
+dataset_name = 'fmnist' # 'fmnist' or 'cifar10'
 dataset_size = int(6e4) if dataset_name in ['fmnist', 'mnist'] else int(5e4)
 aggreg_schemes = ('push_sum', 'sab', 'belief_secure_push_sum', 'test')
 aggregation_mechanism = aggreg_schemes[1]
@@ -74,8 +74,8 @@ elif graph_type_used == 'k_out':
     network_topology = '%s_graph_c_%d_k_%d_seed_%d.txt' % (graph_type_used, designated_clients, k_used, seed)
 # PREF_ATTACH
 elif graph_type_used == 'pref_attach':
-    pref_attach_configs = ('sparse', 'medium', 'dense', 'dense_1', 'dense_2')
-    config_used = 2
+    pref_attach_configs = ('sparse', 'medium', 'dense', 'dense_1', 'dense_2', 'dense_3', 'dense_4')
+    config_used = 4
     data_dir_name = dir_data + '%s_graph_c_%d_type_%s/' % (graph_type_used, designated_clients, pref_attach_configs[config_used])
     network_topology = '%s_graph_c_%d_type_%s_seed_%d.txt' % (graph_type_used, designated_clients, pref_attach_configs[config_used], seed)
 
@@ -128,7 +128,7 @@ nb_iter = 15   # Number of epochs for PGD attack
 
 # Define centrality measures and directories
 centralities = ('none', 'in_deg_centrality', 'out_deg_centrality', 'closeness_centrality', 'betweeness_centrality', 'eigenvector_centrality')
-cent_measure_used = 1
+cent_measure_used = 4
 
 # Split the data for the specified number of clients and servers
 if iid_type == 'iid':
