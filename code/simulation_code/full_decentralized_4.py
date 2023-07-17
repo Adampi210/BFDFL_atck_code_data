@@ -27,14 +27,14 @@ from neural_net_architectures import *
 
 # Device configuration
 # Always check first if GPU is avaialble
-device_used = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+device_used = torch.device('cuda:2' if torch.cuda.is_available() else 'cpu')
 # If CUDA is not avaialbe, print message that CPU will be used
-if device_used != torch.device('cuda:0'):
+if device_used != torch.device('cuda:2'):
     print(f'CUDA not available, have to use {device_used}')
 
 start_time = time.time()
 # Set hyperparameters
-seed = 0 # Seed for PRNGs 
+seed = 24 # Seed for PRNGs 
 random.seed(seed)
 torch.manual_seed(seed)
 np.random.seed(seed)
@@ -106,7 +106,7 @@ with open(data_dir_name + 'node_centrality'+ '.csv', 'w', newline = '') as centr
 # Training parameters
 N_CLIENTS = len(adj_matrix[0]) # Number of clients
 N_SERVERS  = 0        # Number of servers
-iid_type = 'non_iid'      # 'iid' or 'non_iid'
+iid_type = 'iid'      # 'iid' or 'non_iid'
 N_LOCAL_EPOCHS  = 5   # Number of epochs for local training
 N_GLOBAL_EPOCHS = 100 # Number of epochs for global training
 BATCH_SIZE = 500 # Batch size while training
@@ -128,7 +128,7 @@ nb_iter = 15   # Number of epochs for PGD attack
 
 # Define centrality measures and directories
 centralities = ('none', 'in_deg_centrality', 'out_deg_centrality', 'closeness_centrality', 'betweeness_centrality', 'eigenvector_centrality')
-cent_measure_used = 4
+cent_measure_used = 5
 
 # Split the data for the specified number of clients and servers
 if iid_type == 'iid':
