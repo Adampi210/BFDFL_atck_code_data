@@ -24,7 +24,6 @@ from cleverhans.torch.attacks.noise import noise # Basic uniform noise perturbat
 from split_data import *
 from nn_FL_de_cent import *
 from neural_net_architectures import *
-
 # Device configuration
 # Always check first if GPU is avaialble
 device_used = torch.device('cuda:1' if torch.cuda.is_available() else 'cpu')
@@ -34,7 +33,7 @@ if device_used != torch.device('cuda:1'):
 
 start_time = time.time()
 # Set hyperparameters
-seed = 0 # Seed for PRNGs 
+seed = 22 # Seed for PRNGs 
 random.seed(seed)
 torch.manual_seed(seed)
 np.random.seed(seed)
@@ -47,8 +46,8 @@ aggregation_mechanism = aggreg_schemes[1]
 
 # Topology used from a filename
 # Create directory for the network data. Will include accuracy sub-directories
-dir_networks = '/root/programming/Purdue-Research-Programs-Notes/data/full_decentralized/network_topologies'
-dir_data = '/root/programming/Purdue-Research-Programs-Notes/data/full_decentralized/%s/' % dataset_name
+dir_networks = '/home/code/Purdue-Research-Programs-Notes/data/full_decentralized/network_topologies'
+dir_data = '/home/code/Purdue-Research-Programs-Notes/data/full_decentralized/%s/' % dataset_name
 graph_type = ('ER', 'dir_scale_free', 'dir_geom', 'k_out', 'pref_attach')
 graph_type_used = graph_type[4]
 # This is the source for network topology
@@ -63,7 +62,7 @@ if graph_type_used == 'ER':
 # DIR GEOM
 elif graph_type_used == 'dir_geom':
     geo_graph_configs = ('2d_close_nodes', '2d_far_nodes', '3d_close_nodes', '3d_far_nodes')
-    config_used = 1
+    config_used = 0
     data_dir_name = dir_data + '%s_graph_c_%d_type_%s/' % (graph_type_used, designated_clients, geo_graph_configs[config_used])
     network_topology = '%s_graph_c_%d_type_%s_seed_%d.txt' % (graph_type_used, designated_clients, geo_graph_configs[config_used], seed)
 # K-OUT
@@ -74,8 +73,8 @@ elif graph_type_used == 'k_out':
     network_topology = '%s_graph_c_%d_k_%d_seed_%d.txt' % (graph_type_used, designated_clients, k_used, seed)
 # PREF_ATTACH
 elif graph_type_used == 'pref_attach':
-    pref_attach_configs = ('sparse', 'medium', 'dense', 'dense_1', 'dense_2')
-    config_used = 3
+    pref_attach_configs = ('sparse', 'medium', 'dense', 'dense_1', 'dense_2', 'dense_3', 'dense_4')
+    config_used = 6
     data_dir_name = dir_data + '%s_graph_c_%d_type_%s/' % (graph_type_used, designated_clients, pref_attach_configs[config_used])
     network_topology = '%s_graph_c_%d_type_%s_seed_%d.txt' % (graph_type_used, designated_clients, pref_attach_configs[config_used], seed)
 
@@ -106,7 +105,7 @@ with open(data_dir_name + 'node_centrality'+ '.csv', 'w', newline = '') as centr
 # Training parameters
 N_CLIENTS = len(adj_matrix[0]) # Number of clients
 N_SERVERS  = 0        # Number of servers
-iid_type = 'iid'      # 'iid' or 'non_iid'
+iid_type = 'non_iid'      # 'iid' or 'non_iid'
 N_LOCAL_EPOCHS  = 5   # Number of epochs for local training
 N_GLOBAL_EPOCHS = 100 # Number of epochs for global training
 BATCH_SIZE = 500 # Batch size while training
@@ -116,8 +115,8 @@ attacks = ('none', 'FGSM', 'PGD', 'noise')      # Available attacks
 architectures = ('star', 'full_decentralized')  # Architecture used
 attack_used = 1                                 # Which attack from the list was used
 attack = attacks[0]                             # Always start with no attack (attack at some point)
-adv_pow = 0                                     # Power of the attack
-adv_percent = 0.0                               # Percentage of adversaries
+adv_pow = 100                                     # Power of the attack
+adv_percent = 0.2                               # Percentage of adversaries
 adv_number = int(adv_percent * N_CLIENTS)       # Number of adversaries
 # adv_list = list(range(adv_number))
 # adv_list = random.sample(list(range(N_CLIENTS)), adv_number) # Choose the adversaries at random
@@ -128,7 +127,7 @@ nb_iter = 15   # Number of epochs for PGD attack
 
 # Define centrality measures and directories
 centralities = ('none', 'in_deg_centrality', 'out_deg_centrality', 'closeness_centrality', 'betweeness_centrality', 'eigenvector_centrality')
-cent_measure_used = 0
+cent_measure_used = 3
 
 # Split the data for the specified number of clients and servers
 if iid_type == 'iid':

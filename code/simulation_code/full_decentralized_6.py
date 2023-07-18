@@ -24,17 +24,16 @@ from cleverhans.torch.attacks.noise import noise # Basic uniform noise perturbat
 from split_data import *
 from nn_FL_de_cent import *
 from neural_net_architectures import *
-
 # Device configuration
 # Always check first if GPU is avaialble
-device_used = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+device_used = torch.device('cuda:2' if torch.cuda.is_available() else 'cpu')
 # If CUDA is not avaialbe, print message that CPU will be used
-if device_used != torch.device('cuda:0'):
+if device_used != torch.device('cuda:2'):
     print(f'CUDA not available, have to use {device_used}')
 
 start_time = time.time()
 # Set hyperparameters
-seed = 1 # Seed for PRNGs 
+seed = 41 # Seed for PRNGs 
 random.seed(seed)
 torch.manual_seed(seed)
 np.random.seed(seed)
@@ -47,23 +46,23 @@ aggregation_mechanism = aggreg_schemes[1]
 
 # Topology used from a filename
 # Create directory for the network data. Will include accuracy sub-directories
-dir_networks = '/root/programming/Purdue-Research-Programs-Notes/data/full_decentralized/network_topologies'
-dir_data = '/root/programming/Purdue-Research-Programs-Notes/data/full_decentralized/%s/' % dataset_name
+dir_networks = '/home/code/Purdue-Research-Programs-Notes/data/full_decentralized/network_topologies'
+dir_data = '/home/code/Purdue-Research-Programs-Notes/data/full_decentralized/%s/' % dataset_name
 graph_type = ('ER', 'dir_scale_free', 'dir_geom', 'k_out', 'pref_attach')
-graph_type_used = graph_type[4]
+graph_type_used = graph_type[0]
 # This is the source for network topology
 
 # ADJUSTABLE #####
 designated_clients = 20
 # ER
 if graph_type_used == 'ER':
-    prob_conn = 5
+    prob_conn = 3
     data_dir_name = dir_data + '%s_graph_c_%d_p_0%d/' % (graph_type_used, designated_clients, prob_conn)
     network_topology = '%s_graph_c_%d_p_0%d_seed_%d.txt' % (graph_type_used, designated_clients, prob_conn, seed)
 # DIR GEOM
 elif graph_type_used == 'dir_geom':
     geo_graph_configs = ('2d_close_nodes', '2d_far_nodes', '3d_close_nodes', '3d_far_nodes')
-    config_used = 1
+    config_used = 0
     data_dir_name = dir_data + '%s_graph_c_%d_type_%s/' % (graph_type_used, designated_clients, geo_graph_configs[config_used])
     network_topology = '%s_graph_c_%d_type_%s_seed_%d.txt' % (graph_type_used, designated_clients, geo_graph_configs[config_used], seed)
 # K-OUT
@@ -75,7 +74,7 @@ elif graph_type_used == 'k_out':
 # PREF_ATTACH
 elif graph_type_used == 'pref_attach':
     pref_attach_configs = ('sparse', 'medium', 'dense', 'dense_1', 'dense_2', 'dense_3', 'dense_4')
-    config_used = 4
+    config_used = 6
     data_dir_name = dir_data + '%s_graph_c_%d_type_%s/' % (graph_type_used, designated_clients, pref_attach_configs[config_used])
     network_topology = '%s_graph_c_%d_type_%s_seed_%d.txt' % (graph_type_used, designated_clients, pref_attach_configs[config_used], seed)
 
@@ -128,7 +127,7 @@ nb_iter = 15   # Number of epochs for PGD attack
 
 # Define centrality measures and directories
 centralities = ('none', 'in_deg_centrality', 'out_deg_centrality', 'closeness_centrality', 'betweeness_centrality', 'eigenvector_centrality')
-cent_measure_used = 4
+cent_measure_used = 1
 
 # Split the data for the specified number of clients and servers
 if iid_type == 'iid':
