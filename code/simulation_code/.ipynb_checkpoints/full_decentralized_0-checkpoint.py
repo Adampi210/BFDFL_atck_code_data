@@ -47,10 +47,10 @@ aggregation_mechanism = aggreg_schemes[1]
 
 # Topology used from a filename
 # Create directory for the network data. Will include accuracy sub-directories
-dir_networks = '/root/programming/Purdue-Research-Programs-Notes/data/full_decentralized/network_topologies'
-dir_data = '/root/programming/Purdue-Research-Programs-Notes/data/full_decentralized/%s/' % dataset_name
+dir_networks = '../../data/full_decentralized/network_topologies'
+dir_data = '../../data/full_decentralized/%s/' % dataset_name
 graph_type = ('ER', 'dir_scale_free', 'dir_geom', 'k_out', 'pref_attach', 'SNAP_Cisco')
-graph_type_used = graph_type[0]
+graph_type_used = graph_type[2]
 # This is the source for network topology
 
 # ADJUSTABLE #####
@@ -62,7 +62,7 @@ if graph_type_used == 'ER':
     network_topology = '%s_graph_c_%d_p_0%d_seed_%d.txt' % (graph_type_used, designated_clients, prob_conn, seed)
 # DIR GEOM
 elif graph_type_used == 'dir_geom':
-    geo_graph_configs = ('2d_close_nodes', '2d_far_nodes', '3d_close_nodes', '3d_far_nodes')
+    geo_graph_configs = ('2d_very_close_nodes', '2d_close_nodes', '2d_far_nodes')
     config_used = 0
     data_dir_name = dir_data + '%s_graph_c_%d_type_%s/' % (graph_type_used, designated_clients, geo_graph_configs[config_used])
     network_topology = '%s_graph_c_%d_type_%s_seed_%d.txt' % (graph_type_used, designated_clients, geo_graph_configs[config_used], seed)
