@@ -1,5 +1,6 @@
 import sys
 import os
+import re
 
 import torch
 import torch.nn as nn
@@ -26,9 +27,9 @@ from nn_FL_de_cent import *
 from neural_net_architectures import *
 # Device configuration
 # Always check first if GPU is avaialble
-device_used = torch.device('cuda:3' if torch.cuda.is_available() else 'cpu')
+device_used = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 # If CUDA is not avaialbe, print message that CPU will be used
-if device_used != torch.device('cuda:3'):
+if device_used != torch.device('cuda:0'):
     print(f'CUDA not available, have to use {device_used}')
 
 start_time = time.time()
@@ -46,9 +47,9 @@ aggregation_mechanism = aggreg_schemes[1]
 
 # Topology used from a filename
 # Create directory for the network data. Will include accuracy sub-directories
-dir_networks = '/home/code/Purdue-Research-Programs-Notes/data/full_decentralized/network_topologies'
-dir_data = '/home/code/Purdue-Research-Programs-Notes/data/full_decentralized/%s/' % dataset_name
-graph_type = ('ER', 'dir_scale_free', 'dir_geom', 'k_out', 'pref_attach')
+dir_networks = '/root/programming/Purdue-Research-Programs-Notes/data/full_decentralized/network_topologies'
+dir_data = '/root/programming/Purdue-Research-Programs-Notes/data/full_decentralized/%s/' % dataset_name
+graph_type = ('ER', 'dir_scale_free', 'dir_geom', 'k_out', 'pref_attach', 'SNAP_Cisco')
 graph_type_used = graph_type[0]
 # This is the source for network topology
 
@@ -56,7 +57,7 @@ graph_type_used = graph_type[0]
 designated_clients = 20
 # ER
 if graph_type_used == 'ER':
-    prob_conn = 3
+    prob_conn = 5
     data_dir_name = dir_data + '%s_graph_c_%d_p_0%d/' % (graph_type_used, designated_clients, prob_conn)
     network_topology = '%s_graph_c_%d_p_0%d_seed_%d.txt' % (graph_type_used, designated_clients, prob_conn, seed)
 # DIR GEOM
@@ -73,10 +74,29 @@ elif graph_type_used == 'k_out':
     network_topology = '%s_graph_c_%d_k_%d_seed_%d.txt' % (graph_type_used, designated_clients, k_used, seed)
 # PREF_ATTACH
 elif graph_type_used == 'pref_attach':
-    pref_attach_configs = ('sparse', 'medium', 'dense', 'dense_1', 'dense_2', 'dense_3', 'dense_4')
-    config_used = 6
+    pref_attach_configs = ('sparse', 'medium', 'dense')
+    config_used = 0
     data_dir_name = dir_data + '%s_graph_c_%d_type_%s/' % (graph_type_used, designated_clients, pref_attach_configs[config_used])
     network_topology = '%s_graph_c_%d_type_%s_seed_%d.txt' % (graph_type_used, designated_clients, pref_attach_configs[config_used], seed)
+# SNAP
+elif graph_type_used == 'SNAP_Cisco':
+    client_val_used = 0
+    seed_graph = 0
+    client_vals = []
+    graph_types = {}
+    # Iterate over all files 
+    for filename in os.listdir(dir_networks):
+        # Check if the filename starts with 'SNAP_Cisco' and ends with '_seed_x.txt'
+        if filename.startswith('SNAP_Cisco') and filename.endswith('_seed_%d.txt' % seed_graph):
+            # Use a regex to find the number after 'c_'
+            match = re.search(r'c_(\d+)_type_(g\d+)_', filename)
+            if match:
+                # If a match was found, add the number to the list
+                client_vals.append(int(match.group(1)))
+                graph_types[int(match.group(1))] = match.group(2)
+    client_vals = sorted(client_vals)
+    data_dir_name = dir_data + '%s_c_%d_type_%s_seed_%d/' % (graph_type_used, client_vals[client_val_used], graph_types[client_vals[client_val_used]], seed_graph)
+    network_topology = '%s_c_%d_type_%s_seed_%d.txt' % (graph_type_used, client_vals[client_val_used], graph_types[client_vals[client_val_used]], seed)
 
 ##################
 network_topology_filepath = os.path.join(dir_networks, network_topology)
