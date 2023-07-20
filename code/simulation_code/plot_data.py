@@ -356,6 +356,9 @@ def make_graphs():
 def calc_2_set_similarity(list_1, list_2):
     set_1 = set(list_1)
     set_2 = set(list_2)
+    if len(set_1) == 0 or len(set_2) == 0:
+        return 0
+
     return 1 - (len(set_1 - set_2) + len(set_2 - set_1)) / (2 * len(set_1))
 
 def calc_inter_set_similarity(list_cents):
@@ -380,16 +383,82 @@ def score_graph_cent_variance(graph_name, num_attackers = 0):
     dir_graphs = '../../data/full_decentralized/network_topologies/'
     for root, dirs, files in os.walk(dir_graphs):
         for fname in files:
-            if fname.startswith(graph_name):
+            if fname.startswith(graph_name) and '-checkpoint' not in fname:
                 adj_matrix = np.loadtxt(root + fname)
                 centrality_data = sort_by_centrality(calc_centralities(len(adj_matrix[0]), create_graph(adj_matrix)))
                 adv_centralities = [centrality_data[i][0:num_attackers] for i in range(len(centrality_data))]
                 adv_cent_similarity_arr.append(calc_inter_set_similarity(adv_centralities))
-    print(np.mean(adv_cent_similarity_arr))
-    print(np.var(adv_cent_similarity_arr))
+    return np.mean(adv_cent_similarity_arr), np.var(adv_cent_similarity_arr)
+
+def score_graph_types_variances(dataset_name, adv_percentage = 0.2):
+    data_dir = '../../data/full_decentralized/%s/' % dataset_name
+
+    # Get all graph types
+    graph_tyes = sorted([d for d in os.listdir(data_dir) if os.path.isdir(os.path.join(data_dir, d))])
+
+    # Get all similarity results
+    sim_data = []
+    for graph_type in graph_tyes:
+        # Get the client number
+        n_clients = re.search('_c_(\d+)_', graph_type)
+        if n_clients is not None:
+            n_clients = float(n_clients.group(1))
+            n_advs = int(n_clients * adv_percentage)
+
+            # Run the function and get the two floats
+            mean_similarity, var_similarity = score_graph_cent_variance(graph_type, n_advs)
+
+            # Save the results
+            sim_data.append([graph_type, mean_similarity, var_similarity])
+
+    # Write the results to a .txt file
+    with open('../../data/full_decentralized/network_cent_sim/cent_sim_adv_0%d_dset_%s.txt' % (int(adv_percentage * 10), dataset_name), 'w', newline = '') as cent_similarity_file:
+        writer = csv.writer(cent_similarity_file, delimiter = ';')
+        writer.writerows(sim_data)
+
+def make_similarity_graphs(dataset_name):
+    data_dir = '../../data/full_decentralized/network_cent_sim/'
+    result_dir = '../../data/full_decentralized/network_cent_sim_plots/'
+
+    cent_files = [_ for _ in os.listdir(data_dir) if os.path.isfile(os.path.join(data_dir, _))]
+    cent_files = sorted([_ for _ in cent_files if dataset_name in _])
+    last_cent_file = cent_files.pop(1)
+    cent_files.append(last_cent_file)
+    print(cent_files)
+    cent_sim_data = {}
+
+    for cent_file in cent_files:
+        print(cent_file)
+        with open(os.path.join(data_dir, cent_file), 'r') as cent_data_file:
+            for graph_cent_sim_data in cent_data_file:
+                graph_type, mean_similarity, var_similarity = graph_cent_sim_data.strip().split(';')
+                mean_similarity = float(mean_similarity)
+                var_similarity = float(var_similarity)
+
+                if graph_type not in cent_sim_data:
+                    cent_sim_data[graph_type] = {'mean_sim': [], 'var_sim': []}
+
+                cent_sim_data[graph_type]['mean_sim'].append(mean_similarity)
+                cent_sim_data[graph_type]['var_sim'].append(var_similarity)
+
+    for graph_type, graph_sim_data in cent_sim_data.items():
+        plt.figure()
+        plt.errorbar([float(i) / 10 for i in range(len(graph_sim_data['mean_sim']))], graph_sim_data['mean_sim'], yerr = graph_sim_data['var_sim'], fmt = '-o')
+
+        plt.title(graph_type)
+        plt.xlabel('adversarial percentage')
+        plt.ylabel('normalized centralities similarity score')
+        plt.ylim(0, 1)
+        plt.savefig(result_dir + '%s_%s.png' % (graph_type, dataset_name))
+
+        plt.close()
+
 
 if __name__ == '__main__':
     # make_graphs()    
-    score_graph_cent_variance('dir_geom_graph_c_20_type_2d_close_nodes', 4)
+    # for i in range(0, 11):
+    #     score_graph_types_variances('fmnist', float(i) / 10)
+    
+    make_similarity_graphs('fmnist')
     # plot_acc_aver('ER_graph_c_20_p_09', 'fmnist')
 
