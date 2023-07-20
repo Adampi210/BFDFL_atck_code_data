@@ -150,13 +150,14 @@ def plot_acc_diff(dataset_name = 'fmnist'):
 # Plot accuracy averaged over the specified data
 def plot_acc_aver(graph_type_used = '', dataset_name = 'fmnist'):
     # Setup
-    dir_graphs = '/root/programming/Purdue-Research-Programs-Notes/data/plots/'
-    dir_data = '/root/programming/Purdue-Research-Programs-Notes/data/full_decentralized/%s/' % dataset_name
+
+    dir_graphs = '../../data/plots/'
+    dir_data = '../../data/full_decentralized/%s/' % dataset_name
     dir_data += graph_type_used + '/'
     centralities = ('none', 'in_deg_centrality', 'out_deg_centrality', 'closeness_centrality', 'betweeness_centrality', 'eigenvector_centrality')
     cent_data = {cent:[] for cent in centralities}
     aver_cent_data = {cent:[] for cent in centralities}
-    seed_range = 20
+    seed_range = 50
     acc_data = []
     root_dir = ''
     # Get distinct settings
@@ -210,14 +211,12 @@ def plot_acc_aver(graph_type_used = '', dataset_name = 'fmnist'):
 
             plt.grid(True)
             plt.legend()
-            plt.savefig(dir_graphs + graph_type_used + '_' + acc_fname + 'iid_type_%s.png' % iid_type)
+            plt.savefig(dir_graphs + graph_type_used + '_' + acc_fname + '_iid_type_%s.png' % iid_type)
 
             # Reset values
             cent_data = {cent:[] for cent in cent_data.keys()}
             aver_cent_data = {cent:[] for cent in cent_data.keys()}
-
-                    
-
+        
 # Used to generate ER graphs
 def gen_ER_graph(n_clients, prob_conn = 0.5, graph_name = '', seed = 0):
     dir_networks = '/home/code/Purdue-Research-Programs-Notes/data/full_decentralized/network_topologies/'
@@ -353,9 +352,44 @@ def make_graphs():
                     graph_name = 'pref_attach_graph_c_20_type_%s_seed_%d.txt' % (graph_type, seed)
                     gen_pref_attach_graph(20, graph_type = graph_type, graph_name = graph_name, seed = seed)
         '''
+
+def calc_2_set_similarity(list_1, list_2):
+    set_1 = set(list_1)
+    set_2 = set(list_2)
+    return 1 - (len(set_1 - set_2) + len(set_2 - set_1)) / (2 * len(set_1))
+
+def calc_inter_set_similarity(list_cents):
+    sim_score_dict = {i / 10 : 0 for i in range(11)}
+    for i, cent_1_list in enumerate(list_cents):
+        temp_cent_sim_1_2 = []
+        for j, cent_2_list in enumerate(list_cents):
+            if i != j:
+                temp_cent_sim_1_2.append(calc_2_set_similarity(cent_1_list, cent_2_list))
+        aver_cent_1_sim = np.mean(temp_cent_sim_1_2) # TODO fix this to place more emphasis on similar nodes
+        sim_score_dict[float(int(10 * aver_cent_1_sim) / 10)] += 1
+
+
+    weighted_sim = 0
+    for weight, sim_num in sim_score_dict.items():
+        weighted_sim += weight * sim_num
+    return weighted_sim / len(list_cents)
+    # return similarity / norm_param
+
+def score_graph_cent_variance(graph_name, num_attackers = 0):
+    adv_cent_similarity_arr = []
+    dir_graphs = '../../data/full_decentralized/network_topologies/'
+    for root, dirs, files in os.walk(dir_graphs):
+        for fname in files:
+            if fname.startswith(graph_name):
+                adj_matrix = np.loadtxt(root + fname)
+                centrality_data = sort_by_centrality(calc_centralities(len(adj_matrix[0]), create_graph(adj_matrix)))
+                adv_centralities = [centrality_data[i][0:num_attackers] for i in range(len(centrality_data))]
+                adv_cent_similarity_arr.append(calc_inter_set_similarity(adv_centralities))
+    print(np.mean(adv_cent_similarity_arr))
+    print(np.var(adv_cent_similarity_arr))
+
 if __name__ == '__main__':
-    
-    make_graphs()
-    
-    # plot_acc_aver('pref_attach_graph_c_20_type_dense_1', 'fmnist')
+    # make_graphs()    
+    score_graph_cent_variance('dir_geom_graph_c_20_type_2d_close_nodes', 4)
+    # plot_acc_aver('ER_graph_c_20_p_09', 'fmnist')
 
