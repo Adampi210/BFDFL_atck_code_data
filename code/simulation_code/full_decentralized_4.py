@@ -34,7 +34,7 @@ if device_used != torch.device('cuda:4'):
 
 start_time = time.time()
 # Set hyperparameters
-seed = 17 # Seed for PRNGs 
+seed = 21 # Seed for PRNGs 
 random.seed(seed)
 torch.manual_seed(seed)
 np.random.seed(seed)
@@ -50,7 +50,7 @@ aggregation_mechanism = aggreg_schemes[1]
 dir_networks = '../../data/full_decentralized/network_topologies'
 dir_data = '../../data/full_decentralized/%s/' % dataset_name
 graph_type = ('ER', 'dir_scale_free', 'dir_geom', 'k_out', 'pref_attach', 'SNAP_Cisco')
-graph_type_used = graph_type[2]
+graph_type_used = graph_type[3]
 # This is the source for network topology
 
 # ADJUSTABLE #####
@@ -68,7 +68,7 @@ elif graph_type_used == 'dir_geom':
     network_topology = '%s_graph_c_%d_type_%s_seed_%d.txt' % (graph_type_used, designated_clients, geo_graph_configs[config_used], seed)
 # K-OUT
 elif graph_type_used == 'k_out':
-    k_dec = 0.25
+    k_dec = 0.1
     k_used = int(designated_clients * k_dec)
     data_dir_name = dir_data + '%s_graph_c_%d_k_%d/' % (graph_type_used, designated_clients, k_used)
     network_topology = '%s_graph_c_%d_k_%d_seed_%d.txt' % (graph_type_used, designated_clients, k_used, seed)
@@ -147,7 +147,7 @@ nb_iter = 15   # Number of epochs for PGD attack
 
 # Define centrality measures and directories
 centralities = ('none', 'in_deg_centrality', 'out_deg_centrality', 'closeness_centrality', 'betweeness_centrality', 'eigenvector_centrality')
-cent_measure_used = 4
+cent_measure_used = 0
 
 # Split the data for the specified number of clients and servers
 if iid_type == 'iid':
