@@ -34,7 +34,6 @@ k_out_graph_c_20_k_10;1.0;0.0
 k_out_graph_c_20_k_15;1.0;0.0
 k_out_graph_c_20_k_5;1.0;0.0
 pref_attach_graph_c_20_type_dense;1.0;0.0
-pref_attach_graph_c_20_type_dense_1;1.0;0.0
 pref_attach_graph_c_20_type_dense_2;1.0;0.0
 pref_attach_graph_c_20_type_dense_4;1.0;0.0
 pref_attach_graph_c_20_type_medium;1.0;0.0
