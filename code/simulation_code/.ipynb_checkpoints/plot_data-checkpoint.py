@@ -160,6 +160,8 @@ def plot_acc_aver(graph_type_used = '', dataset_name = 'fmnist'):
     seed_range = 50
     acc_data = []
     root_dir = ''
+    cent_name_dir = {'none':'No Attack', 'in_deg_centrality': 'In-Degree Centrality Based Attack', 'out_deg_centrality': 'Out-Degree Centrality Based Attack', 'closeness_centrality' :'Closeness Centrality Based Attack', 'betweeness_centrality' :'Betweenness Centrality Based Attack', 'eigenvector_centrality': 'Eigenvector Centrality Based Attack'}
+
     # Get distinct settings
     acc_diff_fnames = set()
     for root, dirs, files in os.walk(dir_data):
@@ -199,27 +201,130 @@ def plot_acc_aver(graph_type_used = '', dataset_name = 'fmnist'):
                     aver_acc.append(sum(cent_diff_seeds) / len(cent_diff_seeds))
                 aver_cent_data[cent] = aver_acc
 
+            if 'ER' in graph_type_used:
+                graph_type_name = 'ER'
+            elif 'pref_attach' in graph_type_used:
+                graph_type_name = 'Preferential Attachment'
+            elif 'dir_geom' in graph_type_used:
+                graph_type_name = 'Directed Geometric'
+            elif 'out' in graph_type_used:
+                graph_type_name = 'K-Out'
+            elif 'SNAP' in graph_type_used:
+                graph_type_name = 'SNAP Dataset'
+
             # Plot the accuracies
             plt.figure(figsize=(10, 6))
             if any([x == None for x in aver_cent_data.values()]):
                 continue
             for cent, acc_aver in aver_cent_data.items():
-                plt.plot(range(len(acc_aver)), acc_aver, label = cent)
-
+                plt.plot(range(len(acc_aver)), acc_aver, label = cent_name_dir[cent])
+            plt.title('Model Accuracy over Epochs under Different Attacks \n for %s Graph' % (graph_type_name), fontsize=16)
             plt.xlabel('Epoch') 
             plt.ylabel('Accuracy') 
-
+            plt.minorticks_on()
             plt.grid(True)
+            plt.ylim(0.1, plt.ylim()[-1])
+            plt.xlim(0, plt.xlim()[-1])
+            plt.vlines(x = 25, ymin = 0, ymax = plt.ylim()[1], colors = 'black', linestyles = 'dashed', label = 'Attack starts')
             plt.legend()
             plt.savefig(dir_graphs + graph_type_used + '_' + acc_fname + '_iid_type_%s.png' % iid_type)
 
             # Reset values
             cent_data = {cent:[] for cent in cent_data.keys()}
             aver_cent_data = {cent:[] for cent in cent_data.keys()}
+
+# Plot accuracy averaged over the specified data
+def plot_acc_aver_snap(graph_type_used = '', dataset_name = 'fmnist'):
+    # Setup
+    if 'SNAP' not in graph_type_used:
+        print('This can only be used with SNAP dataset graphs!')
+        return
+    dir_graphs = '../../data/plots/'
+    dir_data = '../../data/full_decentralized/%s/' % dataset_name
+    dir_data += graph_type_used + '/'
+    centralities = ('none', 'in_deg_centrality', 'out_deg_centrality', 'closeness_centrality', 'betweeness_centrality', 'eigenvector_centrality')
+    cent_data = {cent:[] for cent in centralities}
+    aver_cent_data = {cent:[] for cent in centralities}
+    seed_range = 1
+    acc_data = []
+    root_dir = ''
+    cent_name_dir = {'none':'No Attack', 'in_deg_centrality': 'In-Degree Centrality Based Attack', 'out_deg_centrality': 'Out-Degree Centrality Based Attack', 'closeness_centrality' :'Closeness Centrality Based Attack', 'betweeness_centrality' :'Betweenness Centrality Based Attack', 'eigenvector_centrality': 'Eigenvector Centrality Based Attack'}
+
+    # Get distinct settings
+    acc_diff_fnames = set()
+    for root, dirs, files in os.walk(dir_data):
+        for fname in files:
+            if fname.startswith('acc_'):
+                fname_parts = re.split('_seed', fname)
+                if '300' not in fname_parts[0]:
+                    if '.png' not in fname_parts[0]:
+                        acc_diff_fnames.add(fname_parts[0])
+        root_dir = root        
+    
+    # Create averaged dictionary data and plot
+    for acc_fname in acc_diff_fnames:
+        for iid_type in ('iid', 'non_iid'):
+            for cent in cent_data.keys():
+                for seed in range(seed_range):
+                    acc_data_fname = acc_fname + '_seed_%d_iid_type_%s_cent_%s.csv' % (seed, iid_type, cent)
+                    acc_data = []
+                    with open(root_dir + acc_data_fname, 'r') as acc_data_file:
+                        reader = csv.reader(acc_data_file)
+                        i = 0
+                        for row in reader:
+                            if i == 0:
+                                attacked_nodes = np.fromstring(row[1].strip("[]"), sep = ' ')
+                                attacked_nodes = [int(_) for _ in attacked_nodes]
+                            else:
+                                acc = ast.literal_eval(row[1])
+                                acc_honest = [_ for i, _ in enumerate(acc) if i not in attacked_nodes]
+                                acc_honest = sum(acc_honest) / len(acc_honest)
+                                acc_data.append(acc_honest)
+                            i += 1
+                    cent_data[cent].append(acc_data)
+            # Calc averaged accuracies over different seeds
+            for cent in centralities:
+                aver_acc = []
+                for cent_diff_seeds in zip(*cent_data[cent]):
+                    aver_acc.append(sum(cent_diff_seeds) / len(cent_diff_seeds))
+                aver_cent_data[cent] = aver_acc
+
+            if 'ER' in graph_type_used:
+                graph_type_name = 'ER'
+            elif 'pref_attach' in graph_type_used:
+                graph_type_name = 'Preferential Attachment'
+            elif 'dir_geom' in graph_type_used:
+                graph_type_name = 'Directed Geometric'
+            elif 'out' in graph_type_used:
+                graph_type_name = 'K-Out'
+            elif 'SNAP' in graph_type_used:
+                graph_type_name = 'SNAP Dataset'
+
+            # Plot the accuracies
+            plt.figure(figsize=(10, 6))
+            if any([x == None for x in aver_cent_data.values()]):
+                continue
+            for cent, acc_aver in aver_cent_data.items():
+                plt.plot(range(len(acc_aver)), acc_aver, label = cent_name_dir[cent])
+            plt.title('Model Accuracy over Epochs under Different Attacks \n for %s Graph' % (graph_type_name), fontsize=16)
+            plt.xlabel('Epoch') 
+            plt.ylabel('Accuracy') 
+            plt.minorticks_on()
+            plt.grid(True)
+            plt.ylim(0.1, plt.ylim()[-1])
+            plt.xlim(0, plt.xlim()[-1])
+            plt.legend()
+            plt.vlines(x=25, ymin=0, ymax=plt.ylim()[1], colors='black', linestyles='dashed', label='Attack starts')
+            plt.savefig(dir_graphs + graph_type_used + '_' + acc_fname + '_iid_type_%s.png' % iid_type)
+
+            # Reset values
+            cent_data = {cent:[] for cent in cent_data.keys()}
+            aver_cent_data = {cent:[] for cent in cent_data.keys()}
         
+
 # Used to generate ER graphs
 def gen_ER_graph(n_clients, prob_conn = 0.5, graph_name = '', seed = 0):
-    dir_networks = '/home/code/Purdue-Research-Programs-Notes/data/full_decentralized/network_topologies/'
+    dir_networks = '../../data/full_decentralized/network_topologies/'
     graph = None
     is_strongly_connected = False
     while not is_strongly_connected:
@@ -239,7 +344,7 @@ def gen_ER_graph(n_clients, prob_conn = 0.5, graph_name = '', seed = 0):
 
 # Generate scale free graphs, cannot find a way to make strongly connected
 def gen_dir_scale_free_graph(n_clients, type_graph = 'default', graph_name = '', seed = 0):
-    dir_networks = '/home/code/Purdue-Research-Programs-Notes/data/full_decentralized/network_topologies/'
+    dir_networks = '../../data/full_decentralized/network_topologies/'
     scale_free_configs = {
         "default": [0.41, 0.54, 0.05, 0.2, 0],
         "in_deg_focus": [0.6, 0.2, 0.2, 0.3, 0],
@@ -260,7 +365,7 @@ def gen_dir_scale_free_graph(n_clients, type_graph = 'default', graph_name = '',
 
 # Used to generate geometric graphs
 def gen_dir_geom_graph(n_clients, graph_type = '2d_close_nodes', graph_name = '', seed = 0):
-    dir_networks = '/home/code/Purdue-Research-Programs-Notes/full_decentralized/network_topologies/'
+    dir_networks = '../../data/full_decentralized/network_topologies/'
     geo_graph_configs = {
         '2d_very_close_nodes': [2, 0.5],
         '2d_close_nodes': [2, 0.3],
@@ -281,7 +386,7 @@ def gen_dir_geom_graph(n_clients, graph_type = '2d_close_nodes', graph_name = ''
 
 # Used to generate k-out graphs
 def gen_k_out_graph(n_clients, k_val_percentage = 0.25, graph_name = '', seed = 0):
-    dir_networks = '/home/code/Purdue-Research-Programs-Notes/data/full_decentralized/network_topologies/'
+    dir_networks = '../../data/full_decentralized/network_topologies/'
     k_out_val = int(k_val_percentage * n_clients)
     print(k_out_val)
     graph = None    
@@ -297,7 +402,7 @@ def gen_k_out_graph(n_clients, k_val_percentage = 0.25, graph_name = '', seed = 
 
 # Used to generate preferencial attachment graph
 def gen_pref_attach_graph(n_clients, graph_type = 'sparse', graph_name = '', seed = 0):
-    dir_networks = '/home/code/Purdue-Research-Programs-Notes/data/full_decentralized/network_topologies/'
+    dir_networks = '../../data/full_decentralized/network_topologies/'
     pref_attach_configs = {
         'sparse': 1,
         'medium': 2,
@@ -319,43 +424,45 @@ def gen_pref_attach_graph(n_clients, graph_type = 'sparse', graph_name = '', see
     return graph, adj_matrix
 
 def make_graphs():
-    dir_networks = '/home/code/Purdue-Research-Programs-Notes/data/full_decentralized/network_topologies/'
+    dir_networks = '../../data/full_decentralized/network_topologies/'
     graph_type = ('ER', 'dir_scale_free', 'dir_geom', 'k_out', 'pref_attach')
+    # graph_type = ('k_out',)
+    n_clients = 500
+    seed_range = 5
     for graph in graph_type:
+        print(graph)
         if graph == 'ER':
             for p in (0.1, 0.3, 0.5, 0.7, 0.9):
-                for seed in range(50):
-                    graph_name = 'ER_graph_c_20_p_0%d_seed_%d.txt' % (int(p * 10), seed)
-                    gen_ER_graph(20, p, graph_name, seed)
+                for seed in range(seed_range):
+                    graph_name = 'ER_graph_c_%d_p_0%d_seed_%d.txt' % (n_clients, int(p * 10), seed)
+                    gen_ER_graph(n_clients, p, graph_name, seed)
         elif graph == 'dir_scale_free':
             continue
         elif graph == 'dir_geom':
             for geo_graph_config in ('2d_very_close_nodes', '2d_close_nodes', '2d_far_nodes'):
                 print(geo_graph_config)
-                for seed in range(50):
+                for seed in range(seed_range):
                     print(seed)
-                    graph_name = 'dir_geom_graph_c_20_type_%s_seed_%d.txt' % (geo_graph_config, seed)
-                    gen_dir_geom_graph(20, graph_type = geo_graph_config, graph_name = graph_name, seed = seed)
+                    graph_name = 'dir_geom_graph_c_%d_type_%s_seed_%d.txt' % (n_clients, geo_graph_config, seed)
+                    gen_dir_geom_graph(n_clients, graph_type = geo_graph_config, graph_name = graph_name, seed = seed)
         elif graph == 'k_out':
-            continue
-            '''
             for k_dec in (0.25, 0.50, 0.75):
-                for seed in range(20):
-                    graph_name = 'k_out_graph_c_20_k_%d_seed_%d.txt' % (int(20 * k_dec), seed)
+                for seed in range(seed_range):
+                    graph_name = 'k_out_graph_c_%d_k_%d_seed_%d.txt' % (n_clients, int(n_clients * k_dec), seed)
                     print(graph_name)
-                    gen_k_out_graph(20, k_val_percentage = k_dec, graph_name = graph_name, seed = seed)    
-            '''
-        '''
+                    gen_k_out_graph(n_clients, k_val_percentage = k_dec, graph_name = graph_name, seed = seed)    
         elif graph == 'pref_attach':
-            for graph_type in ('sparse', 'medium', 'dense'):
-                for seed in range(20):
-                    graph_name = 'pref_attach_graph_c_20_type_%s_seed_%d.txt' % (graph_type, seed)
-                    gen_pref_attach_graph(20, graph_type = graph_type, graph_name = graph_name, seed = seed)
-        '''
+            for graph_type in ('dense', 'dense_2', 'dense_4'):
+                for seed in range(seed_range):
+                    graph_name = 'pref_attach_graph_c_%d_type_%s_seed_%d.txt' % (n_clients, graph_type, seed)
+                    gen_pref_attach_graph(n_clients, graph_type = graph_type, graph_name = graph_name, seed = seed)
 
 def calc_2_set_similarity(list_1, list_2):
     set_1 = set(list_1)
     set_2 = set(list_2)
+    if len(set_1) == 0 or len(set_2) == 0:
+        return 0
+
     return 1 - (len(set_1 - set_2) + len(set_2 - set_1)) / (2 * len(set_1))
 
 def calc_inter_set_similarity(list_cents):
@@ -375,21 +482,261 @@ def calc_inter_set_similarity(list_cents):
     return weighted_sim / len(list_cents)
     # return similarity / norm_param
 
-def score_graph_cent_variance(graph_name, num_attackers = 0):
+def score_graph_centralities_similarity(graph_name, num_attackers = 0):
     adv_cent_similarity_arr = []
     dir_graphs = '../../data/full_decentralized/network_topologies/'
     for root, dirs, files in os.walk(dir_graphs):
         for fname in files:
-            if fname.startswith(graph_name):
+            if fname.startswith(graph_name) and '-checkpoint' not in fname:
                 adj_matrix = np.loadtxt(root + fname)
                 centrality_data = sort_by_centrality(calc_centralities(len(adj_matrix[0]), create_graph(adj_matrix)))
                 adv_centralities = [centrality_data[i][0:num_attackers] for i in range(len(centrality_data))]
                 adv_cent_similarity_arr.append(calc_inter_set_similarity(adv_centralities))
-    print(np.mean(adv_cent_similarity_arr))
-    print(np.var(adv_cent_similarity_arr))
+    return np.mean(adv_cent_similarity_arr), np.var(adv_cent_similarity_arr)
+
+def score_graph_types_centralities_similarity(dataset_name, adv_percentage = 0.2):
+    data_dir = '../../data/full_decentralized/%s/' % dataset_name
+
+    # Get all graph types
+    graph_types = sorted([d for d in os.listdir(data_dir) if os.path.isdir(os.path.join(data_dir, d))])
+
+    # Get all similarity results
+    sim_data = []
+    for graph_type in graph_types:
+        # Get the client number
+        n_clients = re.search('_c_(\d+)_', graph_type)
+        if n_clients is not None:
+            n_clients = float(n_clients.group(1))
+            n_advs = int(n_clients * adv_percentage)
+
+            # Run the function and get the two floats
+            mean_similarity, var_similarity = score_graph_centralities_similarity(graph_type, n_advs)
+
+            # Save the results
+            sim_data.append([graph_type, mean_similarity, var_similarity])
+
+    # Write the results to a .txt file
+    with open('../../data/full_decentralized/network_cent_sim/cent_sim_adv_0%d_dset_%s.txt' % (int(adv_percentage * 10), dataset_name), 'w', newline = '') as cent_similarity_file:
+        writer = csv.writer(cent_similarity_file, delimiter = ';')
+        writer.writerows(sim_data)
+
+def make_similarity_graphs(dataset_name):
+    data_dir = '../../data/full_decentralized/network_cent_sim/'
+    result_dir = '../../data/full_decentralized/network_cent_sim_plots/'
+    graph_types = ('ER', 'dir_scale_free', 'dir_geom', 'k_out', 'pref_attach', 'SNAP_Cisco')
+
+    cent_files = [_ for _ in os.listdir(data_dir) if os.path.isfile(os.path.join(data_dir, _))]
+    cent_files = sorted([_ for _ in cent_files if dataset_name in _])
+    last_cent_file = cent_files.pop(1)
+    cent_files.append(last_cent_file)
+
+    cent_sim_data = {}
+    cent_files.pop(0)
+    snap_data = {}
+    # Calculate averaged data
+    for cent_file in cent_files:
+        with open(os.path.join(data_dir, cent_file), 'r') as cent_data_file:
+            for graph_cent_sim_data in cent_data_file:
+                graph_type, mean_similarity, var_similarity = graph_cent_sim_data.strip().split(';')
+                mean_similarity = float(mean_similarity)
+                var_similarity = float(var_similarity)
+
+                if 'SNAP' in graph_type:
+                    if graph_type not in snap_data:
+                        snap_data[graph_type] = {'mean_sim': [], 'var_sim': []}
+                    snap_data[graph_type]['mean_sim'].append(mean_similarity)
+                    snap_data[graph_type]['var_sim'].append(var_similarity)
+
+                elif 'ER' in graph_type:
+                    if 'ER' not in cent_sim_data:
+                        cent_sim_data['ER'] = {'mean_sim': {x:[] for x in (0.1, 0.3, 0.5, 0.7, 0.9)}, 'var_sim': {x:[] for x in (0.1, 0.3, 0.5, 0.7, 0.9)}}
+                    cent_sim_data['ER']['mean_sim'][float(graph_type[-1]) / 10].append(mean_similarity)
+                    cent_sim_data['ER']['var_sim'][float(graph_type[-1]) / 10].append(var_similarity)
+                elif 'dir_geom' in graph_type:
+                    if 'dir_geom' not in cent_sim_data:
+                        cent_sim_data['dir_geom'] = {'mean_sim': {x:[] for x in ('2d_very_close_nodes', '2d_close_nodes', '2d_far_nodes')}, 'var_sim': {x:[] for x in ('2d_very_close_nodes', '2d_close_nodes', '2d_far_nodes')}}
+                    match = re.search(r'type_(2d.*nodes)', graph_type)
+                    cent_sim_data['dir_geom']['mean_sim'][match.group(1)].append(mean_similarity)
+                    cent_sim_data['dir_geom']['var_sim'][match.group(1)].append(var_similarity)
+                elif 'pref_attach' in graph_type:
+                    if 'pref_attach' not in cent_sim_data:
+                        cent_sim_data['pref_attach'] = {'mean_sim': {x:[] for x in ('dense', 'dense_2', 'dense_4')}, 'var_sim': {x:[] for x in ('dense', 'dense_2', 'dense_4')}}
+                    match = re.search(r'type_(dense(?:_2|_4)?)', graph_type)
+                    if match is not None:
+                        if match.group(1) in ('dense', 'dense_2', 'dense_4'):
+                            cent_sim_data['pref_attach']['mean_sim'][match.group(1)].append(mean_similarity)
+                            cent_sim_data['pref_attach']['var_sim'][match.group(1)].append(var_similarity)
+                elif 'k_out' in graph_type:
+                    if 'k_out' not in cent_sim_data:
+                        cent_sim_data['k_out'] = {'mean_sim': {x:[] for x in (2, 5, 10, 15)}, 'var_sim': {x:[] for x in (2, 5, 10, 15)}}
+                    match = re.search(r'_k_(\d+)', graph_type)
+                    cent_sim_data['k_out']['mean_sim'][int(match.group(1))].append(mean_similarity)
+                    cent_sim_data['k_out']['var_sim'][int(match.group(1))].append(var_similarity)
+
+    # Average SNAP data and add
+    cent_sim_data['SNAP'] = {'mean_sim': [], 'var_sim': []}
+    temp_combined_snap = []
+    for snap_graph in snap_data.keys():
+        temp_combined_snap.append(snap_data[snap_graph]['mean_sim'])
+    for adv_perc_sim_data_snap in zip(*temp_combined_snap):
+        snap_mean, snap_var = np.mean(adv_perc_sim_data_snap), np.var(adv_perc_sim_data_snap)
+        cent_sim_data['SNAP']['mean_sim'].append(snap_mean)
+        cent_sim_data['SNAP']['var_sim'].append(snap_var)
+
+    # Plot
+    for graph_type, graph_sim_data in cent_sim_data.items():
+        if 'SNAP' in graph_type:
+            plt.figure()
+            plt.errorbar([float(i) / 10 for i in range(1, len(graph_sim_data['mean_sim']) + 1)], graph_sim_data['mean_sim'], yerr = graph_sim_data['var_sim'], fmt = '-o')
+
+            plt.title('Centralities Similarity Score for \n SNAP Dataset Graph', fontsize = 16, fontweight = 'bold')
+            plt.xlabel('Adversarial Fraction', fontsize = 14)
+            plt.ylabel('Normalized Centralities Similarity Score', fontsize = 14)
+            plt.ylim(0, 1)
+            plt.grid(True)  # Add a grid to the plot
+
+            # Increase the size and weight of the axis tick labels
+            plt.xticks(fontsize = 12, fontweight = 'bold')
+            plt.yticks(fontsize = 12, fontweight = 'bold')
+
+            plt.tight_layout()  # Ensure that all elements of the plot fit within the figure area
+            plt.savefig(result_dir + '%s_%s.png' % (graph_type, dataset_name), dpi = 300)  # Save the figure with a high resolution
+            plt.close()
+            plt.close()
+        elif 'ER' in graph_type:
+            plt.figure()
+
+            # Iterate over the keys and values in the 'mean_sim' dictionary
+            for setting, mean_sim_values in graph_sim_data['mean_sim'].items():
+                # Get the corresponding variance values
+                var_sim_values = graph_sim_data['var_sim'][setting]
+                
+                # Plot the mean values with the variance as error bars
+                plt.errorbar([float(i) / 10 for i in range(1, len(mean_sim_values) + 1)], mean_sim_values, yerr = var_sim_values, fmt = '-o', label = f'p = {setting}')
+
+            plt.title('Centralities Similarity Score for ER Graphs', fontsize = 16, fontweight = 'bold')
+            plt.xlabel('Adversarial Fraction', fontsize = 14)
+            plt.ylabel('Normalized Centralities Similarity Score', fontsize = 14)
+            plt.ylim(0, 1)
+            plt.grid(True)  # Add a grid to the plot
+            plt.legend(fontsize = 12)  # Add a legend to the plot
+
+            # Increase the size and weight of the axis tick labels
+            plt.xticks(fontsize = 12, fontweight = 'bold')
+            plt.yticks(fontsize = 12, fontweight = 'bold')
+
+            plt.tight_layout()  # Ensure that all elements of the plot fit within the figure area
+            plt.savefig(result_dir + '%s_%s.png' % (graph_type, dataset_name), dpi = 300)  # Save the figure with a high resolution
+            plt.close()
+        elif 'pref_attach' in graph_type:
+            plt.figure()
+
+            # Iterate over the keys and values in the 'mean_sim' dictionary
+            for setting, mean_sim_values in graph_sim_data['mean_sim'].items():
+                # Get the corresponding variance values
+                var_sim_values = graph_sim_data['var_sim'][setting]
+                # Plot the mean values with the variance as error bars
+                plt.errorbar([float(i) / 10 for i in range(1, len(mean_sim_values) + 1)], mean_sim_values, yerr = var_sim_values, fmt = '-o', label = f'type: {setting}')
+
+            plt.title('Centralities Similarity Score for \n Preferential Attachment Graphs', fontsize = 16, fontweight = 'bold')
+            plt.xlabel('Adversarial Fraction', fontsize = 14)
+            plt.ylabel('Normalized Centralities Similarity Score', fontsize = 14)
+            plt.ylim(0, 1)
+            plt.grid(True)  # Add a grid to the plot
+            plt.legend(fontsize = 12)  # Add a legend to the plot
+
+            # Increase the size and weight of the axis tick labels
+            plt.xticks(fontsize = 12, fontweight = 'bold')
+            plt.yticks(fontsize = 12, fontweight = 'bold')
+
+            plt.tight_layout()  # Ensure that all elements of the plot fit within the figure area
+            plt.savefig(result_dir + '%s_%s.png' % (graph_type, dataset_name), dpi = 300)  # Save the figure with a high resolution
+            plt.close()
+        elif 'dir_geom' in graph_type:
+            plt.figure()
+
+            # Iterate over the keys and values in the 'mean_sim' dictionary
+            for setting, mean_sim_values in graph_sim_data['mean_sim'].items():
+                # Get the corresponding variance values
+                var_sim_values = graph_sim_data['var_sim'][setting]
+                # Plot the mean values with the variance as error bars
+                plt.errorbar([float(i) / 10 for i in range(1, len(mean_sim_values) + 1)], mean_sim_values, yerr = var_sim_values, fmt = '-o', label = f'type: {setting}')
+
+            plt.title('Centralities Similarity Score for \n Directed Geometric Graphs', fontsize = 16, fontweight = 'bold')
+            plt.xlabel('Adversarial Fraction', fontsize = 14)
+            plt.ylabel('Normalized Centralities Similarity Score', fontsize = 14)
+            plt.ylim(0, 1)
+            plt.grid(True)  # Add a grid to the plot
+            plt.legend(fontsize = 12)  # Add a legend to the plot
+
+            # Increase the size and weight of the axis tick labels
+            plt.xticks(fontsize = 12, fontweight = 'bold')
+            plt.yticks(fontsize = 12, fontweight = 'bold')
+
+            plt.tight_layout()  # Ensure that all elements of the plot fit within the figure area
+            plt.savefig(result_dir + '%s_%s.png' % (graph_type, dataset_name), dpi = 300)  # Save the figure with a high resolution
+            plt.close()
+        elif 'k_out' in graph_type:
+            plt.figure()
+
+            # Iterate over the keys and values in the 'mean_sim' dictionary
+            for setting, mean_sim_values in graph_sim_data['mean_sim'].items():
+                # Get the corresponding variance values
+                var_sim_values = graph_sim_data['var_sim'][setting]                
+                # Plot the mean values with the variance as error bars
+                plt.errorbar([float(i) / 10 for i in range(1, len(mean_sim_values) + 1)], mean_sim_values, yerr = var_sim_values, fmt = '-o', label = f'k = {setting}')
+
+            plt.title('Centralities Similarity Score for \n K-Out Graphs', fontsize = 16, fontweight = 'bold')
+            plt.xlabel('Adversarial Fraction', fontsize = 14)
+            plt.ylabel('Normalized Centralities Similarity Score', fontsize = 14)
+            plt.ylim(0, 1)
+            plt.grid(True)  # Add a grid to the plot
+            plt.legend(fontsize = 12)  # Add a legend to the plot
+
+            # Increase the size and weight of the axis tick labels
+            plt.xticks(fontsize = 12, fontweight = 'bold')
+            plt.yticks(fontsize = 12, fontweight = 'bold')
+
+            plt.tight_layout()  # Ensure that all elements of the plot fit within the figure area
+            plt.savefig(result_dir + '%s_%s.png' % (graph_type, dataset_name), dpi = 300)  # Save the figure with a high resolution
+            plt.close()
+
+def calc_centrality_measure_aver_variance(graph_name):
+    # in_deg_centrality[node], out_deg_centrality[node], closeness_centrality[node], betweeness_centrality[node], eigenvector_centrality[node]
+    cent_measure_var_array = []
+    cent_variance = {_: [] for _ in ('in_deg', 'out_deg', 'closeness', 'betweeness', 'eigenvector')}
+    dir_graphs = '../../data/full_decentralized/network_topologies/'
+    for root, dirs, files in os.walk(dir_graphs):
+        for fname in files:
+            if fname.startswith(graph_name) and '-checkpoint' not in fname:
+                adj_matrix = np.loadtxt(root + fname)
+                centrality_data = calc_centralities(len(adj_matrix[0]), create_graph(adj_matrix))
+                centrality_data = np.array(list(centrality_data.values()))
+                for i, cent_measure in enumerate(cent_variance.keys()):
+                    cent_variance[cent_measure].append(np.var(centrality_data[:, i]))
+    for cent_measure in cent_variance.keys():
+        cent_variance[cent_measure] = np.mean(cent_variance[cent_measure])
+    
+    return cent_variance
+
+def make_variance_histograms(dataset_name):
+    data_dir = '../../data/full_decentralized/%s/' % dataset_name
+
+    # Get all graph types
+    graph_types = sorted([d for d in os.listdir(data_dir) if os.path.isdir(os.path.join(data_dir, d))])
+
+    # Get all variance results
+    var_data = []
+    print(graph_types)
 
 if __name__ == '__main__':
     # make_graphs()    
-    score_graph_cent_variance('dir_geom_graph_c_20_type_2d_close_nodes', 4)
-    # plot_acc_aver('ER_graph_c_20_p_09', 'fmnist')
+    #for i in range(0, 11):
+    #    score_graph_types_centralities_similarity('fmnist', float(i) / 10)
+    
+    #make_similarity_graphs('fmnist')
+    make_variance_histograms('fmnist')
+    #x = calc_centrality_measure_aver_variance('ER_graph_c_20_p_01')
+    # print(x)
+    plot_acc_aver('pref_attach_graph_c_20_type_dense', 'fmnist')
 

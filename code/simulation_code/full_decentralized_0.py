@@ -34,7 +34,7 @@ if device_used != torch.device('cuda:0'):
 
 start_time = time.time()
 # Set hyperparameters
-seed = 18 # Seed for PRNGs 
+seed = 1 # Seed for PRNGs 
 random.seed(seed)
 torch.manual_seed(seed)
 np.random.seed(seed)
@@ -50,7 +50,7 @@ aggregation_mechanism = aggreg_schemes[1]
 dir_networks = '../../data/full_decentralized/network_topologies'
 dir_data = '../../data/full_decentralized/%s/' % dataset_name
 graph_type = ('ER', 'dir_scale_free', 'dir_geom', 'k_out', 'pref_attach', 'SNAP_Cisco')
-graph_type_used = graph_type[2]
+graph_type_used = graph_type[5]
 # This is the source for network topology
 
 # ADJUSTABLE #####
@@ -95,8 +95,8 @@ elif graph_type_used == 'SNAP_Cisco':
                 client_vals.append(int(match.group(1)))
                 graph_types[int(match.group(1))] = match.group(2)
     client_vals = sorted(client_vals)
-    data_dir_name = dir_data + '%s_c_%d_type_%s_seed_%d/' % (graph_type_used, client_vals[client_val_used], graph_types[client_vals[client_val_used]], seed_graph)
-    network_topology = '%s_c_%d_type_%s_seed_%d.txt' % (graph_type_used, client_vals[client_val_used], graph_types[client_vals[client_val_used]], seed)
+    data_dir_name = dir_data + '%s_c_%d_type_%s/' % (graph_type_used, client_vals[client_val_used], graph_types[client_vals[client_val_used]])
+    network_topology = '%s_c_%d_type_%s_seed_%d.txt' % (graph_type_used, client_vals[client_val_used], graph_types[client_vals[client_val_used]], seed_graph)
 
 ##################
 network_topology_filepath = os.path.join(dir_networks, network_topology)

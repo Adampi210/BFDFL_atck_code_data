@@ -160,6 +160,8 @@ def plot_acc_aver(graph_type_used = '', dataset_name = 'fmnist'):
     seed_range = 50
     acc_data = []
     root_dir = ''
+    cent_name_dir = {'none':'No Attack', 'in_deg_centrality': 'In-Degree Centrality Based Attack', 'out_deg_centrality': 'Out-Degree Centrality Based Attack', 'closeness_centrality' :'Closeness Centrality Based Attack', 'betweeness_centrality' :'Betweenness Centrality Based Attack', 'eigenvector_centrality': 'Eigenvector Centrality Based Attack'}
+
     # Get distinct settings
     acc_diff_fnames = set()
     for root, dirs, files in os.walk(dir_data):
@@ -199,24 +201,127 @@ def plot_acc_aver(graph_type_used = '', dataset_name = 'fmnist'):
                     aver_acc.append(sum(cent_diff_seeds) / len(cent_diff_seeds))
                 aver_cent_data[cent] = aver_acc
 
+            if 'ER' in graph_type_used:
+                graph_type_name = 'ER'
+            elif 'pref_attach' in graph_type_used:
+                graph_type_name = 'Preferential Attachment'
+            elif 'dir_geom' in graph_type_used:
+                graph_type_name = 'Directed Geometric'
+            elif 'out' in graph_type_used:
+                graph_type_name = 'K-Out'
+            elif 'SNAP' in graph_type_used:
+                graph_type_name = 'SNAP Dataset'
+
             # Plot the accuracies
             plt.figure(figsize=(10, 6))
             if any([x == None for x in aver_cent_data.values()]):
                 continue
             for cent, acc_aver in aver_cent_data.items():
-                plt.plot(range(len(acc_aver)), acc_aver, label = cent)
-
+                plt.plot(range(len(acc_aver)), acc_aver, label = cent_name_dir[cent])
+            plt.title('Model Accuracy over Epochs under Different Attacks \n for %s Graph' % (graph_type_name), fontsize=16)
             plt.xlabel('Epoch') 
             plt.ylabel('Accuracy') 
-
+            plt.minorticks_on()
             plt.grid(True)
+            plt.ylim(0.1, plt.ylim()[-1])
+            plt.xlim(0, plt.xlim()[-1])
+            plt.vlines(x = 25, ymin = 0, ymax = plt.ylim()[1], colors = 'black', linestyles = 'dashed', label = 'Attack starts')
             plt.legend()
             plt.savefig(dir_graphs + graph_type_used + '_' + acc_fname + '_iid_type_%s.png' % iid_type)
 
             # Reset values
             cent_data = {cent:[] for cent in cent_data.keys()}
             aver_cent_data = {cent:[] for cent in cent_data.keys()}
+
+# Plot accuracy averaged over the specified data
+def plot_acc_aver_snap(graph_type_used = '', dataset_name = 'fmnist'):
+    # Setup
+    if 'SNAP' not in graph_type_used:
+        print('This can only be used with SNAP dataset graphs!')
+        return
+    dir_graphs = '../../data/plots/'
+    dir_data = '../../data/full_decentralized/%s/' % dataset_name
+    dir_data += graph_type_used + '/'
+    centralities = ('none', 'in_deg_centrality', 'out_deg_centrality', 'closeness_centrality', 'betweeness_centrality', 'eigenvector_centrality')
+    cent_data = {cent:[] for cent in centralities}
+    aver_cent_data = {cent:[] for cent in centralities}
+    seed_range = 1
+    acc_data = []
+    root_dir = ''
+    cent_name_dir = {'none':'No Attack', 'in_deg_centrality': 'In-Degree Centrality Based Attack', 'out_deg_centrality': 'Out-Degree Centrality Based Attack', 'closeness_centrality' :'Closeness Centrality Based Attack', 'betweeness_centrality' :'Betweenness Centrality Based Attack', 'eigenvector_centrality': 'Eigenvector Centrality Based Attack'}
+
+    # Get distinct settings
+    acc_diff_fnames = set()
+    for root, dirs, files in os.walk(dir_data):
+        for fname in files:
+            if fname.startswith('acc_'):
+                fname_parts = re.split('_seed', fname)
+                if '300' not in fname_parts[0]:
+                    if '.png' not in fname_parts[0]:
+                        acc_diff_fnames.add(fname_parts[0])
+        root_dir = root        
+    
+    # Create averaged dictionary data and plot
+    for acc_fname in acc_diff_fnames:
+        for iid_type in ('iid', 'non_iid'):
+            for cent in cent_data.keys():
+                for seed in range(seed_range):
+                    acc_data_fname = acc_fname + '_seed_%d_iid_type_%s_cent_%s.csv' % (seed, iid_type, cent)
+                    acc_data = []
+                    with open(root_dir + acc_data_fname, 'r') as acc_data_file:
+                        reader = csv.reader(acc_data_file)
+                        i = 0
+                        for row in reader:
+                            if i == 0:
+                                attacked_nodes = np.fromstring(row[1].strip("[]"), sep = ' ')
+                                attacked_nodes = [int(_) for _ in attacked_nodes]
+                            else:
+                                acc = ast.literal_eval(row[1])
+                                acc_honest = [_ for i, _ in enumerate(acc) if i not in attacked_nodes]
+                                acc_honest = sum(acc_honest) / len(acc_honest)
+                                acc_data.append(acc_honest)
+                            i += 1
+                    cent_data[cent].append(acc_data)
+            # Calc averaged accuracies over different seeds
+            for cent in centralities:
+                aver_acc = []
+                for cent_diff_seeds in zip(*cent_data[cent]):
+                    aver_acc.append(sum(cent_diff_seeds) / len(cent_diff_seeds))
+                aver_cent_data[cent] = aver_acc
+
+            if 'ER' in graph_type_used:
+                graph_type_name = 'ER'
+            elif 'pref_attach' in graph_type_used:
+                graph_type_name = 'Preferential Attachment'
+            elif 'dir_geom' in graph_type_used:
+                graph_type_name = 'Directed Geometric'
+            elif 'out' in graph_type_used:
+                graph_type_name = 'K-Out'
+            elif 'SNAP' in graph_type_used:
+                graph_type_name = 'SNAP Dataset'
+
+            # Plot the accuracies
+            plt.figure(figsize=(10, 6))
+            if any([x == None for x in aver_cent_data.values()]):
+                continue
+            for cent, acc_aver in aver_cent_data.items():
+                plt.plot(range(len(acc_aver)), acc_aver, label = cent_name_dir[cent])
+            plt.title('Model Accuracy over Epochs under Different Attacks \n for %s Graph' % (graph_type_name), fontsize=16)
+            plt.xlabel('Epoch') 
+            plt.ylabel('Accuracy') 
+            plt.minorticks_on()
+            plt.grid(True)
+            plt.ylim(0.1, plt.ylim()[-1])
+            plt.xlim(0, plt.xlim()[-1])
+            plt.legend()
+            plt.vlines(x=25, ymin=0, ymax=plt.ylim()[1], colors='black', linestyles='dashed', label='Attack starts')
+            plt.savefig(dir_graphs + graph_type_used + '_' + acc_fname + '_iid_type_%s.png' % iid_type)
+
+            # Reset values
+            cent_data = {cent:[] for cent in cent_data.keys()}
+            aver_cent_data = {cent:[] for cent in cent_data.keys()}
         
+
 # Used to generate ER graphs
 def gen_ER_graph(n_clients, prob_conn = 0.5, graph_name = '', seed = 0):
     dir_networks = '../../data/full_decentralized/network_topologies/'
@@ -625,7 +730,7 @@ def make_variance_histograms(dataset_name):
     print(graph_types)
 
 if __name__ == '__main__':
-    make_graphs()    
+    # make_graphs()    
     #for i in range(0, 11):
     #    score_graph_types_centralities_similarity('fmnist', float(i) / 10)
     
@@ -633,5 +738,5 @@ if __name__ == '__main__':
     make_variance_histograms('fmnist')
     #x = calc_centrality_measure_aver_variance('ER_graph_c_20_p_01')
     # print(x)
-    # plot_acc_aver('ER_graph_c_20_p_09', 'fmnist')
+    plot_acc_aver('pref_attach_graph_c_20_type_dense', 'fmnist')
 
