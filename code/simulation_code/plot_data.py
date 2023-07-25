@@ -245,7 +245,7 @@ def plot_acc_aver_snap(graph_type_used = '', dataset_name = 'fmnist'):
     centralities = ('none', 'in_deg_centrality', 'out_deg_centrality', 'closeness_centrality', 'betweeness_centrality', 'eigenvector_centrality')
     cent_data = {cent:[] for cent in centralities}
     aver_cent_data = {cent:[] for cent in centralities}
-    seed_range = 1
+    seed_range = 5
     acc_data = []
     root_dir = ''
     cent_name_dir = {'none':'No Attack', 'in_deg_centrality': 'In-Degree Centrality Based Attack', 'out_deg_centrality': 'Out-Degree Centrality Based Attack', 'closeness_centrality' :'Closeness Centrality Based Attack', 'betweeness_centrality' :'Betweenness Centrality Based Attack', 'eigenvector_centrality': 'Eigenvector Centrality Based Attack'}
@@ -727,7 +727,9 @@ def make_variance_histograms(dataset_name):
 
     # Get all variance results
     var_data = []
-    print(graph_types)
+
+    for graph_type in graph_types:
+        print(f'Graph: {graph_type}, cent var: {np.array(list(calc_centrality_measure_aver_variance(graph_type).values()))}')
 
 if __name__ == '__main__':
     # make_graphs()    
@@ -735,8 +737,9 @@ if __name__ == '__main__':
     #    score_graph_types_centralities_similarity('fmnist', float(i) / 10)
     
     #make_similarity_graphs('fmnist')
-    make_variance_histograms('fmnist')
+    # make_variance_histograms('fmnist')
     #x = calc_centrality_measure_aver_variance('ER_graph_c_20_p_01')
     # print(x)
-    plot_acc_aver('pref_attach_graph_c_20_type_dense', 'fmnist')
+    # plot_acc_aver('k_out_graph_c_20_k_5', 'fmnist')
+    plot_acc_aver_snap('SNAP_Cisco_c_28_type_g20', 'fmnist')
 
