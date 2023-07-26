@@ -980,11 +980,11 @@ if __name__ == '__main__':
     # make_graphs()    
     #for i in range(0, 11):
     #    score_graph_types_centralities_similarity('fmnist', float(i) / 10)
-    
     # make_similarity_graphs('fmnist')
-    make_variance_histograms('fmnist')
+    # make_variance_histograms('fmnist')
     #x = calc_centrality_measure_aver_variance('ER_graph_c_20_p_01')
     # print(x)
     # plot_acc_aver('ER_graph_c_100_p_05', 'fmnist', 10)
     # plot_acc_aver_snap('SNAP_Cisco_c_28_type_g20', 'fmnist')
+    # plot_scored_tradeoff_time_centrality('ER_graph_c_20_p_05', 'fmnist', 50)
 
