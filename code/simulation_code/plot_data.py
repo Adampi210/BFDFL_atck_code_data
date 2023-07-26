@@ -1,6 +1,7 @@
 import os
 import csv
 import matplotlib.pyplot as plt
+from matplotlib.lines import Line2D
 import numpy as np
 import ast
 from nn_FL_de_cent import *
@@ -148,16 +149,14 @@ def plot_acc_diff(dataset_name = 'fmnist'):
         plt.savefig(data_dir_name + filename_data[:-4] + '.png')
 
 # Plot accuracy averaged over the specified data
-def plot_acc_aver(graph_type_used = '', dataset_name = 'fmnist'):
+def plot_acc_aver(graph_type_used = '', dataset_name = 'fmnist', seed_range = 50):
     # Setup
-
     dir_graphs = '../../data/plots/'
     dir_data = '../../data/full_decentralized/%s/' % dataset_name
     dir_data += graph_type_used + '/'
     centralities = ('none', 'in_deg_centrality', 'out_deg_centrality', 'closeness_centrality', 'betweeness_centrality', 'eigenvector_centrality')
     cent_data = {cent:[] for cent in centralities}
     aver_cent_data = {cent:[] for cent in centralities}
-    seed_range = 50
     acc_data = []
     root_dir = ''
     cent_name_dir = {'none':'No Attack', 'in_deg_centrality': 'In-Degree Centrality Based Attack', 'out_deg_centrality': 'Out-Degree Centrality Based Attack', 'closeness_centrality' :'Closeness Centrality Based Attack', 'betweeness_centrality' :'Betweenness Centrality Based Attack', 'eigenvector_centrality': 'Eigenvector Centrality Based Attack'}
@@ -321,7 +320,6 @@ def plot_acc_aver_snap(graph_type_used = '', dataset_name = 'fmnist'):
             cent_data = {cent:[] for cent in cent_data.keys()}
             aver_cent_data = {cent:[] for cent in cent_data.keys()}
         
-
 # Used to generate ER graphs
 def gen_ER_graph(n_clients, prob_conn = 0.5, graph_name = '', seed = 0):
     dir_networks = '../../data/full_decentralized/network_topologies/'
@@ -721,25 +719,272 @@ def calc_centrality_measure_aver_variance(graph_name):
 
 def make_variance_histograms(dataset_name):
     data_dir = '../../data/full_decentralized/%s/' % dataset_name
-
+    result_dir = '../../data/full_decentralized/network_cent_variance_plots/'
     # Get all graph types
     graph_types = sorted([d for d in os.listdir(data_dir) if os.path.isdir(os.path.join(data_dir, d))])
-
     # Get all variance results
-    var_data = []
+    var_data_graphs = {'ER':{20:{}, 100:{}, 500:{}}, 'SNAP':[], 'k_out':{20:{}, 100:{}, 500:{}}, 'pref_attach':{20:{}, 100:{}, 500:{}}, 'dir_geom':{20:{}, 100:{}, 500:{}}}
 
+    # Get variance data
     for graph_type in graph_types:
-        print(f'Graph: {graph_type}, cent var: {np.array(list(calc_centrality_measure_aver_variance(graph_type).values()))}')
+        cent_vars = np.array(list(calc_centrality_measure_aver_variance(graph_type).values()))
+        n_clients = re.search('_c_(\d+)_', graph_type)
+        if n_clients is not None:
+            n_clients = int(n_clients.group(1))
+        if 'ER' in graph_type:
+            prob_conn = re.search('_p_0(\d+)', graph_type)
+            if prob_conn is not None:
+                prob_conn = float(prob_conn.group(1)) / 10
+                var_data_graphs['ER'][n_clients][prob_conn] = cent_vars
+        elif 'SNAP' in graph_type:
+            var_data_graphs['SNAP'].append(cent_vars)
+        elif 'k_out' in graph_type:
+            k_val = re.search('_k_(\d+)', graph_type)
+            if k_val is not None:
+                k_val = int(k_val.group(1))
+                var_data_graphs['k_out'][n_clients][k_val] = cent_vars
+        elif 'pref_attach' in graph_type:
+            type_pref_attach = re.search(r'type_(dense(?:_2|_4)?)', graph_type)
+            if type_pref_attach is not None:
+                var_data_graphs['pref_attach'][n_clients][type_pref_attach.group(1)] = cent_vars
+        elif 'dir_geom' in graph_type:
+            type_dir_geom = re.search(r'type_(2d.*nodes)', graph_type)
+            if type_dir_geom is not None:
+                if type_dir_geom.group(1) == '2d_very_close_nodes':
+                    radius_val = 'r = 0.5'
+                elif type_dir_geom.group(1) == '2d_close_nodes':
+                    radius_val = 'r = 0.3'
+                elif type_dir_geom.group(1) == '2d_far_nodes':
+                    radius_val = 'r = 0.2'
+                var_data_graphs['dir_geom'][n_clients][radius_val] = cent_vars
+    
+    # Plot the variacne plots
+    label_arr = ['In-Degree Centrality', 'Out-Degree Centrality', 'Closeness Centrality', 'Betweenness Centrality', 'Eigenvector Centrality']  # replace with your actual labels
+    # Define your color map
+    cmap = plt.get_cmap('tab10')
+
+    # Generate colors from the color map
+    colors = [cmap(i) for i in range(len(label_arr))]
+    width_bar = 0.15  # width of the bars
+
+    for graph_type, graph_data in var_data_graphs.items():
+        if graph_type == 'SNAP':
+            plt.figure(figsize = (18, 13))  # Set the figure size
+            avg_data_snap_var = np.mean(graph_data, axis = 0)
+            plt.bar(label_arr, avg_data_snap_var, color = colors, alpha = 0.7, label = 'SNAP')
+            lower_font_size = 25
+            higher_font_size = 35
+            graph_var_data = {k: graph_var_data[k] for k in sorted(graph_var_data)}
+            plt.subplots_adjust(bottom = 0.25)
+            ax = plt.gca()  # get current axes
+            ax.tick_params(axis = 'y', labelsize = lower_font_size)
+            ax.tick_params(axis = 'x', labelsize = lower_font_size)
+
+            plt.xticks(rotation = 30)  # Rotate x-axis labels
+            ax.set_xlabel('Centrality Measure', fontsize = lower_font_size)
+            ax.set_ylabel('Averaged Variance of Node Centrality', fontsize = lower_font_size)
+            ax.set_title('Averaged Node Centrality Variances for Different Centrality Measures \n for Different Snap Graphs', fontsize = higher_font_size)
+            ax.grid(True, zorder = 0)
+            plt.savefig(result_dir + '%s_graphs_variance_histograms.png' % graph_type)
+            plt.close()
+        else:
+            for n_clients, graph_var_data in graph_data.items():
+                if graph_var_data:  # check if the dictionary is not empty
+                    if graph_type == 'ER':
+                        lower_font_size = 25
+                        higher_font_size = 35
+                        fig, ax = plt.subplots(figsize = (18, 13))
+                        x = np.arange(len(graph_var_data))  # the label locations
+                        for i, (key, values) in enumerate(graph_var_data.items()):
+                            area_dist_data = [x[i] -3 * width_bar / 2 + j * width_bar for j in range(len(values))]
+                            for j, value in enumerate(values):
+                                ax.bar(area_dist_data[j], value, width_bar, label=f'{label_arr[j]}', color=colors[j])  # use color
+                        # Create a custom legend
+                        custom_lines = [Line2D([0], [0], color=colors[i], lw=4) for i in range(len(label_arr))]
+                        plt.subplots_adjust(bottom = 0.2)
+                        ax.legend(custom_lines, label_arr, loc = 'lower center', bbox_to_anchor = (0.5, -0.27), fancybox = True, shadow = True, ncol = 3, fontsize = lower_font_size)
+
+                        ax.set_xticks(x)
+                        ax.set_xticklabels(graph_var_data.keys(), fontsize = lower_font_size)
+                        ax = plt.gca()  # get current axes
+                        ax.tick_params(axis = 'y', labelsize = lower_font_size)
+                        ax.set_xlabel('Probability of Connection', fontsize = lower_font_size)
+                        ax.set_ylabel('Variance of Node Centrality', fontsize = lower_font_size)
+                        ax.set_title('Node Centrality Variances for Different Centrality Measures \n for %s Graphs with %d nodes' % (graph_type, n_clients), fontsize = higher_font_size)
+                        ax.grid(True, zorder = 0)
+                        plt.savefig(result_dir + '%s_graphs_c_%d_variance_histograms.png' % (graph_type, n_clients))
+                        plt.close()
+                    elif graph_type == 'pref_attach':
+                        lower_font_size = 25
+                        higher_font_size = 35
+                        fig, ax = plt.subplots(figsize=(18, 13))
+                        x = np.arange(len(graph_var_data))  # the label locations
+                        for i, (key, values) in enumerate(graph_var_data.items()):
+                            area_dist_data = [x[i] -3 * width_bar / 2 + j * width_bar for j in range(len(values))]
+                            for j, value in enumerate(values):
+                                ax.bar(area_dist_data[j], value, width_bar, label=f'{label_arr[j]}', color=colors[j])  # use color
+                        # Create a custom legend
+                        custom_lines = [Line2D([0], [0], color=colors[i], lw=4) for i in range(len(label_arr))]
+                        plt.subplots_adjust(bottom = 0.2)
+                        ax.legend(custom_lines, label_arr, loc = 'lower center', bbox_to_anchor = (0.5, -0.27), fancybox = True, shadow = True, ncol = 3, fontsize = lower_font_size)
+
+                        ax.set_xticks(x)
+                        x_tick_labels = ['Dense Type 0', 'Dense Type 2', 'Dense Type 4']
+                        ax.set_xticklabels(x_tick_labels, fontsize = lower_font_size)
+                        ax = plt.gca()  # get current axes
+                        ax.tick_params(axis = 'y', labelsize = lower_font_size)
+                        ax.set_xlabel('Preferential Attachment Graph Type', fontsize = lower_font_size)
+                        ax.set_ylabel('Variance of Node Centrality', fontsize = lower_font_size)
+                        ax.set_title('Node Centrality Variances for Different Centrality Measures \n for Preferential Attachment Graphs with %d nodes' % n_clients, fontsize = higher_font_size)
+                        ax.grid(True, zorder = 0)
+                        plt.savefig(result_dir + '%s_graphs_c_%d_variance_histograms.png' % (graph_type, n_clients))
+                        plt.close()
+                    elif graph_type == 'dir_geom':
+                        lower_font_size = 25
+                        higher_font_size = 35
+                        graph_var_data = {k: graph_var_data[k] for k in sorted(graph_var_data)}
+                        fig, ax = plt.subplots(figsize=(18, 13))
+                        x = np.arange(len(graph_var_data))  # the label locations
+                        for i, (key, values) in enumerate(graph_var_data.items()):
+                            area_dist_data = [x[i] -3 * width_bar / 2 + j * width_bar for j in range(len(values))]
+                            for j, value in enumerate(values):
+                                ax.bar(area_dist_data[j], value, width_bar, label=f'{label_arr[j]}', color=colors[j])  # use color
+                        # Create a custom legend
+                        custom_lines = [Line2D([0], [0], color=colors[i], lw=4) for i in range(len(label_arr))]
+                        plt.subplots_adjust(bottom = 0.2)
+                        ax.legend(custom_lines, label_arr, loc = 'lower center', bbox_to_anchor = (0.5, -0.27), fancybox = True, shadow = True, ncol = 3, fontsize = lower_font_size)
+
+                        ax.set_xticks(x)
+                        # x_tick_labels = ['Dense Type 0', 'Dense Type 2', 'Dense Type 4']
+                        ax.set_xticklabels(graph_var_data.keys(), fontsize = lower_font_size)
+                        ax = plt.gca()  # get current axes
+                        ax.tick_params(axis = 'y', labelsize = lower_font_size)
+                        ax.set_xlabel('Directed Geometric Graph Type', fontsize = lower_font_size)
+                        ax.set_ylabel('Variance of Node Centrality', fontsize = lower_font_size)
+                        ax.set_title('Node Centrality Variances for Different Centrality Measures \n for Directed Geometric Graphs with %d nodes' % n_clients, fontsize = higher_font_size)
+                        ax.grid(True, zorder = 0)
+                        plt.savefig(result_dir + '%s_graphs_c_%d_variance_histograms.png' % (graph_type, n_clients))
+                        plt.close()
+                    elif graph_type == 'k_out':
+                        lower_font_size = 25
+                        higher_font_size = 35
+                        graph_var_data = {k: graph_var_data[k] for k in sorted(graph_var_data)}
+                        fig, ax = plt.subplots(figsize=(18, 13))
+                        x = np.arange(len(graph_var_data))  # the label locations
+                        for i, (key, values) in enumerate(graph_var_data.items()):
+                            area_dist_data = [x[i] -3 * width_bar / 2 + j * width_bar for j in range(len(values))]
+                            for j, value in enumerate(values):
+                                ax.bar(area_dist_data[j], value, width_bar, label=f'{label_arr[j]}', color=colors[j])  # use color
+                        # Create a custom legend
+                        custom_lines = [Line2D([0], [0], color=colors[i], lw=4) for i in range(len(label_arr))]
+                        plt.subplots_adjust(bottom = 0.2)
+                        ax.legend(custom_lines, label_arr, loc = 'lower center', bbox_to_anchor = (0.5, -0.27), fancybox = True, shadow = True, ncol = 3, fontsize = lower_font_size)
+
+                        ax.set_xticks(x)
+                        # x_tick_labels = ['Dense Type 0', 'Dense Type 2', 'Dense Type 4']
+                        ax.set_xticklabels(graph_var_data.keys(), fontsize = lower_font_size)
+                        ax = plt.gca()  # get current axes
+                        ax.tick_params(axis = 'y', labelsize = lower_font_size)
+                        ax.set_xlabel('Value of K in a K-Out Graph', fontsize = lower_font_size)
+                        ax.set_ylabel('Variance of Node Centrality', fontsize = lower_font_size)
+                        ax.set_title('Node Centrality Variances for Different Centrality Measures \n for K-Out Graphs with %d nodes' % n_clients, fontsize = higher_font_size)
+                        ax.grid(True, zorder = 0)
+                        plt.savefig(result_dir + '%s_graphs_c_%d_variance_histograms.png' % (graph_type, n_clients))
+                        plt.close()
+
+def plot_scored_tradeoff_time_centrality(graph_type_used = '', dataset_name = 'fmnist', seed_range = 50):
+    # Setup
+    dir_graphs = '../../data/plots/'
+    dir_data = '../../data/full_decentralized/%s/' % dataset_name
+    dir_data += graph_type_used + '/'
+    centralities = ('none', 'in_deg_centrality', 'out_deg_centrality', 'closeness_centrality', 'betweeness_centrality', 'eigenvector_centrality')
+    cent_data = {cent:[] for cent in centralities}
+    aver_cent_data = {cent:[] for cent in centralities}
+    acc_data = []
+    root_dir = ''
+    cent_name_dir = {'none':'No Attack', 'in_deg_centrality': 'In-Degree Centrality Based Attack', 'out_deg_centrality': 'Out-Degree Centrality Based Attack', 'closeness_centrality' :'Closeness Centrality Based Attack', 'betweeness_centrality' :'Betweenness Centrality Based Attack', 'eigenvector_centrality': 'Eigenvector Centrality Based Attack'}
+
+    # Get distinct settings
+    acc_diff_fnames = set()
+    for root, dirs, files in os.walk(dir_data):
+        for fname in files:
+            if fname.startswith('acc_'):
+                fname_parts = re.split('_seed', fname)
+                if '300' not in fname_parts[0]:
+                    if '.png' not in fname_parts[0]:
+                        acc_diff_fnames.add(fname_parts[0])
+        root_dir = root        
+    
+    # Create averaged dictionary data and plot
+    for acc_fname in acc_diff_fnames:
+        for iid_type in ('iid', 'non_iid'):
+            for cent in cent_data.keys():
+                for seed in range(seed_range):
+                    acc_data_fname = acc_fname + '_seed_%d_iid_type_%s_cent_%s.csv' % (seed, iid_type, cent)
+                    acc_data = []
+                    with open(root_dir + acc_data_fname, 'r') as acc_data_file:
+                        reader = csv.reader(acc_data_file)
+                        i = 0
+                        for row in reader:
+                            if i == 0:
+                                attacked_nodes = np.fromstring(row[1].strip("[]"), sep = ' ')
+                                attacked_nodes = [int(_) for _ in attacked_nodes]
+                            else:
+                                acc = ast.literal_eval(row[1])
+                                acc_honest = [_ for i, _ in enumerate(acc) if i not in attacked_nodes]
+                                acc_honest = sum(acc_honest) / len(acc_honest)
+                                acc_data.append(acc_honest)
+                            i += 1
+                    cent_data[cent].append(acc_data)
+            # Calc averaged accuracies over different seeds
+            for cent in centralities:
+                aver_acc = []
+                for cent_diff_seeds in zip(*cent_data[cent]):
+                    aver_acc.append(sum(cent_diff_seeds) / len(cent_diff_seeds))
+                aver_cent_data[cent] = aver_acc
+
+            if 'ER' in graph_type_used:
+                graph_type_name = 'ER'
+            elif 'pref_attach' in graph_type_used:
+                graph_type_name = 'Preferential Attachment'
+            elif 'dir_geom' in graph_type_used:
+                graph_type_name = 'Directed Geometric'
+            elif 'out' in graph_type_used:
+                graph_type_name = 'K-Out'
+            elif 'SNAP' in graph_type_used:
+                graph_type_name = 'SNAP Dataset'
+
+            # Plot the accuracies
+            plt.figure(figsize=(10, 6))
+            if any([x == None for x in aver_cent_data.values()]):
+                continue
+            for cent, acc_aver in aver_cent_data.items():
+                plt.plot(range(len(acc_aver)), acc_aver, label = cent_name_dir[cent])
+            plt.title('Model Accuracy over Epochs under Different Attacks \n for %s Graph' % (graph_type_name), fontsize=16)
+            plt.xlabel('Epoch') 
+            plt.ylabel('Accuracy') 
+            plt.minorticks_on()
+            plt.grid(True)
+            plt.ylim(0.1, plt.ylim()[-1])
+            plt.xlim(0, plt.xlim()[-1])
+            plt.vlines(x = 25, ymin = 0, ymax = plt.ylim()[1], colors = 'black', linestyles = 'dashed', label = 'Attack starts')
+            plt.legend()
+            plt.savefig(dir_graphs + graph_type_used + '_' + acc_fname + '_iid_type_%s.png' % iid_type)
+
+            # Reset values
+            cent_data = {cent:[] for cent in cent_data.keys()}
+            aver_cent_data = {cent:[] for cent in cent_data.keys()}
+
 
 if __name__ == '__main__':
     # make_graphs()    
     #for i in range(0, 11):
     #    score_graph_types_centralities_similarity('fmnist', float(i) / 10)
     
-    #make_similarity_graphs('fmnist')
-    # make_variance_histograms('fmnist')
+    # make_similarity_graphs('fmnist')
+    make_variance_histograms('fmnist')
     #x = calc_centrality_measure_aver_variance('ER_graph_c_20_p_01')
     # print(x)
-    # plot_acc_aver('k_out_graph_c_20_k_5', 'fmnist')
-    plot_acc_aver_snap('SNAP_Cisco_c_28_type_g20', 'fmnist')
+    # plot_acc_aver('ER_graph_c_100_p_05', 'fmnist', 10)
+    # plot_acc_aver_snap('SNAP_Cisco_c_28_type_g20', 'fmnist')
 
