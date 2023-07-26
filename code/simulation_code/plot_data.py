@@ -903,7 +903,7 @@ def plot_scored_tradeoff_time_centrality(graph_type_used = '', dataset_name = 'f
     acc_data = []
     root_dir = ''
     cent_name_dir = {'none':'No Attack', 'in_deg_centrality': 'In-Degree Centrality Based Attack', 'out_deg_centrality': 'Out-Degree Centrality Based Attack', 'closeness_centrality' :'Closeness Centrality Based Attack', 'betweeness_centrality' :'Betweenness Centrality Based Attack', 'eigenvector_centrality': 'Eigenvector Centrality Based Attack'}
-    weight_prop_constant = 10000
+    weight_prop_constant = 500
     # Get distinct settings
     acc_diff_fnames = set()
     for root, dirs, files in os.walk(dir_data):
@@ -970,7 +970,7 @@ def plot_scored_tradeoff_time_centrality(graph_type_used = '', dataset_name = 'f
                 cent_time_eff['closeness_centrality'] = prob_conn * n_clients * (n_clients - 1) / 2 + n_clients ** 2
 
             weights_cents = [float(x) / 100 for x in range(100)]
-            cent_weighted_data = {cent:[combined_acc[cent] * weight + (weight_prop_constant / cent_time_eff[cent]) * (1 - weight) for weight in weights_cents] for cent in cent_time_eff.keys()}
+            cent_weighted_data = {cent:[combined_acc[cent] * weight + (cent_time_eff[cent] / weight_prop_constant) * (1 - weight) for weight in weights_cents] for cent in cent_time_eff.keys()}
             cent_weighted_data['none'] = [0 for x in cent_weighted_data['none']]
             print(cent_weighted_data['out_deg_centrality'])
             # Plot the accuracies
