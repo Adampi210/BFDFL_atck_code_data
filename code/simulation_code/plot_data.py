@@ -894,7 +894,7 @@ def make_variance_histograms(dataset_name):
 
 def plot_scored_tradeoff_time_centrality(graph_type_used = '', dataset_name = 'fmnist', seed_range = 50):
     # Setup
-    dir_graphs = '../../data/plots/'
+    dir_graphs = '../../data/full_decentralized/network_optimality_score_graphs/'
     dir_data = '../../data/full_decentralized/%s/' % dataset_name
     dir_data += graph_type_used + '/'
     centralities = ('none', 'in_deg_centrality', 'out_deg_centrality', 'closeness_centrality', 'betweeness_centrality', 'eigenvector_centrality')
@@ -903,7 +903,7 @@ def plot_scored_tradeoff_time_centrality(graph_type_used = '', dataset_name = 'f
     acc_data = []
     root_dir = ''
     cent_name_dir = {'none':'No Attack', 'in_deg_centrality': 'In-Degree Centrality Based Attack', 'out_deg_centrality': 'Out-Degree Centrality Based Attack', 'closeness_centrality' :'Closeness Centrality Based Attack', 'betweeness_centrality' :'Betweenness Centrality Based Attack', 'eigenvector_centrality': 'Eigenvector Centrality Based Attack'}
-
+    weight_prop_constant = 10000
     # Get distinct settings
     acc_diff_fnames = set()
     for root, dirs, files in os.walk(dir_data):
@@ -954,15 +954,34 @@ def plot_scored_tradeoff_time_centrality(graph_type_used = '', dataset_name = 'f
             elif 'SNAP' in graph_type_used:
                 graph_type_name = 'SNAP Dataset'
 
+            combined_acc = {cent:sum(acc_data) for cent, acc_data in aver_cent_data.items()}
+            cent_time_eff = {cent:1 for cent in aver_cent_data.keys()}
+            n_clients = re.search('_c_(\d+)_', graph_type_used)
+            if n_clients is not None:
+                n_clients = int(n_clients.group(1))
+            cent_time_eff['in_deg_centrality'] = n_clients ** 2
+            cent_time_eff['out_deg_centrality'] = n_clients ** 2
+            cent_time_eff['eigenvector_centrality'] = n_clients ** 3
+            if 'ER' in graph_type_used:
+                prob_conn = re.search('_p_0(\d+)', graph_type_used)
+                if prob_conn is not None:
+                    prob_conn = float(prob_conn.group(1)) / 10
+                cent_time_eff['betweeness_centrality'] = prob_conn * n_clients * (n_clients - 1) / 2 + n_clients ** 2
+                cent_time_eff['closeness_centrality'] = prob_conn * n_clients * (n_clients - 1) / 2 + n_clients ** 2
+
+            weights_cents = [float(x) / 100 for x in range(100)]
+            cent_weighted_data = {cent:[combined_acc[cent] * weight + (weight_prop_constant / cent_time_eff[cent]) * (1 - weight) for weight in weights_cents] for cent in cent_time_eff.keys()}
+            cent_weighted_data['none'] = [0 for x in cent_weighted_data['none']]
+            print(cent_weighted_data['out_deg_centrality'])
             # Plot the accuracies
             plt.figure(figsize=(10, 6))
-            if any([x == None for x in aver_cent_data.values()]):
+            if any([x == None for x in cent_weighted_data.values()]):
                 continue
-            for cent, acc_aver in aver_cent_data.items():
-                plt.plot(range(len(acc_aver)), acc_aver, label = cent_name_dir[cent])
-            plt.title('Model Accuracy over Epochs under Different Attacks \n for %s Graph' % (graph_type_name), fontsize=16)
-            plt.xlabel('Epoch') 
-            plt.ylabel('Accuracy') 
+            for cent, tradeoff_score in cent_weighted_data.items():
+                plt.plot(weights_cents, tradeoff_score, label = cent_name_dir[cent])
+            plt.title('Weighted \n for %s Graph' % (graph_type_name), fontsize=16)
+            plt.xlabel('Weight of accuracy sum') 
+            plt.ylabel('Weighted score') 
             plt.minorticks_on()
             plt.grid(True)
             plt.ylim(0.1, plt.ylim()[-1])
@@ -986,5 +1005,5 @@ if __name__ == '__main__':
     # print(x)
     # plot_acc_aver('ER_graph_c_100_p_05', 'fmnist', 10)
     # plot_acc_aver_snap('SNAP_Cisco_c_28_type_g20', 'fmnist')
-    # plot_scored_tradeoff_time_centrality('ER_graph_c_20_p_05', 'fmnist', 50)
+    plot_scored_tradeoff_time_centrality('ER_graph_c_20_p_09', 'fmnist', 50)
 
