@@ -216,14 +216,14 @@ def plot_acc_aver(graph_type_used = '', dataset_name = 'fmnist', seed_range = 50
             if any([x == None for x in aver_cent_data.values()]):
                 continue
             for cent, acc_aver in aver_cent_data.items():
-                plt.plot(range(len(acc_aver)), acc_aver, label = cent_name_dir[cent])
+                plt.plot(range(25, len(acc_aver)), acc_aver[25:], label = cent_name_dir[cent])  # start plotting from 25th epoch
             plt.title('Model Accuracy over Epochs under Different Attacks \n for %s Graph' % (graph_type_name), fontsize=16)
             plt.xlabel('Epoch') 
             plt.ylabel('Accuracy') 
             plt.minorticks_on()
             plt.grid(True)
-            plt.ylim(0.1, plt.ylim()[-1])
-            plt.xlim(0, plt.xlim()[-1])
+            plt.ylim(plt.ylim()[0], plt.ylim()[-1])
+            plt.xlim(25, plt.xlim()[-1])  # start x-axis from 25th epoch
             plt.vlines(x = 25, ymin = 0, ymax = plt.ylim()[1], colors = 'black', linestyles = 'dashed', label = 'Attack starts')
             # plt.legend()
             plt.savefig(dir_graphs + graph_type_used + '_' + acc_fname + '_iid_type_%s.png' % iid_type)
@@ -1014,11 +1014,11 @@ if __name__ == '__main__':
     # make_graphs()    
     #for i in range(0, 11):
     #    score_graph_types_centralities_similarity('fmnist', float(i) / 10)
-    make_similarity_graphs('fmnist')
+    # make_similarity_graphs('fmnist')
     # make_variance_histograms('fmnist')
     #x = calc_centrality_measure_aver_variance('ER_graph_c_20_p_01')
     # print(x)
-    # plot_acc_aver('k_out_graph_c_20_k_10', 'fmnist')
+    plot_acc_aver('k_out_graph_c_20_k_15', 'fmnist')
     # plot_acc_aver_snap('SNAP_Cisco_c_28_type_g20', 'fmnist')
     # plot_scored_tradeoff_time_centrality('ER_graph_c_20_p_09', 'fmnist', 50)
     # calc_centrality_measure_aver_variance('dir_geom_graph_c_20_type_2d_close_nodes_seed_0.txt')
