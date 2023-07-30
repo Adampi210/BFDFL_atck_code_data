@@ -1005,7 +1005,7 @@ if __name__ == '__main__':
     # make_variance_histograms('fmnist')
     #x = calc_centrality_measure_aver_variance('ER_graph_c_20_p_01')
     # print(x)
-    plot_acc_aver('ER_graph_c_100_p_05', 'fmnist', 10)
+    plot_acc_aver('pref_attach_graph_c_20_type_dense_4', 'fmnist')
     # plot_acc_aver_snap('SNAP_Cisco_c_28_type_g20', 'fmnist')
     # plot_scored_tradeoff_time_centrality('ER_graph_c_20_p_09', 'fmnist', 50)
     # calc_centrality_measure_aver_variance('dir_geom_graph_c_20_type_2d_close_nodes_seed_0.txt')
