@@ -225,7 +225,7 @@ def plot_acc_aver(graph_type_used = '', dataset_name = 'fmnist', seed_range = 50
             plt.ylim(0.1, plt.ylim()[-1])
             plt.xlim(0, plt.xlim()[-1])
             plt.vlines(x = 25, ymin = 0, ymax = plt.ylim()[1], colors = 'black', linestyles = 'dashed', label = 'Attack starts')
-            plt.legend()
+            # plt.legend()
             plt.savefig(dir_graphs + graph_type_used + '_' + acc_fname + '_iid_type_%s.png' % iid_type)
 
             # Reset values
@@ -710,6 +710,7 @@ def calc_centrality_measure_aver_variance(graph_name):
                 adj_matrix = np.loadtxt(root + fname)
                 centrality_data = calc_centralities(len(adj_matrix[0]), create_graph(adj_matrix))
                 centrality_data = np.array(list(centrality_data.values()))
+                # centrality_data = centrality_data / centrality_data.sum(axis = 0)  # normalize each column
                 for i, cent_measure in enumerate(cent_variance.keys()):
                     cent_variance[cent_measure].append(np.var(centrality_data[:, i]))
     for cent_measure in cent_variance.keys():
@@ -717,6 +718,7 @@ def calc_centrality_measure_aver_variance(graph_name):
     
     return cent_variance
 
+# TODO normalize all measures to sum to 1
 def make_variance_histograms(dataset_name):
     data_dir = '../../data/full_decentralized/%s/' % dataset_name
     result_dir = '../../data/full_decentralized/network_cent_variance_plots/'
@@ -1003,7 +1005,8 @@ if __name__ == '__main__':
     # make_variance_histograms('fmnist')
     #x = calc_centrality_measure_aver_variance('ER_graph_c_20_p_01')
     # print(x)
-    # plot_acc_aver('ER_graph_c_100_p_05', 'fmnist', 10)
+    plot_acc_aver('ER_graph_c_100_p_05', 'fmnist', 10)
     # plot_acc_aver_snap('SNAP_Cisco_c_28_type_g20', 'fmnist')
-    plot_scored_tradeoff_time_centrality('ER_graph_c_20_p_09', 'fmnist', 50)
+    # plot_scored_tradeoff_time_centrality('ER_graph_c_20_p_09', 'fmnist', 50)
+    # calc_centrality_measure_aver_variance('dir_geom_graph_c_20_type_2d_close_nodes_seed_0.txt')
 
