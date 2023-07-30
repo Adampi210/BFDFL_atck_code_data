@@ -552,18 +552,31 @@ def make_similarity_graphs(dataset_name):
                     cent_sim_data['ER']['var_sim'][float(graph_type[-1]) / 10].append(var_similarity)
                 elif 'dir_geom' in graph_type:
                     if 'dir_geom' not in cent_sim_data:
-                        cent_sim_data['dir_geom'] = {'mean_sim': {x:[] for x in ('2d_very_close_nodes', '2d_close_nodes', '2d_far_nodes')}, 'var_sim': {x:[] for x in ('2d_very_close_nodes', '2d_close_nodes', '2d_far_nodes')}}
+                        cent_sim_data['dir_geom'] = {'mean_sim': {x:[] for x in ('r = 0.2', 'r = 0.3', 'r = 0.5')}, 'var_sim': {x:[] for x in ('r = 0.2', 'r = 0.3', 'r = 0.5')}}
                     match = re.search(r'type_(2d.*nodes)', graph_type)
-                    cent_sim_data['dir_geom']['mean_sim'][match.group(1)].append(mean_similarity)
-                    cent_sim_data['dir_geom']['var_sim'][match.group(1)].append(var_similarity)
+                    if match.group(1) == '2d_very_close_nodes':
+                        radius_val = 'r = 0.5'
+                    elif match.group(1) == '2d_close_nodes':
+                        radius_val = 'r = 0.3'
+                    elif match.group(1) == '2d_far_nodes':
+                        radius_val = 'r = 0.2'
+                    cent_sim_data['dir_geom']['mean_sim'][radius_val].append(mean_similarity)
+                    cent_sim_data['dir_geom']['var_sim'][radius_val].append(var_similarity)
                 elif 'pref_attach' in graph_type:
                     if 'pref_attach' not in cent_sim_data:
-                        cent_sim_data['pref_attach'] = {'mean_sim': {x:[] for x in ('dense', 'dense_2', 'dense_4')}, 'var_sim': {x:[] for x in ('dense', 'dense_2', 'dense_4')}}
+                        cent_sim_data['pref_attach'] = {'mean_sim': {x:[] for x in ('Dense Type 0', 'Dense Type 2', 'Dense Type 4')}, 'var_sim': {x:[] for x in ('Dense Type 0', 'Dense Type 2', 'Dense Type 4')}}
                     match = re.search(r'type_(dense(?:_2|_4)?)', graph_type)
                     if match is not None:
                         if match.group(1) in ('dense', 'dense_2', 'dense_4'):
-                            cent_sim_data['pref_attach']['mean_sim'][match.group(1)].append(mean_similarity)
-                            cent_sim_data['pref_attach']['var_sim'][match.group(1)].append(var_similarity)
+                            if match.group(1) == 'dense':
+                                type_pref_attach = 'Dense Type 0'
+                            elif match.group(1) == 'dense_2':
+                                type_pref_attach = 'Dense Type 2'
+                            elif match.group(1) == 'dense_4':
+                                type_pref_attach = 'Dense Type 4'
+                            
+                            cent_sim_data['pref_attach']['mean_sim'][type_pref_attach].append(mean_similarity)
+                            cent_sim_data['pref_attach']['var_sim'][type_pref_attach].append(var_similarity)
                 elif 'k_out' in graph_type:
                     if 'k_out' not in cent_sim_data:
                         cent_sim_data['k_out'] = {'mean_sim': {x:[] for x in (2, 5, 10, 15)}, 'var_sim': {x:[] for x in (2, 5, 10, 15)}}
@@ -634,7 +647,7 @@ def make_similarity_graphs(dataset_name):
                 # Get the corresponding variance values
                 var_sim_values = graph_sim_data['var_sim'][setting]
                 # Plot the mean values with the variance as error bars
-                plt.errorbar([float(i) / 10 for i in range(1, len(mean_sim_values) + 1)], mean_sim_values, yerr = var_sim_values, fmt = '-o', label = f'type: {setting}')
+                plt.errorbar([float(i) / 10 for i in range(1, len(mean_sim_values) + 1)], mean_sim_values, yerr = var_sim_values, fmt = '-o', label = f'Type: {setting}')
 
             plt.title('Centralities Similarity Score for \n Preferential Attachment Graphs', fontsize = 16, fontweight = 'bold')
             plt.xlabel('Adversarial Fraction', fontsize = 14)
@@ -658,7 +671,7 @@ def make_similarity_graphs(dataset_name):
                 # Get the corresponding variance values
                 var_sim_values = graph_sim_data['var_sim'][setting]
                 # Plot the mean values with the variance as error bars
-                plt.errorbar([float(i) / 10 for i in range(1, len(mean_sim_values) + 1)], mean_sim_values, yerr = var_sim_values, fmt = '-o', label = f'type: {setting}')
+                plt.errorbar([float(i) / 10 for i in range(1, len(mean_sim_values) + 1)], mean_sim_values, yerr = var_sim_values, fmt = '-o', label = f'radius: {setting}')
 
             plt.title('Centralities Similarity Score for \n Directed Geometric Graphs', fontsize = 16, fontweight = 'bold')
             plt.xlabel('Adversarial Fraction', fontsize = 14)
@@ -1001,11 +1014,11 @@ if __name__ == '__main__':
     # make_graphs()    
     #for i in range(0, 11):
     #    score_graph_types_centralities_similarity('fmnist', float(i) / 10)
-    # make_similarity_graphs('fmnist')
+    make_similarity_graphs('fmnist')
     # make_variance_histograms('fmnist')
     #x = calc_centrality_measure_aver_variance('ER_graph_c_20_p_01')
     # print(x)
-    plot_acc_aver('k_out_graph_c_20_k_10', 'fmnist')
+    # plot_acc_aver('k_out_graph_c_20_k_10', 'fmnist')
     # plot_acc_aver_snap('SNAP_Cisco_c_28_type_g20', 'fmnist')
     # plot_scored_tradeoff_time_centrality('ER_graph_c_20_p_09', 'fmnist', 50)
     # calc_centrality_measure_aver_variance('dir_geom_graph_c_20_type_2d_close_nodes_seed_0.txt')
