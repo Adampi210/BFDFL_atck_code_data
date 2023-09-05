@@ -426,9 +426,68 @@ def sort_by_centrality(centrality_data):
 
     return node_sorted_centrality
 
+def score_cent_dist_manual(cent_weight, n_clients, n_advs, graph_representation, cent_used = -1):
+    cent_clients = calc_centralities(n_clients, graph_representation)
+    # Scale centralities
+    max_cent, min_cent = max(np.array(list(cent_clients.values()))[:, cent_used]), min(np.array(list(cent_clients.values()))[:, cent_used])
+    for client in cent_clients.keys():
+        cent_clients[client][cent_used] = (cent_clients[client][cent_used] - min_cent) / (max_cent - min_cent)
+    nodes_sorted_by_cent = sort_by_centrality(cent_clients)
+    adv_chosen = 0
+    adv_nodes = []
+    dist_to_advs = {client_id : 0 for client_id in cent_clients.keys()}
+    client_scores = {client_id : cent_weight * cent_clients[client_id][cent_used] + (1 - cent_weight) * dist_to_advs[client_id] for client_id in cent_clients.keys()}
+    clients_not_chosen = [_ for _ in client_scores.keys()]
+
+    # Choose the adversarial nodes
+    while adv_chosen < n_advs:
+        # First always most central
+        if adv_chosen == 0:
+            adv_nodes.append(nodes_sorted_by_cent[cent_used, 0])
+            clients_not_chosen.remove(adv_nodes[0])
+            del client_scores[adv_nodes[0]]
+            del dist_to_advs[adv_nodes[0]]
+        # Else, score and choose highest scoring
+        else:
+            for client in clients_not_chosen:
+                dist_to_advs[client] = 0
+                # Calculate updated scores
+                for adv in adv_nodes:
+                    dist_to_advs[client] += nx.shortest_path_length(graph_representation, source = adv, target = client)
+                    dist_to_advs[client] += nx.shortest_path_length(graph_representation, source = client, target = adv)
+                dist_to_advs[client] /= (2 * len(adv_nodes))
+            # Scaling the distances to be 0 to 1
+            max_dist, min_dist = max(dist_to_advs.values()), min(dist_to_advs.values())
+            for client_dist in dist_to_advs:
+                dist_to_advs[client_dist] = (dist_to_advs[client_dist] - min_dist) / (max_dist - min_dist)
+            # Score the clients
+            for client in clients_not_chosen:
+                client_scores[client] = cent_weight * cent_clients[client][cent_used] + (1 - cent_weight) * dist_to_advs[client]
+            sorted_scores = [k for k, _ in sorted(client_scores.items(), key = lambda item: item[1], reverse = True) if k not in adv_nodes]
+            highest_scoring_node = sorted_scores[0]
+            adv_nodes.append(highest_scoring_node)
+            clients_not_chosen.remove(highest_scoring_node)
+            del client_scores[highest_scoring_node]
+            del dist_to_advs[highest_scoring_node]
+
+        adv_chosen += 1
+    return adv_nodes
+
+def score_cent_dist_auto():
+    # TODO - do the same as above but the weights are chosen automatically based on the variance in centrality data/something else
+    pass
+
+def cluster_cent_dist():
+    # TODO: cluster the graph into some clusters of equal size/equal num nodes/ some other method
+    # TODO: then in each cluster choose the most cluster-specific central node
+    pass
+
+def entropy_cent_dist():
+    # TODO: incorporate entropy into the scoring for each node, base it on the variance of transmitted parameters + dist + cent
+    pass
+
 if __name__ == "__main__":
-    a = sort_by_centrality('../../data/full_decentralized/fmnist/atk_none_advs_1_adv_pow_1_clients_10_atk_time_0_arch_star_seed_0_iid_type_iid/centrality_clients_fb5507dc8f227c762865a6f14daa2358a0003fff.csv')
-    print(a)
+    pass
 
 # Increase number of epochs 3-5 times the current one, check different learning rates
 # Decrease step size significantly, increase the sizes of minibatchs
@@ -450,3 +509,8 @@ if __name__ == "__main__":
 #   - Then, look at each centrality measure variance
 #   - Then, implement the weighting algorithm for the calculation efficiency of cent measure vs the attack potency
 #   - Those above should be instanteneous. Next see some potential stuff like time of launching the attack vs its effect (maybe?)
+
+
+# TODO:
+# Implement different choosing strategies, then run the tests
+# To implement:

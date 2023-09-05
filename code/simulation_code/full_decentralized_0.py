@@ -54,7 +54,7 @@ graph_type_used = graph_type[0]
 # This is the source for network topology
 
 # ADJUSTABLE #####
-designated_clients = 100
+designated_clients = 20
 # ER
 if graph_type_used == 'ER':
     prob_conn = 7
@@ -112,7 +112,9 @@ graph_representation = create_graph(adj_matrix)
 # plt.savefig(data_dir_name + 'graph_picture' + '.png')
 # Save network centralities
 centrality_data = calc_centralities(len(adj_matrix[0]), graph_representation)
-
+highest_scoring_cent_dist_manual_nodes = score_cent_dist_manual(0, len(adj_matrix[0]), int(0.2 * len(adj_matrix[0])), graph_representation)
+print(highest_scoring_cent_dist_manual_nodes)
+exit()
 '''
 with open(data_dir_name + 'node_centrality'+ '.csv', 'w', newline = '') as centrality_data_file:
     writer = csv.writer(centrality_data_file)
@@ -176,7 +178,8 @@ def run_and_save_simulation(train_split, valid_split, adj_matrix, centrality_mea
 
     # Sort by centralities
     nodes_to_atk_centrality = sort_by_centrality(centrality_data)
-
+    print(nodes_to_atk_centrality)
+    exit()
     # Init accuracy and loss values and files
     curr_loss, curr_acc = 0, 0
     centrality_used = centralities[centrality_measure]
