@@ -1009,6 +1009,29 @@ def plot_scored_tradeoff_time_centrality(graph_type_used = '', dataset_name = 'f
             cent_data = {cent:[] for cent in cent_data.keys()}
             aver_cent_data = {cent:[] for cent in cent_data.keys()}
 
+# Function to plot averaged accuracy from multiple files
+def plot_averaged_accuracy(plot_name, filenames):
+    plt.figure(figsize = (10, 6))
+    plt.title(plot_name)
+    plt.xlabel('Epoch')
+    plt.ylabel('Averaged Accuracy')
+
+    for filename in filenames:
+        epoch_accuracies = []
+        with open(filename, 'r') as f:
+            csv_reader = csv.reader(f)
+            next(csv_reader)  # Skip the header
+            for row in csv_reader:
+                accuracies = eval(row[1])  # Convert string to list
+                avg_accuracy = np.mean(accuracies)  # Calculate average
+                epoch_accuracies.append(avg_accuracy)
+
+        plt.plot(range(1, len(epoch_accuracies) + 1), epoch_accuracies, label=filename[55:100])
+
+    plt.legend()
+    plt.grid(True)
+    plt.savefig(plot_name)
+
 
 if __name__ == '__main__':
     # make_graphs()    
@@ -1018,7 +1041,10 @@ if __name__ == '__main__':
     # make_variance_histograms('fmnist')
     #x = calc_centrality_measure_aver_variance('ER_graph_c_20_p_01')
     # print(x)
-    plot_acc_aver('k_out_graph_c_20_k_15', 'fmnist')
+    # plot_acc_aver('k_out_graph_c_20_k_15', 'fmnist')
+    file_dir = '../../data/full_decentralized/fmnist/ER_graph_c_20_p_05/' 
+    files = [file_dir + x + '.csv' for x in ('acc_score_cent_dist_manual_weight_00_atk_FGSM_advs_4_adv_pow_100_atk_time_25_seed_0_iid_type_iid_cent_eigenvector_centrality', 'acc_score_cent_dist_manual_weight_05_atk_FGSM_advs_4_adv_pow_100_atk_time_25_seed_0_iid_type_iid_cent_eigenvector_centrality', 'acc_score_cent_dist_manual_weight_010_atk_FGSM_advs_4_adv_pow_100_atk_time_25_seed_0_iid_type_iid_cent_eigenvector_centrality')]
+    plot_averaged_accuracy('New_Method_Plot_Acc_05.png', files)
     # plot_acc_aver_snap('SNAP_Cisco_c_28_type_g20', 'fmnist')
     # plot_scored_tradeoff_time_centrality('ER_graph_c_20_p_09', 'fmnist', 50)
     # calc_centrality_measure_aver_variance('dir_geom_graph_c_20_type_2d_close_nodes_seed_0.txt')
