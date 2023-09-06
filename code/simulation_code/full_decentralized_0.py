@@ -112,22 +112,18 @@ graph_representation = create_graph(adj_matrix)
 # plt.savefig(data_dir_name + 'graph_picture' + '.png')
 # Save network centralities
 centrality_data = calc_centralities(len(adj_matrix[0]), graph_representation)
-highest_scoring_cent_dist_manual_nodes = score_cent_dist_manual(0, len(adj_matrix[0]), int(0.2 * len(adj_matrix[0])), graph_representation)
-print(highest_scoring_cent_dist_manual_nodes)
-exit()
-'''
+
 with open(data_dir_name + 'node_centrality'+ '.csv', 'w', newline = '') as centrality_data_file:
     writer = csv.writer(centrality_data_file)
     for node_id in centrality_data.keys():
         data_cent_node = [node_id]
         data_cent_node.extend(centrality_data[node_id])
         writer.writerow(data_cent_node)
-'''
 
 # Training parameters
 N_CLIENTS = len(adj_matrix[0]) # Number of clients
 N_SERVERS  = 0        # Number of servers
-iid_type = 'iid'      # 'iid' or 'non_iid'
+iid_type = 'non_iid'      # 'iid' or 'non_iid'
 N_LOCAL_EPOCHS  = 10   # Number of epochs for local training
 N_GLOBAL_EPOCHS = 100 # Number of epochs for global training
 BATCH_SIZE = 500 # Batch size while training
@@ -137,8 +133,8 @@ attacks = ('none', 'FGSM', 'PGD', 'noise')      # Available attacks
 architectures = ('star', 'full_decentralized')  # Architecture used
 attack_used = 1                                 # Which attack from the list was used
 attack = attacks[0]                             # Always start with no attack (attack at some point)
-adv_pow = 0                                     # Power of the attack
-adv_percent = 0.0                               # Percentage of adversaries
+adv_pow = 100                                   # Power of the attack
+adv_percent = 0.2                               # Percentage of adversaries
 adv_number = int(adv_percent * N_CLIENTS)       # Number of adversaries
 # adv_list = list(range(adv_number))
 # adv_list = random.sample(list(range(N_CLIENTS)), adv_number) # Choose the adversaries at random
@@ -149,7 +145,7 @@ nb_iter = 15   # Number of epochs for PGD attack
 
 # Define centrality measures and directories
 centralities = ('none', 'in_deg_centrality', 'out_deg_centrality', 'closeness_centrality', 'betweeness_centrality', 'eigenvector_centrality')
-cent_measure_used = 0
+cent_measure_used = -1
 
 # Split the data for the specified number of clients and servers
 if iid_type == 'iid':
@@ -177,15 +173,17 @@ def run_and_save_simulation(train_split, valid_split, adj_matrix, centrality_mea
     create_clients_graph(node_list, adj_matrix, 0)
 
     # Sort by centralities
-    nodes_to_atk_centrality = sort_by_centrality(centrality_data)
-    print(nodes_to_atk_centrality)
-    exit()
+    # nodes_to_atk_centrality = sort_by_centrality(centrality_data) # For normal operation
+    # New framework
+    score_cent_dist_weight = 1 # 1 is the same as original, only choose by centralities, 0 chooses most spread out nodes
+    prefix_name = 'score_cent_dist_manual_weight_0%d' % int(10 * score_cent_dist_weight)
+    nodes_to_atk_centrality = score_cent_dist_manual(score_cent_dist_weight, N_CLIENTS, adv_number, graph_representation, cent_measure_used)
     # Init accuracy and loss values and files
     curr_loss, curr_acc = 0, 0
     centrality_used = centralities[centrality_measure]
     # atk_%s_advs_%d_adv_pow_%s_atk_time_%d_seed_%d_iid_type_%s/' % (attacks[attack_used], adv_number, str(adv_pow), attack_time, seed, iid_type)
-    file_acc_name = data_dir_name + 'acc_atk_%s_advs_%d_adv_pow_%s_atk_time_%d_seed_%d_iid_type_%s_cent_%s' % (attacks[attack_used], adv_number, str(adv_pow), attack_time, seed, iid_type, centrality_used)
-    file_loss_name = data_dir_name + 'loss_atk_%s_advs_%d_adv_pow_%s_atk_time_%d_seed_%d_iid_type_%s_cent_%s' % (attacks[attack_used], adv_number, str(adv_pow), attack_time, seed, iid_type, centrality_used)
+    file_acc_name = data_dir_name + 'acc_%s_atk_%s_advs_%d_adv_pow_%s_atk_time_%d_seed_%d_iid_type_%s_cent_%s' % (prefix_name, attacks[attack_used], adv_number, str(adv_pow), attack_time, seed, iid_type, centrality_used)
+    file_loss_name = data_dir_name + 'loss_%s_atk_%s_advs_%d_adv_pow_%s_atk_time_%d_seed_%d_iid_type_%s_cent_%s' % (prefix_name, attacks[attack_used], adv_number, str(adv_pow), attack_time, seed, iid_type, centrality_used)
 
     with open(file_acc_name + '.csv', 'w', newline = '') as file_acc:
         with open(file_loss_name + '.csv', 'w', newline = '') as file_loss:
@@ -200,7 +198,8 @@ def run_and_save_simulation(train_split, valid_split, adj_matrix, centrality_mea
                 writer_acc.writerow(['none', adv_list])
                 writer_loss.writerow(['none', adv_list])
             else: 
-                adv_list = nodes_to_atk_centrality[centrality_measure - 1][0:adv_number]
+                # adv_list = nodes_to_atk_centrality[centrality_measure - 1][0:adv_number] # Old framework
+                adv_list = nodes_to_atk_centrality
                 writer_acc.writerow([centralities[centrality_measure], adv_list])
                 writer_loss.writerow([centralities[centrality_measure], adv_list])
 
