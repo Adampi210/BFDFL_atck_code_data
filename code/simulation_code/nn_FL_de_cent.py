@@ -514,3 +514,6 @@ if __name__ == "__main__":
 # TODO:
 # Implement different choosing strategies, then run the tests
 # To implement:
+
+
+# Compare physical distance of the nodes in both cases (based on centrality distance + based on distance distance)
