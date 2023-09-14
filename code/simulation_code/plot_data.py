@@ -7,6 +7,8 @@ import ast
 from nn_FL_de_cent import *
 import networkx as nx
 import re
+import pandas as pd
+import glob
 
 # Read parameters
 seed = 0 # Seed for PRNGs 
@@ -1032,7 +1034,43 @@ def plot_averaged_accuracy(plot_name, filenames):
     plt.grid(True)
     plt.savefig(plot_name)
 
+def plot_score_cent_dist_manual(dir_acc_data):
+    # Initialize lists to store data for iid and non_iid
+    iid_data = {'none': [], '00': [], '05': [], '010': []}
+    non_iid_data = {'none': [], '00': [], '05': [], '010': []}
+    # Loop through each file in the directory
+    for filepath in glob.glob(os.path.join(dir_acc_data, 'acc_score_cent_dist_manual_weight_*.csv')):
+        filename = os.path.basename(filepath)
+        
+        # Extract relevant parts from the filename
+        weight, advs, adv_pow, seed, iid_type, cent = filename.split('_')[5], filename.split('_')[9], filename.split('_')[12], filename.split('_')[16], filename.split('_')[18], filename.split('_')[20].split('.')[0]
+        
+        # Read the CSV file into a DataFrame
+        df = pd.read_csv(filepath)
+        
+        # Drop the initial list from each epoch's data and calculate the mean
+        df['mean'] = df.apply(lambda row: np.mean([float(x) for x in row[1][1:-1].split(", ") if float(x) not in eval(row[0])]), axis=1)
+        
+        # Add the mean data to the appropriate list based on iid_type and cent
+        if iid_type == 'iid':
+            iid_data[weight if cent == 'eigenvector_centrality' else 'none'].append(df['mean'].values)
+        else:
+            non_iid_data[weight if cent == 'eigenvector_centrality' else 'none'].append(df['mean'].values)
 
+    plot_dir = ''
+    for data, iid_type in zip(iid_data, ('iid', 'non_iid')):
+        plt.figure(figsize = (10, 6))
+        for weight, values in data.items():
+            # Average across all seeds
+            avg_values = np.mean(values, axis=0)
+            plt.plot(avg_values, label=f'Weight: {weight}')
+        
+        plt.title(iid_type)
+        plt.xlabel('Epoch')
+        plt.ylabel('Average Accuracy')
+        plt.legend()
+        plt.savefig(os.path.join(plot_dir, f"{dir_acc_data.split('/')[-1]}_{iid_type}.png"))
+        plt.close()
 if __name__ == '__main__':
     # make_graphs()    
     #for i in range(0, 11):

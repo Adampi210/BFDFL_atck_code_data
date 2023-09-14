@@ -123,7 +123,7 @@ with open(data_dir_name + 'node_centrality'+ '.csv', 'w', newline = '') as centr
 # Training parameters
 N_CLIENTS = len(adj_matrix[0]) # Number of clients
 N_SERVERS  = 0        # Number of servers
-iid_type = 'non_iid'      # 'iid' or 'non_iid'
+iid_type = 'iid'      # 'iid' or 'non_iid'
 N_LOCAL_EPOCHS  = 10   # Number of epochs for local training
 N_GLOBAL_EPOCHS = 100 # Number of epochs for global training
 BATCH_SIZE = 500 # Batch size while training
