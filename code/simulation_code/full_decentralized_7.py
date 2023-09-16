@@ -50,14 +50,14 @@ aggregation_mechanism = aggreg_schemes[1]
 dir_networks = '../../data/full_decentralized/network_topologies'
 dir_data = '../../data/full_decentralized/%s/' % dataset_name
 graph_type = ('ER', 'dir_scale_free', 'dir_geom', 'k_out', 'pref_attach', 'SNAP_Cisco')
-graph_type_used = graph_type[0]
+graph_type_used = graph_type[2]
 # This is the source for network topology
 
 # ADJUSTABLE #####
 designated_clients = 20
 # ER
 if graph_type_used == 'ER':
-    prob_conn = 5
+    prob_conn = 9
     data_dir_name = dir_data + '%s_graph_c_%d_p_0%d/' % (graph_type_used, designated_clients, prob_conn)
     network_topology = '%s_graph_c_%d_p_0%d_seed_%d.txt' % (graph_type_used, designated_clients, prob_conn, seed)
 # DIR GEOM
@@ -123,7 +123,7 @@ with open(data_dir_name + 'node_centrality'+ '.csv', 'w', newline = '') as centr
 # Training parameters
 N_CLIENTS = len(adj_matrix[0]) # Number of clients
 N_SERVERS  = 0        # Number of servers
-iid_type = 'iid'      # 'iid' or 'non_iid'
+iid_type = 'non_iid'      # 'iid' or 'non_iid'
 N_LOCAL_EPOCHS  = 10   # Number of epochs for local training
 N_GLOBAL_EPOCHS = 100 # Number of epochs for global training
 BATCH_SIZE = 500 # Batch size while training
