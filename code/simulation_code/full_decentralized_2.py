@@ -63,7 +63,7 @@ if graph_type_used == 'ER':
 # DIR GEOM
 elif graph_type_used == 'dir_geom':
     geo_graph_configs = ('2d_very_close_nodes', '2d_close_nodes', '2d_far_nodes')
-    config_used = 2
+    config_used = 0
     data_dir_name = dir_data + '%s_graph_c_%d_type_%s/' % (graph_type_used, designated_clients, geo_graph_configs[config_used])
     network_topology = '%s_graph_c_%d_type_%s_seed_%d.txt' % (graph_type_used, designated_clients, geo_graph_configs[config_used], seed)
 # K-OUT
@@ -124,7 +124,7 @@ with open(data_dir_name + 'node_centrality'+ '.csv', 'w', newline = '') as centr
 N_CLIENTS = len(adj_matrix[0]) # Number of clients
 N_SERVERS  = 0        # Number of servers
 iid_type = 'iid'      # 'iid' or 'non_iid'
-N_LOCAL_EPOCHS  = 10   # Number of epochs for local training
+N_LOCAL_EPOCHS  = 10  # Number of epochs for local training
 N_GLOBAL_EPOCHS = 100 # Number of epochs for global training
 BATCH_SIZE = 500 # Batch size while training
 
@@ -140,7 +140,7 @@ adv_number = int(adv_percent * N_CLIENTS)       # Number of adversaries
 # adv_list = random.sample(list(range(N_CLIENTS)), adv_number) # Choose the adversaries at random
 attack_time = 25                                # Global epoch at which the attack activates
 # PGD attack parameters
-eps_iter = 0.1 # Learning rate for PGD attack
+eps_iter = 0.0 # Learning rate for PGD attack
 nb_iter = 15   # Number of epochs for PGD attack
 
 # Define centrality measures and directories
@@ -175,12 +175,26 @@ def run_and_save_simulation(train_split, valid_split, adj_matrix, centrality_mea
     # Sort by centralities
     # nodes_to_atk_centrality = sort_by_centrality(centrality_data) # For normal operation
     # New framework #########################
-    score_cent_dist_weight = 1 # 1 is the same as original, only choose by centralities, 0 chooses most spread out nodes
-    prefix_name = 'score_cent_dist_manual_weight_0%d' % int(10 * score_cent_dist_weight)
-    if centralities[centrality_measure] == 'none':
-        nodes_to_atk_centrality = []
-    else:
-        nodes_to_atk_centrality = score_cent_dist_manual(score_cent_dist_weight, N_CLIENTS, adv_number, graph_representation, centrality_measure - 1)
+    # prefix_name = 'score_cent_dist_manual_weight_0%d' % int(10 * score_cent_dist_weight) # For centrality-distance tradeoff
+    # prefix_name = 'cluster_metis_alg' # For creating clusters baed on the metis algorithm and choosing most central node for each cluster
+    prefix_name = 'random_nodes'
+    if 'score_cent_dist_manual_weight_0' in prefix_name:
+        score_cent_dist_weight = 0 # 1 is the same as original, only choose by centralities, 0 chooses most spread out nodes
+        if centralities[centrality_measure] == 'none':
+            nodes_to_atk_centrality = []
+        else:
+            nodes_to_atk_centrality = score_cent_dist_manual(score_cent_dist_weight, N_CLIENTS, adv_number, graph_representation, centrality_measure - 1)
+    elif 'cluster_metis_alg' in prefix_name:
+        if centralities[centrality_measure] == 'none':
+            nodes_to_atk_centrality = []
+        else:
+            nodes_to_atk_centrality = cluster_metis_alg(N_CLIENTS, adv_number, graph_representation, centrality_measure - 1)
+    elif 'random_nodes' in prefix_name:
+        if centralities[centrality_measure] == 'none':
+            nodes_to_atk_centrality = []
+        else:
+            nodes_to_atk_centrality = random_nodes(N_CLIENTS, adv_number)
+    
     # Init accuracy and loss values and files
     curr_loss, curr_acc = 0, 0
     centrality_used = centralities[centrality_measure]

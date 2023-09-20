@@ -17,7 +17,7 @@ sed -i "s/iid_type = '$prev_iid_style'/iid_type = '$init_iid_style'/g" full_dece
 sed -i "s/cent_measure_used = $prev_cent_used/cent_measure_used = $init_cent_used/g" full_decentralized_3.py
 
 
-for iid_style in 'iid'
+for iid_style in 'non_iid'
 do
     for power in 0
     do
