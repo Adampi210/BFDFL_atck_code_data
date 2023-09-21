@@ -1071,18 +1071,67 @@ def plot_score_cent_dist_manual(dir_acc_data):
         plt.legend()
         plt.savefig(os.path.join(plot_dir, f"{dir_acc_data.split('/')[-1]}_{iid_type}.png"))
         plt.close()
+
+def plot_new_scheme(dir_acc_data):
+    dir_plot_data = '../../data/full_decentralized/new_schemes_plots/'
+    iid_types = ('iid', 'non_iid')
+    prefix_names = ('score_cent_dist_manual_weight_00', 'score_cent_dist_manual_weight_05', 'score_cent_dist_manual_weight_010', 'cluster_metis_alg', 'random_nodes')
+    seed_range = 50
+    num_clients = 20
+    num_advs = 4
+    for iid_type in iid_types:
+        plt.figure()
+        
+        for prefix_name in prefix_names:
+            for cent in ['none', 'eigenvector_centrality']:
+                all_seeds_data = []
+                
+                for seed in range(seed_range):
+                    filename = f'acc_{prefix_name}_atk_FGSM_advs_{num_advs}_adv_pow_100_atk_time_25_seed_{seed}_iid_type_{iid_type}_cent_{cent}.csv'
+                    filepath = os.path.join(dir_acc_data, filename)
+                    
+                    if not os.path.exists(filepath):
+                        continue
+                    
+                    with open(filepath, 'r') as f:
+                        reader = csv.reader(f)
+                        adv_nodes = next(reader)[1]
+                        adv_nodes = list(map(int, adv_nodes.strip('[]').split(',')))
+                        
+                        epoch_data = []
+                        for row in reader:
+                            accs = list(map(float, row[1].strip('[]').split(',')))
+                            non_adv_accs = [accs[i] for i in range(len(accs)) if i not in adv_nodes]
+                            epoch_data.append(np.mean(non_adv_accs))
+                        
+                        all_seeds_data.append(epoch_data)
+                
+                if all_seeds_data:
+                    avg_data = np.mean(all_seeds_data, axis=0)
+                    plt.plot(range(len(avg_data)), avg_data, label=f'{prefix_name}_{cent}')
+        
+        plt.xlabel('Epoch')
+        plt.ylabel('Average Accuracy')
+        plt.legend()
+        plt.title(f"Average Accuracy vs Epoch for {iid_type} for {dir_acc_data.split('/')[-2]} graph")
+        
+        plot_name = f"{dir_acc_data.split('/')[-2]}_{iid_type}.png"
+        plt.savefig(os.path.join(dir_plot_data, plot_name))
+
+    
 if __name__ == '__main__':
+    plot_new_scheme('../../data/full_decentralized/fmnist/ER_graph_c_20_p_09/')
     # make_graphs()    
     #for i in range(0, 11):
     #    score_graph_types_centralities_similarity('fmnist', float(i) / 10)
     # make_similarity_graphs('fmnist')
     # make_variance_histograms('fmnist')
-    #x = calc_centrality_measure_aver_variance('ER_graph_c_20_p_01')
+    # x = calc_centrality_measure_aver_variance('ER_graph_c_20_p_01')
     # print(x)
     # plot_acc_aver('k_out_graph_c_20_k_15', 'fmnist')
-    file_dir = '../../data/full_decentralized/fmnist/ER_graph_c_20_p_05/' 
-    files = [file_dir + x + '.csv' for x in ('acc_score_cent_dist_manual_weight_00_atk_FGSM_advs_4_adv_pow_100_atk_time_25_seed_0_iid_type_iid_cent_eigenvector_centrality', 'acc_score_cent_dist_manual_weight_05_atk_FGSM_advs_4_adv_pow_100_atk_time_25_seed_0_iid_type_iid_cent_eigenvector_centrality', 'acc_score_cent_dist_manual_weight_010_atk_FGSM_advs_4_adv_pow_100_atk_time_25_seed_0_iid_type_iid_cent_eigenvector_centrality')]
-    plot_averaged_accuracy('New_Method_Plot_Acc_05.png', files)
+    # file_dir = '../../data/full_decentralized/fmnist/ER_graph_c_20_p_05/' 
+    # files = [file_dir + x + '.csv' for x in ('acc_score_cent_dist_manual_weight_00_atk_FGSM_advs_4_adv_pow_100_atk_time_25_seed_0_iid_type_iid_cent_eigenvector_centrality', 'acc_score_cent_dist_manual_weight_05_atk_FGSM_advs_4_adv_pow_100_atk_time_25_seed_0_iid_type_iid_cent_eigenvector_centrality', 'acc_score_cent_dist_manual_weight_010_atk_FGSM_advs_4_adv_pow_100_atk_time_25_seed_0_iid_type_iid_cent_eigenvector_centrality')]
+    # plot_averaged_accuracy('New_Method_Plot_Acc_05.png', files)
     # plot_acc_aver_snap('SNAP_Cisco_c_28_type_g20', 'fmnist')
     # plot_scored_tradeoff_time_centrality('ER_graph_c_20_p_09', 'fmnist', 50)
     # calc_centrality_measure_aver_variance('dir_geom_graph_c_20_type_2d_close_nodes_seed_0.txt')
