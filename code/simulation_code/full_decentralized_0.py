@@ -34,7 +34,7 @@ if device_used != torch.device('cuda:0'):
 
 start_time = time.time()
 # Set hyperparameters
-seed = 0 # Seed for PRNGs 
+seed = 5 # Seed for PRNGs 
 random.seed(seed)
 torch.manual_seed(seed)
 np.random.seed(seed)
@@ -145,7 +145,7 @@ nb_iter = 15   # Number of epochs for PGD attack
 
 # Define centrality measures and directories
 centralities = ('none', 'in_deg_centrality', 'out_deg_centrality', 'closeness_centrality', 'betweeness_centrality', 'eigenvector_centrality')
-cent_measure_used = 0
+cent_measure_used = 5
 
 # Split the data for the specified number of clients and servers
 if iid_type == 'iid':
@@ -271,3 +271,4 @@ if __name__ == '__main__':
 # Run noise attack, make sure the noise is significant in comparison to the information being aggregated
 # Noise is chosen to be a function of the aggregated gradients, function chosen to be proportional to the gradients without randomness
 # Check different types of graphs, random connection model, preferencial attachment model, geometric, scale-free graph
+# 
