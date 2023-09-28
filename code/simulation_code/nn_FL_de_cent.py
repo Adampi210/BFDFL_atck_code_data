@@ -14,6 +14,7 @@ import csv
 import copy
 import time 
 import metis
+from collections import deque
 
 from sklearn.cluster import KMeans, SpectralClustering
 
@@ -508,9 +509,60 @@ def cluster_metis_alg(n_clients, n_advs, graph_representation, cent_used = -1):
 def random_nodes(n_clients, n_advs):
     return list(np.random.choice(np.arange(n_clients), n_advs))
 
+def bfs_cluster(graph, start_node, area):
+    visited = set()
+    queue = deque([start_node])
+    cluster = set()
+    
+    while queue and len(cluster) < area:
+        current_node = queue.popleft()
+        if current_node not in visited:
+            visited.add(current_node)
+            cluster.add(current_node)
+            queue.extend(neighbor for neighbor in graph.neighbors(current_node) if neighbor not in visited)
+    
+    return cluster
+
+def least_overlap_area(n_clients, n_advs, graph_representation):
+    # Calculate the area each BFS should cover
+    area = n_clients // n_advs
+    
+    # Run BFS for each node and store the resulting cluster
+    node_clusters = {}
+    for node in range(n_clients):
+        node_clusters[node] = bfs_cluster(graph_representation, node, area)
+    
+    # Initialize adversarial nodes and available nodes
+    adv_nodes = []
+    available_nodes = set(range(n_clients))
+    
+    while len(adv_nodes) < n_advs:
+        min_overlap = float('inf')
+        best_node = None
+        
+        for node in available_nodes:
+            # Calculate overlap with already selected adversarial nodes
+            overlap = sum(len(node_clusters[node].intersection(node_clusters[adv])) for adv in adv_nodes)
+            
+            if overlap < min_overlap:
+                min_overlap = overlap
+                best_node = node
+        
+        # Add the best node to adversarial nodes and remove from available nodes
+        adv_nodes.append(best_node)
+        available_nodes.remove(best_node)
+    
+    return adv_nodes
+
 
 if __name__ == "__main__":
-    pass
+    # Example usage
+    G = nx.erdos_renyi_graph(20, 0.2)  # Replace this with your actual graph_representation
+    n_clients = 20
+    n_advs = 4
+
+    adv_nodes = least_overlap_area(n_clients, n_advs, G)
+    print("Selected adversarial nodes:", adv_nodes)
 
 # Increase number of epochs 3-5 times the current one, check different learning rates
 # Decrease step size significantly, increase the sizes of minibatchs

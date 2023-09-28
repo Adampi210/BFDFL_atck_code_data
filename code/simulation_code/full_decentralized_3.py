@@ -54,7 +54,7 @@ graph_type_used = graph_type[0]
 # This is the source for network topology
 
 # ADJUSTABLE #####
-designated_clients = 100
+designated_clients = 20
 # ER
 if graph_type_used == 'ER':
     prob_conn = 5
@@ -176,8 +176,9 @@ def run_and_save_simulation(train_split, valid_split, adj_matrix, centrality_mea
     # nodes_to_atk_centrality = sort_by_centrality(centrality_data) # For normal operation
     # New framework #########################
     # prefix_name = 'score_cent_dist_manual_weight_0%d' % int(10 * score_cent_dist_weight) # For centrality-distance tradeoff
-    # prefix_name = 'cluster_metis_alg' # For creating clusters baed on the metis algorithm and choosing most central node for each cluster
-    prefix_name = 'random_nodes'
+    # prefix_name = 'cluster_metis_alg' # For creating clusters based on the metis algorithm and choosing most central node for each cluster
+    prefix_name = 'least_overlap_area' # For creating clusters based on the new least overlap area algorithm
+    # prefix_name = 'random_nodes'
     if 'score_cent_dist_manual_weight_0' in prefix_name:
         score_cent_dist_weight = 0 # 1 is the same as original, only choose by centralities, 0 chooses most spread out nodes
         if centralities[centrality_measure] == 'none':
@@ -194,7 +195,11 @@ def run_and_save_simulation(train_split, valid_split, adj_matrix, centrality_mea
             nodes_to_atk_centrality = []
         else:
             nodes_to_atk_centrality = random_nodes(N_CLIENTS, adv_number)
-    
+    elif 'least_overlap_area' in prefix_name:
+        if centralities[centrality_measure] == 'none':
+            nodes_to_atk_centrality = []
+        else:
+            nodes_to_atk_centrality = least_overlap_area(N_CLIENTS, adv_number, graph_representation)
     # Init accuracy and loss values and files
     curr_loss, curr_acc = 0, 0
     centrality_used = centralities[centrality_measure]
@@ -271,3 +276,4 @@ if __name__ == '__main__':
 # Run noise attack, make sure the noise is significant in comparison to the information being aggregated
 # Noise is chosen to be a function of the aggregated gradients, function chosen to be proportional to the gradients without randomness
 # Check different types of graphs, random connection model, preferencial attachment model, geometric, scale-free graph
+# 
