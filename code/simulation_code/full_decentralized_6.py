@@ -57,7 +57,7 @@ graph_type_used = graph_type[0]
 designated_clients = 20
 # ER
 if graph_type_used == 'ER':
-    prob_conn = 5
+    prob_conn = 3
     data_dir_name = dir_data + '%s_graph_c_%d_p_0%d/' % (graph_type_used, designated_clients, prob_conn)
     network_topology = '%s_graph_c_%d_p_0%d_seed_%d.txt' % (graph_type_used, designated_clients, prob_conn, seed)
 # DIR GEOM

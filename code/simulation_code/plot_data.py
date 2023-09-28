@@ -1075,7 +1075,7 @@ def plot_score_cent_dist_manual(dir_acc_data):
 def plot_new_scheme(dir_acc_data):
     dir_plot_data = '../../data/full_decentralized/new_schemes_plots/'
     iid_types = ('iid', 'non_iid')
-    prefix_names = ('score_cent_dist_manual_weight_00', 'score_cent_dist_manual_weight_05', 'score_cent_dist_manual_weight_010', 'cluster_metis_alg', 'random_nodes')
+    prefix_names = ('score_cent_dist_manual_weight_00', 'score_cent_dist_manual_weight_05', 'score_cent_dist_manual_weight_010', 'cluster_metis_alg', 'random_nodes', 'least_overlap_area')
     seed_range = 50
     num_clients = 20
     num_advs = 4
@@ -1083,7 +1083,7 @@ def plot_new_scheme(dir_acc_data):
         plt.figure()
         
         for prefix_name in prefix_names:
-            for cent in ['none', 'eigenvector_centrality']:
+            for cent in ['eigenvector_centrality', 'none']:
                 all_seeds_data = []
                 
                 for seed in range(seed_range):
@@ -1096,8 +1096,10 @@ def plot_new_scheme(dir_acc_data):
                     with open(filepath, 'r') as f:
                         reader = csv.reader(f)
                         adv_nodes = next(reader)[1]
-                        adv_nodes = list(map(int, adv_nodes.strip('[]').split(',')))
-                        
+                        if adv_nodes != '[]':
+                            adv_nodes = list(map(int, adv_nodes.strip('[]').split(',')))
+                        else:
+                            adv_nodes = []
                         epoch_data = []
                         for row in reader:
                             accs = list(map(float, row[1].strip('[]').split(',')))
@@ -1120,7 +1122,7 @@ def plot_new_scheme(dir_acc_data):
 
     
 if __name__ == '__main__':
-    plot_new_scheme('../../data/full_decentralized/fmnist/ER_graph_c_20_p_09/')
+    plot_new_scheme('../../data/full_decentralized/fmnist/dir_geom_graph_c_20_type_2d_close_nodes/')
     # make_graphs()    
     #for i in range(0, 11):
     #    score_graph_types_centralities_similarity('fmnist', float(i) / 10)
