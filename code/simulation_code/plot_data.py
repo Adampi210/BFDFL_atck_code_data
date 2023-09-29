@@ -1122,7 +1122,7 @@ def plot_new_scheme(dir_acc_data):
 
     
 if __name__ == '__main__':
-    plot_new_scheme('../../data/full_decentralized/fmnist/dir_geom_graph_c_20_type_2d_close_nodes/')
+    plot_new_scheme('../../data/full_decentralized/fmnist/ER_graph_c_20_p_05/')
     # make_graphs()    
     #for i in range(0, 11):
     #    score_graph_types_centralities_similarity('fmnist', float(i) / 10)
