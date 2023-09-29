@@ -1138,3 +1138,12 @@ if __name__ == '__main__':
     # plot_scored_tradeoff_time_centrality('ER_graph_c_20_p_09', 'fmnist', 50)
     # calc_centrality_measure_aver_variance('dir_geom_graph_c_20_type_2d_close_nodes_seed_0.txt')
 
+
+# Plot variables
+# Different types of networks (ER, Geom, Pref-Attach, SNAP?) - iid and non-iid FMNIST and CIFAR10
+# Different connectivity (ER 0.1 0.3 0.5 0.7, Geom r = 0.2 0.4 0.6, pref_attach -> look at parameters to change)
+# Different newtork sizes (10 25 50 75 100)
+# Different adversarial percentages (5, 10, 20%)
+
+
+
