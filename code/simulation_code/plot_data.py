@@ -369,7 +369,10 @@ def gen_dir_geom_graph(n_clients, graph_type = '2d_close_nodes', graph_name = ''
     geo_graph_configs = {
         '2d_very_close_nodes': [2, 0.5],
         '2d_close_nodes': [2, 0.3],
-        '2d_far_nodes': [2, 0.2]
+        '2d_far_nodes': [2, 0.2],
+        '2d_r_02' : [2, 0.2],
+        '2d_r_04' : [2, 0.4],
+        '2d_r_06' : [2, 0.6]
     }
     dim, radius = geo_graph_configs[graph_type]
     graph = None    
@@ -1122,7 +1125,12 @@ def plot_new_scheme(dir_acc_data):
 
     
 if __name__ == '__main__':
-    plot_new_scheme('../../data/full_decentralized/fmnist/ER_graph_c_20_p_05/')
+    for n_clients in [10, 25, 50, 75, 100]:
+        for seed in range(50):
+            for type_geom in ['2d_r_02', '2d_r_04', '2d_r_06']:
+                graph_name = 'dir_geom_graph_c_%d_type_%s_seed_%d.txt' % (n_clients, type_geom, seed)
+                gen_dir_geom_graph(n_clients, type_geom, graph_name, seed)
+    # plot_new_scheme('../../data/full_decentralized/fmnist/ER_graph_c_20_p_05/')
     # make_graphs()    
     #for i in range(0, 11):
     #    score_graph_types_centralities_similarity('fmnist', float(i) / 10)
