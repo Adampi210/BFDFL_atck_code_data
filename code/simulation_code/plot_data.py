@@ -1078,10 +1078,10 @@ def plot_score_cent_dist_manual(dir_acc_data):
 def plot_new_scheme(dir_acc_data):
     dir_plot_data = '../../data/full_decentralized/new_schemes_plots/'
     iid_types = ('iid', 'non_iid')
-    prefix_names = ('score_cent_dist_manual_weight_00', 'score_cent_dist_manual_weight_05', 'score_cent_dist_manual_weight_010', 'cluster_metis_alg', 'random_nodes', 'least_overlap_area')
+    prefix_names = ('score_cent_dist_manual_weight_010', 'least_overlap_area')
     seed_range = 50
-    num_clients = 20
-    num_advs = 4
+    num_clients = 10
+    num_advs = 2
     for iid_type in iid_types:
         plt.figure()
         
@@ -1125,12 +1125,7 @@ def plot_new_scheme(dir_acc_data):
 
     
 if __name__ == '__main__':
-    for n_clients in [10, 25, 50, 75, 100]:
-        for seed in range(50):
-            for type_geom in ['2d_r_02', '2d_r_04', '2d_r_06']:
-                graph_name = 'dir_geom_graph_c_%d_type_%s_seed_%d.txt' % (n_clients, type_geom, seed)
-                gen_dir_geom_graph(n_clients, type_geom, graph_name, seed)
-    # plot_new_scheme('../../data/full_decentralized/fmnist/ER_graph_c_20_p_05/')
+    plot_new_scheme('../../data/full_decentralized/fmnist/ER_graph_c_10_p_05/')
     # make_graphs()    
     #for i in range(0, 11):
     #    score_graph_types_centralities_similarity('fmnist', float(i) / 10)

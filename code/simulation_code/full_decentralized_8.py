@@ -63,7 +63,7 @@ if graph_type_used == 'ER':
 # DIR GEOM
 elif graph_type_used == 'dir_geom':
     geo_graph_configs = ('2d_r_02', '2d_r_04', '2d_r_06')
-    config_used = 1
+    config_used = 0
     data_dir_name = dir_data + '%s_graph_c_%d_type_%s/' % (graph_type_used, designated_clients, geo_graph_configs[config_used])
     network_topology = '%s_graph_c_%d_type_%s_seed_%d.txt' % (graph_type_used, designated_clients, geo_graph_configs[config_used], seed)
 # K-OUT
@@ -124,7 +124,7 @@ with open(data_dir_name + 'node_centrality'+ '.csv', 'w', newline = '') as centr
 N_CLIENTS = len(adj_matrix[0]) # Number of clients
 N_SERVERS  = 0        # Number of servers
 iid_type = 'iid'      # 'iid' or 'non_iid'
-N_LOCAL_EPOCHS  = 5   # Number of epochs for local training
+N_LOCAL_EPOCHS  = 10  # Number of epochs for local training
 N_GLOBAL_EPOCHS = 100 # Number of epochs for global training
 BATCH_SIZE = 500 # Batch size while training
 

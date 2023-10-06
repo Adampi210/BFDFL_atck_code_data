@@ -54,7 +54,7 @@ graph_type_used = graph_type[0]
 # This is the source for network topology
 
 # ADJUSTABLE #####
-designated_clients = 10
+designated_clients = 25
 # ER
 if graph_type_used == 'ER':
     prob_conn = 5
@@ -124,7 +124,7 @@ with open(data_dir_name + 'node_centrality'+ '.csv', 'w', newline = '') as centr
 N_CLIENTS = len(adj_matrix[0]) # Number of clients
 N_SERVERS  = 0        # Number of servers
 iid_type = 'iid'      # 'iid' or 'non_iid'
-N_LOCAL_EPOCHS  = 5   # Number of epochs for local training
+N_LOCAL_EPOCHS  = 10  # Number of epochs for local training
 N_GLOBAL_EPOCHS = 100 # Number of epochs for global training
 BATCH_SIZE = 500 # Batch size while training
 
