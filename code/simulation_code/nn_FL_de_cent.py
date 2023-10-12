@@ -592,3 +592,6 @@ if __name__ == "__main__":
 
 
 # Compare physical distance of the nodes in both cases (based on centrality distance + based on distance distance)
+
+# Check the clustering algorithm on 25 client case, see if its doing what we think
+# Check if separate at r = 0.05 0.1 0.15 for 25 client case (geom)
