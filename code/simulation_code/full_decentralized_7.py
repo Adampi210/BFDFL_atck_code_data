@@ -34,7 +34,7 @@ if device_used != torch.device('cuda:1'):
 
 start_time = time.time()
 # Set hyperparameters
-seed = 15 # Seed for PRNGs 
+seed = 40 # Seed for PRNGs 
 random.seed(seed)
 torch.manual_seed(seed)
 np.random.seed(seed)
@@ -54,7 +54,7 @@ graph_type_used = graph_type[0]
 # This is the source for network topology
 
 # ADJUSTABLE #####
-designated_clients = 25
+designated_clients = 50
 # ER
 if graph_type_used == 'ER':
     prob_conn = 5
@@ -63,7 +63,7 @@ if graph_type_used == 'ER':
 # DIR GEOM
 elif graph_type_used == 'dir_geom':
     geo_graph_configs = ('2d_r_02', '2d_r_04', '2d_r_06')
-    config_used = 2
+    config_used = 0
     data_dir_name = dir_data + '%s_graph_c_%d_type_%s/' % (graph_type_used, designated_clients, geo_graph_configs[config_used])
     network_topology = '%s_graph_c_%d_type_%s_seed_%d.txt' % (graph_type_used, designated_clients, geo_graph_configs[config_used], seed)
 # K-OUT

@@ -372,9 +372,13 @@ def gen_dir_geom_graph(n_clients, graph_type = '2d_close_nodes', graph_name = ''
         '2d_far_nodes': [2, 0.2],
         '2d_r_02' : [2, 0.2],
         '2d_r_04' : [2, 0.4],
-        '2d_r_06' : [2, 0.6]
+        '2d_r_06' : [2, 0.6],
+        '2d_r_015' : [2, 0.15],
+        '2d_r_01' : [2, 0.1],
+        '2d_r_005' : [2, 0.05]
     }
     dim, radius = geo_graph_configs[graph_type]
+    print(dim, radius)
     graph = None    
     is_strongly_connected = False
     while not is_strongly_connected:
@@ -1125,7 +1129,13 @@ def plot_new_scheme(dir_acc_data):
 
     
 if __name__ == '__main__':
-    plot_new_scheme('../../data/full_decentralized/fmnist/dir_geom_graph_c_25_type_2d_r_06/')
+    # plot_new_scheme('../../data/full_decentralized/fmnist/dir_geom_graph_c_25_type_2d_r_06/')
+    for graph_type in ('2d_r_015', '2d_r_01', '2d_r_005'):
+        for seed in range(50):
+            for n_clients in (25, ):  
+                graph_name = 'dir_geom_graph_c_%d_type_%s_seed_%d.txt' % (n_clients, graph_type, seed)
+                print(graph_name)
+                gen_dir_geom_graph(n_clients, graph_type = graph_type, graph_name = graph_name, seed = seed)
     # make_graphs()    
     #for i in range(0, 11):
     #    score_graph_types_centralities_similarity('fmnist', float(i) / 10)
