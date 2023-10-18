@@ -6,6 +6,7 @@ import torch.utils.data as data_utils
 import torchvision
 import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
+from scipy.linalg import expm
 import random
 import hashlib
 import numpy as np
@@ -553,6 +554,24 @@ def least_overlap_area(n_clients, n_advs, graph_representation):
         available_nodes.remove(best_node)
     
     return adv_nodes
+
+# Calculate average distance between adversarial nodes
+def average_distance_between_advs(G, adv_list):
+    total_distance = 0
+    count = 0
+    for i in range(len(adv_list)):
+        for j in range(i+1, len(adv_list)):
+            try:
+                distance = nx.shortest_path_length(G, source = adv_list[i], target = adv_list[j])
+                total_distance += distance
+                count += 1
+            except nx.NetworkXNoPath:
+                continue
+    if count == 0:
+        return 0
+    avg_distance = total_distance / count
+    return avg_distance
+
 
 
 if __name__ == "__main__":
