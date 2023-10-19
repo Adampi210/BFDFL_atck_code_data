@@ -1079,63 +1079,111 @@ def plot_score_cent_dist_manual(dir_acc_data):
         plt.savefig(os.path.join(plot_dir, f"{dir_acc_data.split('/')[-1]}_{iid_type}.png"))
         plt.close()
 
-def plot_new_scheme(dir_acc_data):
-    dir_plot_data = '../../data/full_decentralized/new_schemes_plots/'
-    iid_types = ('iid', 'non_iid')
-    prefix_names = ('score_cent_dist_manual_weight_010', 'least_overlap_area', 'random_nodes')
-    seed_range = 50
-    num_clients = 25
-    num_advs = 5
-    for iid_type in iid_types:
-        plt.figure()
-        
-        for prefix_name in prefix_names:
-            for cent in ['eigenvector_centrality', 'none']:
-                all_seeds_data = []
-                
-                for seed in range(seed_range):
-                    filename = f'acc_{prefix_name}_atk_FGSM_advs_{num_advs}_adv_pow_100_atk_time_25_seed_{seed}_iid_type_{iid_type}_cent_{cent}.csv'
-                    filepath = os.path.join(dir_acc_data, filename)
-                    
-                    if not os.path.exists(filepath):
-                        continue
-                    
-                    with open(filepath, 'r') as f:
-                        reader = csv.reader(f)
-                        adv_nodes = next(reader)[1]
-                        if adv_nodes != '[]':
-                            adv_nodes = list(map(int, adv_nodes.strip('[]').split(',')))
-                        else:
-                            adv_nodes = []
-                        epoch_data = []
-                        for row in reader:
-                            accs = list(map(float, row[1].strip('[]').split(',')))
-                            non_adv_accs = [accs[i] for i in range(len(accs)) if i not in adv_nodes]
-                            epoch_data.append(np.mean(non_adv_accs))
-                        
-                        all_seeds_data.append(epoch_data)
-                
-                if all_seeds_data:
-                    avg_data = np.mean(all_seeds_data, axis=0)
-                    plt.plot(range(len(avg_data)), avg_data, label=f'{prefix_name}_{cent}')
-        
-        plt.xlabel('Epoch')
-        plt.ylabel('Average Accuracy')
-        plt.legend()
-        plt.title(f"Average Accuracy vs Epoch for {iid_type} for {dir_acc_data.split('/')[-2]} graph")
-        
-        plot_name = f"{dir_acc_data.split('/')[-2]}_{iid_type}.png"
-        plt.savefig(os.path.join(dir_plot_data, plot_name))
-
-    
-if __name__ == '__main__':
-    # plot_new_scheme('../../data/full_decentralized/fmnist/dir_geom_graph_c_25_type_2d_r_06/')
-    for graph_type in ('2d_r_015', '2d_r_01', '2d_r_005'):
+def measure_avg_dist_diff_schemes(network_type):
+    dir_networks = '../../data/full_decentralized/network_topologies/'
+    adv_schemes = {'score_cent_dist_manual_weight_010': [], 'least_overlap_area': [], 'random_nodes': []}
+    n_clients = int((re.search('_c_(\d+)', network_type)).group(1))
+    adv_number = int(float(n_clients) * 0.2)
+    for adv_scheme in adv_schemes.keys():
         for seed in range(50):
-            for n_clients in (25, ):  
-                graph_name = 'dir_geom_graph_c_%d_type_%s_seed_%d.txt' % (n_clients, graph_type, seed)
-                print(graph_name)
-                gen_dir_geom_graph(n_clients, graph_type = graph_type, graph_name = graph_name, seed = seed)
+            graph_topology = network_type + '_seed_%d.txt' % seed
+            network_topology_filepath = os.path.join(dir_networks, graph_topology)
+            adj_matrix = np.loadtxt(network_topology_filepath) 
+            graph_representation = create_graph(adj_matrix)
+            if adv_scheme == 'score_cent_dist_manual_weight_010':
+                adv_nodes = score_cent_dist_manual(1, n_clients, adv_number, graph_representation, -1)
+            elif adv_scheme == 'least_overlap_area':
+                adv_nodes = least_overlap_area(n_clients, adv_number, graph_representation)
+            elif adv_scheme == 'random_nodes':
+                adv_nodes = random_nodes(n_clients, adv_number)
+            
+            adv_schemes[adv_scheme].append(average_distance_between_advs(graph_representation, adv_nodes))
+
+    for adv_scheme in adv_schemes.keys():
+        adv_schemes[adv_scheme] = np.mean(adv_schemes[adv_scheme])
+
+def plot_new_schemes(network_type, iid_type):
+    dataset_name = 'fmnist' # Remember to change for CIFAR10
+    dir_data = '../../data/full_decentralized/%s/%s/' % (dataset_name, network_type)
+    dir_plots = '../../data/full_decentralized/finalized_plots/'
+    # adv_schemes = {'score_cent_dist_manual_weight_010': [], 'least_overlap_area': [], 'random_nodes': [], 'none': []} # All
+    # adv_schemes = {'least_overlap_area': [], 'random_nodes': [], 'none': []} # Missing eigenv 
+    adv_schemes = {'score_cent_dist_manual_weight_010': [], 'least_overlap_area': [], 'none': []} # Missibg random
+    n_clients = int((re.search('_c_(\d+)', network_type)).group(1))
+    adv_frac = 0.2
+    adv_number = int(float(n_clients) * adv_frac)
+    seed_range = 50
+    # First get the data for none
+    for seed in range(seed_range):
+        file_name = 'acc_score_cent_dist_manual_weight_010_atk_FGSM_advs_0_adv_pow_0_atk_time_25_seed_%d_iid_type_%s_cent_none.csv' % (seed, iid_type)
+        file_data_path = os.path.join(dir_data, file_name)
+        with open(file_data_path, 'r') as acc_data_file:
+            reader = csv.reader(acc_data_file)
+            curr_seed_run = []
+            for i, row in enumerate(reader):
+                if i != 0:
+                    acc = ast.literal_eval(row[1])
+                    acc = sum(acc) / len(acc)
+                    curr_seed_run.append(acc)
+            adv_schemes['none'].append(curr_seed_run)
+    adv_schemes['none'] = np.mean(adv_schemes['none'], axis = 0)
+
+    # Next do all attacks and compare
+    for scheme in adv_schemes.keys():
+        if scheme == 'none':
+            continue
+        for seed in range(seed_range):
+            file_name = 'acc_%s_atk_FGSM_advs_%d_adv_pow_100_atk_time_25_seed_%d_iid_type_%s_cent_eigenvector_centrality.csv' % (scheme, adv_number, seed, iid_type)
+            file_data_path = os.path.join(dir_data, file_name)
+            with open(file_data_path, 'r') as acc_data_file:
+                reader = csv.reader(acc_data_file)
+                curr_seed_run = []
+                for i, row in enumerate(reader):
+                    if i == 0:
+                        attacked_nodes = ast.literal_eval(row[1])
+                        attacked_nodes = [int(_) for _ in attacked_nodes]
+                    else:
+                        acc = ast.literal_eval(row[1])
+                        acc_honest = [_ for i, _ in enumerate(acc) if i not in attacked_nodes]
+                        acc_honest = sum(acc_honest) / len(acc_honest)
+                        curr_seed_run.append(acc_honest)
+            adv_schemes[scheme].append(curr_seed_run)
+        adv_schemes[scheme] = np.mean(adv_schemes[scheme], axis = 0)
+
+    # Finally make legend and plot
+    legend = {'score_cent_dist_manual_weight_010': 'Eigenvector-Centrality Based Attack', 'least_overlap_area': 'BFDFL Attack', 'random_nodes': 'Random Choice Based Attack', 'none': 'No attack'}
+    # Create the figure and axis
+    fig, ax = plt.subplots(figsize = (16, 9))
+
+    # Plot each data series
+    for key, values in adv_schemes.items():
+        ax.plot(range(len(values)), values, label = legend[key])
+
+    # Add vertical line
+    ax.axvline(x = 25, color = 'r', label = 'Attack begins')
+
+    # Customize the plot
+    ax.set_xticks([0, 20, 40, 60, 80, 100])
+    ax.set_xlabel('Epoch')
+    ax.set_ylabel('Average Accuracy for Honest Nodes')
+    network_name = ''
+    if 'dir_geom_graph' in network_type and n_clients != 20:
+        radius = int((re.search('_r_0(\d+)', network_type)).group(1))
+        network_name = 'directed geometric graph with %d nodes including %d adversaries, and radius r = 0.%d' % (n_clients, adv_number, radius)
+    elif 'ER_graph' in network_type:
+        probability = int((re.search('_p_0(\d+)', network_type)).group(1))
+        network_name = 'ER graph with %d nodes including %d adversaries, and connection probability p = 0.%d' % (n_clients, adv_number, probability)
+
+    title = 'Average Honest client accuracy over time \n for %s' % network_name
+    ax.set_title(title)
+    ax.legend()
+    ax.grid()
+    plt.savefig(dir_plots + 'plot_' + '_' + dataset_name + '_' + network_type + '_' + iid_type + '.png')
+
+
+if __name__ == '__main__':
+    plot_new_schemes('ER_graph_c_20_p_05', 'iid')
+
     # make_graphs()    
     #for i in range(0, 11):
     #    score_graph_types_centralities_similarity('fmnist', float(i) / 10)

@@ -527,7 +527,6 @@ def bfs_cluster(graph, start_node, area):
 def least_overlap_area(n_clients, n_advs, graph_representation):
     # Calculate the area each BFS should cover
     area = n_clients // n_advs
-    
     # Run BFS for each node and store the resulting cluster
     node_clusters = {}
     for node in range(n_clients):
@@ -548,7 +547,7 @@ def least_overlap_area(n_clients, n_advs, graph_representation):
             if overlap < min_overlap:
                 min_overlap = overlap
                 best_node = node
-        
+
         # Add the best node to adversarial nodes and remove from available nodes
         adv_nodes.append(best_node)
         available_nodes.remove(best_node)
