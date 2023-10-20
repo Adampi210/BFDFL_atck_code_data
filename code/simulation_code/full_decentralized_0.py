@@ -35,7 +35,7 @@ if device_used != torch.device('cuda:0'):
 
 start_time = time.time()
 # Set hyperparameters
-seed = 1 # Seed for PRNGs 
+seed = 0 # Seed for PRNGs 
 random.seed(seed)
 torch.manual_seed(seed)
 np.random.seed(seed)
@@ -55,10 +55,10 @@ graph_type_used = graph_type[2]
 # This is the source for network topology
 
 # ADJUSTABLE #####
-designated_clients = 25
+designated_clients = 50
 # ER
 if graph_type_used == 'ER':
-    prob_conn = 7
+    prob_conn = 5
     data_dir_name = dir_data + '%s_graph_c_%d_p_0%d/' % (graph_type_used, designated_clients, prob_conn)
     network_topology = '%s_graph_c_%d_p_0%d_seed_%d.txt' % (graph_type_used, designated_clients, prob_conn, seed)
 # DIR GEOM
@@ -134,8 +134,9 @@ attacks = ('none', 'FGSM', 'PGD', 'noise')      # Available attacks
 architectures = ('star', 'full_decentralized')  # Architecture used
 attack_used = 1                                 # Which attack from the list was used
 attack = attacks[0]                             # Always start with no attack (attack at some point)
-adv_pow = 100                                   # Power of the attack
-adv_percent = 0.2                               # Percentage of adversaries
+adv_pow = 0                                     # Power of the attack
+adv_percent = 0.0                               # Percentage of adversaries
+adv_percent /= 10
 adv_number = int(adv_percent * N_CLIENTS)       # Number of adversaries
 # adv_list = list(range(adv_number))
 # adv_list = random.sample(list(range(N_CLIENTS)), adv_number) # Choose the adversaries at random
@@ -146,7 +147,7 @@ nb_iter = 15   # Number of epochs for PGD attack
 
 # Define centrality measures and directories
 centralities = ('none', 'in_deg_centrality', 'out_deg_centrality', 'closeness_centrality', 'betweeness_centrality', 'eigenvector_centrality')
-cent_measure_used = -1
+cent_measure_used = 0
 
 # Split the data for the specified number of clients and servers
 if iid_type == 'iid':
@@ -180,8 +181,9 @@ def run_and_save_simulation(train_split, valid_split, adj_matrix, centrality_mea
     # prefix_name = 'score_cent_dist_manual_weight_0%d' % int(10 * score_cent_dist_weight) # For centrality-distance tradeoff
     # prefix_name = 'cluster_metis_alg' # For creating clusters based on the metis algorithm and choosing most central node for each cluster
     # prefix_name = 'least_overlap_area' # For creating clusters based on the new least overlap area algorithm
-    # prefix_name = 'random_nodes'
-    prefix_name = 'entropy_rand_walk'
+    prefix_name = 'random_nodes'
+    # prefix_name = 'entropy_rand_walk'
+    print(f'Scheme used: {prefix_name}')
     if 'score_cent_dist_manual_weight_0' in prefix_name:
         if centralities[centrality_measure] == 'none':
             nodes_to_atk_centrality = []
@@ -202,15 +204,6 @@ def run_and_save_simulation(train_split, valid_split, adj_matrix, centrality_mea
             nodes_to_atk_centrality = []
         else:
             nodes_to_atk_centrality = least_overlap_area(N_CLIENTS, adv_number, graph_representation)
-    elif 'entropy_rand_walk' in prefix_name:
-        if centralities[centrality_measure] == 'none':
-            nodes_to_atk_centrality = []
-        else:
-            nodes_to_atk_centrality = entropy_rand_walk(graph_representation, adv_number)
-    print(nodes_to_atk_centrality)
-    print(f'Averaged distance for {prefix_name}-based attack: ', end = '')
-    print(average_distance_between_advs(graph_representation, nodes_to_atk_centrality))
-    exit()
     # Init accuracy and loss values and files
     curr_loss, curr_acc = 0, 0
     centrality_used = centralities[centrality_measure]

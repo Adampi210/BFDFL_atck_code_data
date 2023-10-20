@@ -1101,6 +1101,7 @@ def measure_avg_dist_diff_schemes(network_type):
 
     for adv_scheme in adv_schemes.keys():
         adv_schemes[adv_scheme] = np.mean(adv_schemes[adv_scheme])
+    print(adv_schemes)
 
 def plot_new_schemes(network_type, iid_type):
     dataset_name = 'fmnist' # Remember to change for CIFAR10
@@ -1182,8 +1183,8 @@ def plot_new_schemes(network_type, iid_type):
 
 
 if __name__ == '__main__':
-    plot_new_schemes('ER_graph_c_20_p_05', 'iid')
-
+    # plot_new_schemes('ER_graph_c_20_p_05', 'iid')
+    measure_avg_dist_diff_schemes('ER_graph_c_25_p_01')
     # make_graphs()    
     #for i in range(0, 11):
     #    score_graph_types_centralities_similarity('fmnist', float(i) / 10)
@@ -1199,6 +1200,9 @@ if __name__ == '__main__':
     # plot_scored_tradeoff_time_centrality('ER_graph_c_20_p_09', 'fmnist', 50)
     # calc_centrality_measure_aver_variance('dir_geom_graph_c_20_type_2d_close_nodes_seed_0.txt')
 
+    # Take 25 -> reduce power see if change (separation) (first)
+    # Take 100 see case for 5 advs
+    # 
 
 # Plot variables
 # Different types of networks (ER, Geom, Pref-Attach, SNAP?) - iid and non-iid FMNIST and CIFAR10
