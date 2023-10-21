@@ -19,7 +19,7 @@ sed -i "s/cent_measure_used = $prev_cent_used/cent_measure_used = $init_cent_use
 
 for iid_style in 'iid'
 do
-    for power in 25
+    for power in 50
     do
         for adv_prec in 2
         do

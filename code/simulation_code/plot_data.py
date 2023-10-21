@@ -1107,34 +1107,37 @@ def plot_new_schemes(network_type, iid_type):
     dataset_name = 'fmnist' # Remember to change for CIFAR10
     dir_data = '../../data/full_decentralized/%s/%s/' % (dataset_name, network_type)
     dir_plots = '../../data/full_decentralized/finalized_plots/'
-    # adv_schemes = {'score_cent_dist_manual_weight_010': [], 'least_overlap_area': [], 'random_nodes': [], 'none': []} # All
+    adv_schemes = {'score_cent_dist_manual_weight_010': [], 'least_overlap_area': [], 'random_nodes': [], 'none': []} # All
     # adv_schemes = {'least_overlap_area': [], 'random_nodes': [], 'none': []} # Missing eigenv 
-    adv_schemes = {'score_cent_dist_manual_weight_010': [], 'least_overlap_area': [], 'none': []} # Missibg random
+    # adv_schemes = {'score_cent_dist_manual_weight_010': [], 'least_overlap_area': [], 'none': []} # Missibg random
     n_clients = int((re.search('_c_(\d+)', network_type)).group(1))
     adv_frac = 0.2
     adv_number = int(float(n_clients) * adv_frac)
-    seed_range = 50
+    seed_range = 20
+    pwr = 50
     # First get the data for none
-    for seed in range(seed_range):
-        file_name = 'acc_score_cent_dist_manual_weight_010_atk_FGSM_advs_0_adv_pow_0_atk_time_25_seed_%d_iid_type_%s_cent_none.csv' % (seed, iid_type)
-        file_data_path = os.path.join(dir_data, file_name)
-        with open(file_data_path, 'r') as acc_data_file:
-            reader = csv.reader(acc_data_file)
-            curr_seed_run = []
-            for i, row in enumerate(reader):
-                if i != 0:
-                    acc = ast.literal_eval(row[1])
-                    acc = sum(acc) / len(acc)
-                    curr_seed_run.append(acc)
-            adv_schemes['none'].append(curr_seed_run)
-    adv_schemes['none'] = np.mean(adv_schemes['none'], axis = 0)
+    none_avail = True
+    if none_avail:
+        for seed in range(seed_range):
+            file_name = 'acc_score_cent_dist_manual_weight_010_atk_FGSM_advs_0_adv_pow_0_atk_time_25_seed_%d_iid_type_%s_cent_none.csv' % (seed, iid_type)
+            file_data_path = os.path.join(dir_data, file_name)
+            with open(file_data_path, 'r') as acc_data_file:
+                reader = csv.reader(acc_data_file)
+                curr_seed_run = []
+                for i, row in enumerate(reader):
+                    if i != 0:
+                        acc = ast.literal_eval(row[1])
+                        acc = sum(acc) / len(acc)
+                        curr_seed_run.append(acc)
+                adv_schemes['none'].append(curr_seed_run)
+        adv_schemes['none'] = np.mean(adv_schemes['none'], axis = 0)
 
     # Next do all attacks and compare
     for scheme in adv_schemes.keys():
         if scheme == 'none':
             continue
         for seed in range(seed_range):
-            file_name = 'acc_%s_atk_FGSM_advs_%d_adv_pow_100_atk_time_25_seed_%d_iid_type_%s_cent_eigenvector_centrality.csv' % (scheme, adv_number, seed, iid_type)
+            file_name = 'acc_%s_atk_FGSM_advs_%d_adv_pow_%d_atk_time_25_seed_%d_iid_type_%s_cent_eigenvector_centrality.csv' % (scheme, adv_number, pwr, seed, iid_type)
             file_data_path = os.path.join(dir_data, file_name)
             with open(file_data_path, 'r') as acc_data_file:
                 reader = csv.reader(acc_data_file)
@@ -1179,12 +1182,12 @@ def plot_new_schemes(network_type, iid_type):
     ax.set_title(title)
     ax.legend()
     ax.grid()
-    plt.savefig(dir_plots + 'plot_' + '_' + dataset_name + '_' + network_type + '_' + iid_type + '.png')
+    plt.savefig(dir_plots + 'plot' + '_' + dataset_name + '_' + network_type + '_' + iid_type + 'FGSM_advs_%d_adv_pow_%d_atk_time_25_seed' % (adv_number, pwr) +'.png')
 
 
 if __name__ == '__main__':
-    # plot_new_schemes('ER_graph_c_20_p_05', 'iid')
-    measure_avg_dist_diff_schemes('ER_graph_c_25_p_01')
+    plot_new_schemes('dir_geom_graph_c_25_type_2d_r_02', 'iid')
+    # measure_avg_dist_diff_schemes('ER_graph_c_25_p_01')
     # make_graphs()    
     #for i in range(0, 11):
     #    score_graph_types_centralities_similarity('fmnist', float(i) / 10)
