@@ -16,9 +16,9 @@ import copy
 import time 
 import metis
 from collections import deque
-
+from split_data import *
 from sklearn.cluster import KMeans, SpectralClustering
-
+from neural_net_architectures import *
 
 from cleverhans.torch.attacks.fast_gradient_method import fast_gradient_method # FGSM
 from cleverhans.torch.attacks.projected_gradient_descent import projected_gradient_descent # PGD
@@ -265,45 +265,49 @@ class client_FL():
                 gradients = model_used.calc_grads(train_data = new_adv_data,  train_labels = self.y_train, train_batch_size = batch_s, n_epoch = n_epoch, show_progress = show_progress)
                 return gradients
     
-    # Get the models from in-neighbors
+    # Get the models from in-neighbors (adversary never does this)
     def exchange_models(self):
-        # Get current parameters
-        old_model_parameters = self.client_model.get_params()
-        # Calculate scaling weights a_ij, b_ij for the model aggregation
-        # Since A is row-stochastic, the scaling is by the in-degree of the current node
-        # Since B is column-stochastic, the scaling is by the out-degree of each in-neighbor
-        # Also always include itself
-        global_model_param_weights = [1 / (len(self.in_neighbors) + 1) for _ in range(len(self.in_neighbors) + 1)]
-        gradient_estimate_weights = [1 / (len(neighbor.out_neighbors) + 1) for neighbor in self.in_neighbors.values()]
-        gradient_estimate_weights.append(1 / (len(self.out_neighbors) + 1))
-        # Create parameter lists for global model and gradient estimate
-        global_model_list = [neighbor.client_model.get_params() for neighbor in self.in_neighbors.values()]
-        global_model_list.append(old_model_parameters)
-        gradient_estimate_list = [neighbor.grad_est_curr for neighbor in self.in_neighbors.values()]
-        gradient_estimate_list.append(self.grad_est_curr)
-        # Aggregate models
-        # Get the parameter lists
-        global_model_next_params = copy.deepcopy(global_model_list[0])
-        gradient_estimate_next_params = copy.deepcopy(gradient_estimate_list[0])
-        # Reset the parameters to 0 and aggregate the neighbor parameters
-        for param_new in global_model_next_params:
-            param_new.data *= 0
-        # Aggregate the neighbors
-        for neighbor_model, neighbor_weight in zip(global_model_list, global_model_param_weights):
-            for param_new, param_neighbor in zip(global_model_next_params, neighbor_model):
-                param_new.data += neighbor_weight * param_neighbor.data
-        # Reset the gradients to 0
-        for grad_new in gradient_estimate_next_params:
-            grad_new.data *= 0
-        # Aggregate the neighbors
-        for neighbor_grad, neighbor_weight in zip(gradient_estimate_list, gradient_estimate_weights):
-            for grad_new, grad_neighbor in zip(gradient_estimate_next_params, neighbor_grad):
-                grad_new.data += neighbor_weight * grad_neighbor.data
+        if self.if_adv_client == False or (self.if_adv_client and self.attack == 'none'):
+            # Get current parameters
+            old_model_parameters = self.client_model.get_params()
+            # Calculate scaling weights a_ij, b_ij for the model aggregation
+            # Since A is row-stochastic, the scaling is by the in-degree of the current node
+            # Since B is column-stochastic, the scaling is by the out-degree of each in-neighbor
+            # Also always include itself
+            global_model_param_weights = [1 / (len(self.in_neighbors) + 1) for _ in range(len(self.in_neighbors) + 1)]
+            gradient_estimate_weights = [1 / (len(neighbor.out_neighbors) + 1) for neighbor in self.in_neighbors.values()]
+            gradient_estimate_weights.append(1 / (len(self.out_neighbors) + 1))
+            # Create parameter lists for global model and gradient estimate
+            global_model_list = [neighbor.client_model.get_params() for neighbor in self.in_neighbors.values()]
+            global_model_list.append(old_model_parameters)
+            gradient_estimate_list = [neighbor.grad_est_curr for neighbor in self.in_neighbors.values()]
+            gradient_estimate_list.append(self.grad_est_curr)
+            # Aggregate models
+            # Get the parameter lists
+            global_model_next_params = copy.deepcopy(global_model_list[0])
+            gradient_estimate_next_params = copy.deepcopy(gradient_estimate_list[0])
+            # Reset the parameters to 0 and aggregate the neighbor parameters
+            for param_new in global_model_next_params:
+                param_new.data *= 0
+            # Aggregate the neighbors
+            for neighbor_model, neighbor_weight in zip(global_model_list, global_model_param_weights):
+                for param_new, param_neighbor in zip(global_model_next_params, neighbor_model):
+                    param_new.data += neighbor_weight * param_neighbor.data
+            # Reset the gradients to 0
+            for grad_new in gradient_estimate_next_params:
+                grad_new.data *= 0
+            # Aggregate the neighbors
+            for neighbor_grad, neighbor_weight in zip(gradient_estimate_list, gradient_estimate_weights):
+                for grad_new, grad_neighbor in zip(gradient_estimate_next_params, neighbor_grad):
+                    grad_new.data += neighbor_weight * grad_neighbor.data
 
-        # Calculate the final value as the sum of scaled layers
-        self.global_model_next = global_model_next_params
-        self.grad_est_next = gradient_estimate_next_params
-        
+            # Calculate the final value as the sum of scaled layers
+            self.global_model_next = global_model_next_params
+            self.grad_est_next = gradient_estimate_next_params
+        else:
+            return
+
+    # Update rule for SAB alg 
     def aggregate_SAB(self, batch_s, n_epoch, show_progress = False, lr = None):        
         # Update next model parameters
         # Subtract the estimated gradients
@@ -575,13 +579,13 @@ def average_distance_between_advs(G, adv_list):
 
 if __name__ == "__main__":
     # Example usage
-    G = nx.erdos_renyi_graph(20, 0.2)  # Replace this with your actual graph_representation
-    n_clients = 20
-    n_advs = 4
-
-    adv_nodes = least_overlap_area(n_clients, n_advs, G)
-    print("Selected adversarial nodes:", adv_nodes)
-
+    N_CLIENTS = 1
+    device_used = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+    train_dset_split, valid_dset_split = split_data_iid_excl_server(N_CLIENTS, 'fmnist')
+    node_list = [client_FL(i, device = device_used) for i in range(N_CLIENTS)]
+    [node.get_data(train_dset_split[i], valid_dset_split[i]) for node, i in zip(node_list, range(N_CLIENTS))]
+    [node.init_compiled_model(FashionMNIST_Classifier()) for node in node_list]
+    print([x.client_model for x in node_list])
 # Increase number of epochs 3-5 times the current one, check different learning rates
 # Decrease step size significantly, increase the sizes of minibatchs
 # Use strongly convex loss (different loss functions)
