@@ -308,30 +308,36 @@ class client_FL():
             return
 
     # Update rule for SAB alg 
-    def aggregate_SAB(self, batch_s, n_epoch, show_progress = False, lr = None):        
-        # Update next model parameters
-        # Subtract the estimated gradients
-        self.moving_model.set_params(self.global_model_next)
-        self.moving_model.set_grads_and_step(self.grad_est_curr, lr) 
-        #self.moving_model.set_grads_and_step(self.calc_client_grads(batch_s, n_epoch, show_progress, self.client_model), step_size = lr)
-        # for params_weighted, grads_est in zip(self.global_model_next, self.grad_est_curr):
-        # for params_weighted, grads_est in zip(self.global_model_next, self.calc_client_grads(batch_s, n_epoch, show_progress, self.client_model)):
-        #    params_weighted.data.sub_(lr * grads_est)
-        # self.global_model_next = [x - lr * y for x, y in zip(self.global_model_next, self.calc_client_grads(batch_s, n_epoch, show_progress, self.client_model))] # Testing
-        # The moving model gets the next parameters
-        # self.moving_model.set_params(self.global_model_next) # = x_i(k + 1)
-        self.global_model_next = self.moving_model.get_params()
-        # Calculate new estimated gradients as follows
-        est_grad_diff = [next_grad - curr_grad for next_grad, curr_grad in zip(self.calc_client_grads(batch_s, n_epoch, show_progress, self.moving_model), self.calc_client_grads(batch_s, n_epoch, show_progress, self.client_model))]
+    def aggregate_SAB(self, batch_s, n_epoch, show_progress = False, lr = None): 
+        if self.if_adv_client == False or (self.if_adv_client and self.attack == 'none'):
+            # Update next model parameters
+            # Subtract the estimated gradients
+            self.moving_model.set_params(self.global_model_next)
+            self.moving_model.set_grads_and_step(self.grad_est_curr, lr) 
+            #self.moving_model.set_grads_and_step(self.calc_client_grads(batch_s, n_epoch, show_progress, self.client_model), step_size = lr)
+            # for params_weighted, grads_est in zip(self.global_model_next, self.grad_est_curr):
+            # for params_weighted, grads_est in zip(self.global_model_next, self.calc_client_grads(batch_s, n_epoch, show_progress, self.client_model)):
+            #    params_weighted.data.sub_(lr * grads_est)
+            # self.global_model_next = [x - lr * y for x, y in zip(self.global_model_next, self.calc_client_grads(batch_s, n_epoch, show_progress, self.client_model))] # Testing
+            # The moving model gets the next parameters
+            # self.moving_model.set_params(self.global_model_next) # = x_i(k + 1)
+            self.global_model_next = self.moving_model.get_params()
+            # Calculate new estimated gradients as follows
+            est_grad_diff = [next_grad - curr_grad for next_grad, curr_grad in zip(self.calc_client_grads(batch_s, n_epoch, show_progress, self.moving_model), self.calc_client_grads(batch_s, n_epoch, show_progress, self.client_model))]
 
-        for grad_weighted, grad_next_model in zip(self.grad_est_next, est_grad_diff):
-            grad_weighted.data.add_(grad_next_model)
-        
-        # Update current values
-        self.global_model_curr = self.global_model_next
-        self.grad_est_curr = self.grad_est_next
-        # Set the parameters to current version
-        self.client_model.set_params(self.global_model_curr)
+            for grad_weighted, grad_next_model in zip(self.grad_est_next, est_grad_diff):
+                grad_weighted.data.add_(grad_next_model)
+            
+            # Update current values
+            self.global_model_curr = self.global_model_next
+            self.grad_est_curr = self.grad_est_next
+            # Set the parameters to current version
+            self.client_model.set_params(self.global_model_curr)
+        else:
+            # Save current params
+            curr_model_adv_gradients = self.calc_client_grads(batch_s, n_epoch, show_progress, self.client_model)
+            self.client_model.set_grads_and_step(curr_model_adv_gradients, lr) 
+
 
 # Hash a numpy array
 def hash_np_arr(np_arr):
@@ -579,13 +585,35 @@ def average_distance_between_advs(G, adv_list):
 
 if __name__ == "__main__":
     # Example usage
-    N_CLIENTS = 1
-    device_used = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+    time_start = time.time()
+    N_CLIENTS = 2
+    device_used = torch.device('cuda:1' if torch.cuda.is_available() else 'cpu')
     train_dset_split, valid_dset_split = split_data_iid_excl_server(N_CLIENTS, 'fmnist')
     node_list = [client_FL(i, device = device_used) for i in range(N_CLIENTS)]
     [node.get_data(train_dset_split[i], valid_dset_split[i]) for node, i in zip(node_list, range(N_CLIENTS))]
     [node.init_compiled_model(FashionMNIST_Classifier()) for node in node_list]
-    print([x.client_model for x in node_list])
+    print([x.dset_size for x in node_list])
+    # node_list[0].if_adv_client = True
+    # Run the training
+    for i in range(20):
+        # Update values if attacking
+        if i == 10:
+            attack = 'FGSM'
+            for node in node_list:
+                if node.if_adv_client:
+                    node.attack = attack
+                    node.adv_pow = 100
+        # Train and aggregate
+        print(f'global epoch: {i}')
+        # Exchange models and aggregate, MAIN PART
+        [node.exchange_models() for node in node_list]
+        [node.aggregate_SAB(10000, 10, False) for node in node_list]
+        
+        # Save accuracies
+        for node in node_list:
+            curr_loss, curr_acc = node.validate_client()
+            print(f'Client: {node.client_id}, Accuracy: {curr_acc}')
+    print(f'Total time: {time.time() - time_start}s')
 # Increase number of epochs 3-5 times the current one, check different learning rates
 # Decrease step size significantly, increase the sizes of minibatchs
 # Use strongly convex loss (different loss functions)
