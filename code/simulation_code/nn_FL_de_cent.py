@@ -593,7 +593,7 @@ if __name__ == "__main__":
     [node.get_data(train_dset_split[i], valid_dset_split[i]) for node, i in zip(node_list, range(N_CLIENTS))]
     [node.init_compiled_model(FashionMNIST_Classifier()) for node in node_list]
     print([x.dset_size for x in node_list])
-    # node_list[0].if_adv_client = True
+    node_list[0].if_adv_client = True
     # Run the training
     for i in range(20):
         # Update values if attacking
@@ -607,7 +607,7 @@ if __name__ == "__main__":
         print(f'global epoch: {i}')
         # Exchange models and aggregate, MAIN PART
         [node.exchange_models() for node in node_list]
-        [node.aggregate_SAB(10000, 10, False) for node in node_list]
+        [node.aggregate_SAB(10000, 2, False) for node in node_list]
         
         # Save accuracies
         for node in node_list:

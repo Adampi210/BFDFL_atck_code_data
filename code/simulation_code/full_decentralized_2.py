@@ -136,6 +136,8 @@ attack = attacks[0]                             # Always start with no attack (a
 adv_pow = 0                                     # Power of the attack
 adv_percent = 0.0                               # Percentage of adversaries
 adv_number = int(adv_percent * N_CLIENTS)       # Number of adversaries
+# adv_percent /= 10
+
 # adv_list = list(range(adv_number))
 # adv_list = random.sample(list(range(N_CLIENTS)), adv_number) # Choose the adversaries at random
 attack_time = 25                                # Global epoch at which the attack activates
@@ -176,9 +178,9 @@ def run_and_save_simulation(train_split, valid_split, adj_matrix, centrality_mea
     # nodes_to_atk_centrality = sort_by_centrality(centrality_data) # For normal operation
     # New framework #########################
     score_cent_dist_weight = 1 # 1 is the same as original, only choose by centralities, 0 chooses most spread out nodes
-    # prefix_name = 'score_cent_dist_manual_weight_0%d' % int(10 * score_cent_dist_weight) # For centrality-distance tradeoff
+    prefix_name = 'score_cent_dist_manual_weight_0%d' % int(10 * score_cent_dist_weight) # For centrality-distance tradeoff
     # prefix_name = 'cluster_metis_alg' # For creating clusters based on the metis algorithm and choosing most central node for each cluster
-    prefix_name = 'least_overlap_area' # For creating clusters based on the new least overlap area algorithm
+    # prefix_name = 'least_overlap_area' # For creating clusters based on the new least overlap area algorithm
     # prefix_name = 'random_nodes'
     print(f'Scheme used: {prefix_name}')
     if 'score_cent_dist_manual_weight_0' in prefix_name:
