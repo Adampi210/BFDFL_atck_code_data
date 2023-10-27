@@ -34,7 +34,7 @@ if device_used != torch.device('cuda:2'):
 
 start_time = time.time()
 # Set hyperparameters
-seed = 44 # Seed for PRNGs 
+seed = 0 # Seed for PRNGs 
 random.seed(seed)
 torch.manual_seed(seed)
 np.random.seed(seed)
@@ -133,8 +133,8 @@ attacks = ('none', 'FGSM', 'PGD', 'noise')      # Available attacks
 architectures = ('star', 'full_decentralized')  # Architecture used
 attack_used = 1                                 # Which attack from the list was used
 attack = attacks[0]                             # Always start with no attack (attack at some point)
-adv_pow = 400                                     # Power of the attack
-adv_percent = 0.5                               # Percentage of adversaries
+adv_pow = 0                                     # Power of the attack
+adv_percent = 0.0                               # Percentage of adversaries
 adv_number = int(adv_percent * N_CLIENTS)       # Number of adversaries
 adv_percent /= 10
 
@@ -147,7 +147,7 @@ nb_iter = 15   # Number of epochs for PGD attack
 
 # Define centrality measures and directories
 centralities = ('none', 'in_deg_centrality', 'out_deg_centrality', 'closeness_centrality', 'betweeness_centrality', 'eigenvector_centrality')
-cent_measure_used = 5
+cent_measure_used = 0
 
 # Split the data for the specified number of clients and servers
 if iid_type == 'iid':
