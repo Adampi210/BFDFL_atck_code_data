@@ -1111,10 +1111,10 @@ def plot_new_schemes(network_type, iid_type):
     # adv_schemes = {'least_overlap_area': [], 'random_nodes': [], 'none': []} # Missing eigenv 
     # adv_schemes = {'score_cent_dist_manual_weight_010': [], 'least_overlap_area': [], 'none': []} # Missibg random
     n_clients = int((re.search('_c_(\d+)', network_type)).group(1))
-    adv_frac = 0.06
+    adv_frac = 0.2
     adv_number = int(float(n_clients) * adv_frac)
     seed_range = 50
-    pwr = 333
+    pwr = 100
     # First get the data for none
     none_avail = True
     if none_avail:
@@ -1182,11 +1182,11 @@ def plot_new_schemes(network_type, iid_type):
     ax.set_title(title)
     ax.legend()
     ax.grid()
-    plt.savefig(dir_plots + 'plot' + '_' + dataset_name + '_' + network_type + '_' + iid_type + 'FGSM_advs_%d_adv_pow_%d_atk_time_25_seed' % (adv_number, pwr) +'.png')
+    plt.savefig(dir_plots + 'plot' + '_' + dataset_name + '_' + network_type + '_' + iid_type + '_FGSM_advs_%d_adv_pow_%d_atk_time_25_seed' % (adv_number, pwr) +'.png')
 
 
 if __name__ == '__main__':
-    plot_new_schemes('dir_geom_graph_c_50_type_2d_r_02', 'iid')
+    plot_new_schemes('ER_graph_c_50_p_05', 'iid')
     # measure_avg_dist_diff_schemes('ER_graph_c_25_p_01')
     # make_graphs()    
     #for i in range(0, 11):

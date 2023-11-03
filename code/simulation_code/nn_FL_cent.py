@@ -512,3 +512,5 @@ if __name__ == "__main__":
 
 # Find real-world graph types for wireless and use them
 # For theoretical analysis good idea to start general, then maybe look at specific types of graphs
+
+# Run case with 1 adversary show eigenvector centrality outperforms (low centrality cases)
