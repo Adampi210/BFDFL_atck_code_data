@@ -2,6 +2,7 @@ import os
 import csv
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
+import matplotlib.patches as mpatches
 import numpy as np
 import ast
 from nn_FL_de_cent import *
@@ -10,6 +11,7 @@ import re
 import pandas as pd
 import glob
 
+#plt.rcParams["font.family"] = "Times New Roman"
 # Read parameters
 seed = 0 # Seed for PRNGs 
 
@@ -1103,7 +1105,8 @@ def measure_avg_dist_diff_schemes(network_type):
         adv_schemes[adv_scheme] = np.mean(adv_schemes[adv_scheme])
     print(adv_schemes)
 
-def plot_new_schemes(network_type, iid_type):
+def plot_new_schemes(network_type, iid_type, label_in_plot = 0):
+    plot_labels = ('1) ', '2) ', '3) ', '4) ')
     dataset_name = 'fmnist' # Remember to change for CIFAR10
     dir_data = '../../data/full_decentralized/%s/%s/' % (dataset_name, network_type)
     dir_plots = '../../data/full_decentralized/finalized_plots/'
@@ -1113,7 +1116,10 @@ def plot_new_schemes(network_type, iid_type):
     n_clients = int((re.search('_c_(\d+)', network_type)).group(1))
     adv_frac = 0.2
     adv_number = int(float(n_clients) * adv_frac)
-    seed_range = 50
+    if 'non_iid' in iid_type:
+        seed_range = 20
+    else:
+        seed_range = 50
     pwr = 100
     # First get the data for none
     none_avail = True
@@ -1160,6 +1166,7 @@ def plot_new_schemes(network_type, iid_type):
     fig, ax = plt.subplots(figsize = (16, 9))
 
     # Plot each data series
+    #print(adv_schemes.items())
     for key, values in adv_schemes.items():
         ax.plot(range(len(values)), values, label = legend[key])
 
@@ -1168,26 +1175,511 @@ def plot_new_schemes(network_type, iid_type):
 
     # Customize the plot
     ax.set_xticks([0, 20, 40, 60, 80, 100])
-    ax.set_xlabel('Epoch')
-    ax.set_ylabel('Average Accuracy for Honest Nodes')
+    # Customize the plot to match IEEE format
+    ax.set_xlabel('Epoch', fontsize=10)
+    ax.set_ylabel('Average Accuracy for Honest Nodes', fontsize=10)
+    ax.tick_params(axis='both', which='major', labelsize=8)
+    ax.tick_params(axis='both', which='minor', labelsize=8)
+    ax.legend(fontsize=8)
+    ax.grid(True)
     network_name = ''
     if 'dir_geom_graph' in network_type and n_clients != 20:
         radius = int((re.search('_r_0(\d+)', network_type)).group(1))
-        network_name = 'directed geometric graph with %d nodes including %d adversaries, and radius r = 0.%d' % (n_clients, adv_number, radius)
+        network_name = 'Directed Geometric Graph'
     elif 'ER_graph' in network_type:
         probability = int((re.search('_p_0(\d+)', network_type)).group(1))
-        network_name = 'ER graph with %d nodes including %d adversaries, and connection probability p = 0.%d' % (n_clients, adv_number, probability)
-
-    title = 'Average Honest client accuracy over time \n for %s' % network_name
+        network_name = 'ER graph'
+    if 'non_iid' in iid_type:
+        iid_type_title = 'Non-IID'
+    else:
+        iid_type_title = 'IID'
+    title = '%s %s %s data' % (plot_labels[label_in_plot], network_name, iid_type_title)
     ax.set_title(title)
-    ax.legend()
+    # ax.legend()
     ax.grid()
-    plt.savefig(dir_plots + 'plot' + '_' + dataset_name + '_' + network_type + '_' + iid_type + '_FGSM_advs_%d_adv_pow_%d_atk_time_25_seed' % (adv_number, pwr) +'.png')
+    # plt.savefig(dir_plots + 'plot' + '_' + dataset_name + '_' + network_type + '_' + iid_type + '_FGSM_advs_%d_adv_pow_%d_atk_time_25_seed' % (adv_number, pwr) +'.png')
+    print(title, [(i, adv_schemes[i][-1]) for i in adv_schemes.keys()])
+    return adv_schemes, fig, ax, title
 
+def create_composite_figure(graph_iid_tuples):    
+    # Define the color scheme for the lines
+    color_scheme = {
+        'No attack': 'blue',
+        'Eigenvector-Centrality Based Attack': 'green',
+        'BFDFL Attack': 'black',  # Assuming this is the BLDFL attack
+        'Random Choice Based Attack': 'purple',
+        'Attack begins': 'red'  # Assuming this is the vertical line you mentioned
+    }
+    
+    # Create a figure with subplots and a shared legend
+    fig, axs = plt.subplots(1, 4, figsize=(20, 4))  # Adjust the size as needed
+    
+    # To collect legend handles
+    legend_handles = []  
+    custom_legend_handles = []
+    # Iterate over each graph_iid_tuple and plot in the respective subplot
+    for i, (network_type, iid_type) in enumerate(graph_iid_tuples):
+        # Generate each subplot
+        _, fig_single, ax_single, title_plot = plot_new_schemes(network_type, iid_type, i)
+        
+        # Get the lines from the single plot and get the legend handles
+        lines, labels = ax_single.get_legend_handles_labels()
+        if i == 0:
+            axs[i].set_ylabel('Average Accuracy for\nHonest Nodes %', fontsize=12)
+            legend_handles.extend(lines)
+            
+        # Now, let's plot the same lines on the subplot axis with the specified colors
+        for line in lines:
+            if i == 0:
+                handle = Line2D([], [], color=color_scheme[line.get_label()], label=line.get_label())
+                custom_legend_handles.append(handle)
+            line_color = color_scheme.get(line.get_label(), color_scheme[line.get_label()])  # Default to black if not specified
+            axs[i].plot(line.get_xdata(), [100 * x for x in line.get_ydata()], label=line.get_label(), color=line_color)
+
+        # Set the same x and y labels and title
+        axs[i].set_xlabel('Global Epoch', fontsize=12)
+        axs[i].set_title(title_plot, fontsize=12)
+        axs[i].set_xticks([0, 20, 40, 60, 80, 100])
+        # Set the same grid
+        axs[i].grid(True)
+        
+        # Set the same limits on all subplots, if needed
+        if 'Non' in title_plot:
+            axs[i].set_yticks([10, 20, 30, 40, 50])
+            axs[i].set_ylim([7, 41])
+        else:
+            axs[i].set_yticks([10, 20, 30, 40, 50])
+            axs[i].set_ylim([10, 55])
+
+    # Create a shared legend above the subplots
+    order_legend = [3, 0, 2, 1, 4]
+    ordered_custom_legend_handles = [custom_legend_handles[i] for i in order_legend]
+    ordered_legend_handles = [legend_handles[i] for i in order_legend]
+    fig.legend(ordered_custom_legend_handles, [h.get_label() for h in ordered_legend_handles], loc='upper center', bbox_to_anchor=(0.5, 1), ncol=5, fontsize=12)
+
+    # Adjust the layout to prevent overlap, leaving space for the legend at the top
+    fig.subplots_adjust(top=0.8)
+
+    # Save the composite figure
+    plt.savefig('composite_figure.png', dpi=300, bbox_inches='tight')
+    plt.show()  # If you want to display the figure as well
+
+def calculate_attack_gain_connectivity(dir_names):
+    iid_types = ('iid', 'non_iid')
+    attacks = ('score_cent_dist_manual_weight_010', 'least_overlap_area', 'random_nodes', 'none')
+    n_bars = len(iid_types) * len(attacks)
+    seed_range = 20
+    dataset_name = 'fmnist' # Remember to change for CIFAR10
+    dir_plots = '../../data/full_decentralized/finalized_plots/'
+    pwr = 100
+    colors = {'score_cent_dist_manual_weight_010': 'green', 'least_overlap_area': 'black', 'random_nodes': 'purple'}
+    lighter_colors = {'score_cent_dist_manual_weight_010': 'lime', 'least_overlap_area': 'grey', 'random_nodes': 'violet'}
+    attack_order = ['score_cent_dist_manual_weight_010', 'random_nodes', 'least_overlap_area']
+    # Assuming dir_names contain full paths to the directories with the data
+    # attacks is a list of attack names
+    # iid_types is a list containing 'iid' and 'non_iid'
+    # n_bars is the number of bars per group (should be len(attacks) * len(iid_types))
+
+    # Initialize the data structure to hold the gains
+    accuracies = {dir_name: {attack: {iid_type: [] for iid_type in iid_types} for attack in attacks} for dir_name in dir_names}
+    gains = {dir_name: {attack: {iid_type: 0 for iid_type in iid_types} for attack in attacks} for dir_name in dir_names}
+
+    for network in dir_names:
+        dir_data = '../../data/full_decentralized/%s/%s/' % (dataset_name, network)
+        for iid in iid_types:
+            for seed in range(seed_range):
+                file_name = 'acc_score_cent_dist_manual_weight_010_atk_FGSM_advs_0_adv_pow_0_atk_time_25_seed_%d_iid_type_%s_cent_none.csv' % (seed, iid)
+                file_data_path = os.path.join(dir_data, file_name)
+                with open(file_data_path, 'r') as acc_data_file:
+                    reader = csv.reader(acc_data_file)
+                    curr_seed_run = []
+                    for i, row in enumerate(reader):
+                        if i != 0:
+                            acc = ast.literal_eval(row[1])
+                            acc = sum(acc) / len(acc)
+                            curr_seed_run.append(acc)
+                    accuracies[network]['none'][iid].append(curr_seed_run)
+            accuracies[network]['none'][iid] = np.mean(accuracies[network]['none'][iid], axis = 0)
+    
+    for network in dir_names:
+        dir_data = '../../data/full_decentralized/%s/%s/' % (dataset_name, network)
+        for attack in attacks:
+            if attack == 'none':
+                continue
+            for iid in iid_types:
+                for seed in range(seed_range):
+                    n_clients = int((re.search('_c_(\d+)', network)).group(1))
+                    adv_number = int(0.2 * n_clients)
+                    file_name = 'acc_%s_atk_FGSM_advs_%d_adv_pow_%d_atk_time_25_seed_%d_iid_type_%s_cent_eigenvector_centrality.csv' % (attack, adv_number, pwr, seed, iid)
+                    file_data_path = os.path.join(dir_data, file_name)
+                    with open(file_data_path, 'r') as acc_data_file:
+                        reader = csv.reader(acc_data_file)
+                        curr_seed_run = []
+                        for i, row in enumerate(reader):
+                            if i == 0:
+                                attacked_nodes = ast.literal_eval(row[1])
+                                attacked_nodes = [int(_) for _ in attacked_nodes]
+                            else:
+                                acc = ast.literal_eval(row[1])
+                                acc_honest = [_ for i, _ in enumerate(acc) if i not in attacked_nodes]
+                                acc_honest = sum(acc_honest) / len(acc_honest)
+                                curr_seed_run.append(acc_honest)
+                        accuracies[network][attack][iid].append(curr_seed_run)
+                accuracies[network][attack][iid] = np.mean(accuracies[network][attack][iid], axis = 0)
+    for network in dir_names:
+        for attack in attacks:
+            for iid in iid_types:
+                if attack == 'none':
+                    gains[network][attack][iid] = np.sum(accuracies[network]['none'][iid][25:])
+                    continue
+                gains[network][attack][iid] = (np.sum(accuracies[network]['none'][iid][25:]) - np.sum(accuracies[network][attack][iid][25:])) * 100 / 75
+
+    
+    fig, ax = plt.subplots(figsize=(10, 5))
+    bar_width = 1 / (n_bars + 1)
+    index = np.arange(len(dir_names))
+
+    # Define the legend labels
+    legend_labels = [
+        'Eigenvector-Centrality Based Attack IID', 
+        'Eigenvector-Centrality Based Attack Non-IID', 
+        'Random Choice Attack IID', 
+        'Random Choice Attack Non-IID', 
+        'BLDFL attack IID',
+        'BLDFL attack Non-IID'
+    ]
+
+    # Create a list to hold the legend handles
+    handles = []
+
+    for i, network in enumerate(dir_names):
+        for j, attack in enumerate(attack_order):
+            if attack == 'none':
+                continue
+            for k, iid in enumerate(iid_types):
+                gain = gains[network][attack][iid]
+                pos = i + (j - len(attacks) / 2) * bar_width + k * bar_width * len(attacks)
+                color = colors[attack] if iid == 'iid' else lighter_colors[attack]
+                label = legend_labels[2 * j + k]  # Only label the first set
+                bar = ax.bar(pos, gain, bar_width, label=label, color=color)
+                if i == 0:  # Only add to handles on the first iteration
+                    handles.append(bar)
+
+    # Add some text for labels, title, and custom x-axis tick labels, etc.
+    ax.set_ylabel('Averaged Attack Accuracy Loss %')
+
+    ax.set_xticks(index + bar_width / 2)
+    if 'ER_graph_' in dir_names[0]:
+        ax.set_title('2) ER Graph 25 clients', fontsize=12)
+        ax.set_xticklabels(['p = 0.1', 'p = 0.3', 'p = 0.5'], fontsize=12)
+        ax.set_xlabel('Connection Probability', fontsize=12)
+    else:
+        ax.set_title('1) Directed Geometric Graph 25 clients', fontsize=12)
+        ax.set_xticklabels(['r = 0.2', 'r = 0.4', 'r = 0.6'], fontsize=12)
+        ax.set_xlabel('Radius', fontsize=12)
+        # Create the legend
+        ax.legend(handles=[h[0] for h in handles], labels=legend_labels, loc='upper center', bbox_to_anchor=(0.5, 1.22), ncol=3, fontsize='small')
+    plt.tight_layout()  # Ensure that all elements of the plot fit within the figure area
+    ax.grid(True)
+
+    plt.show()
+    print(gains)
+    
+def calculate_attack_gain_size_and_adv_percent(dir_names):
+    iid_types = ('iid', 'non_iid')
+    attacks = ('score_cent_dist_manual_weight_010', 'random_nodes', 'least_overlap_area', 'none')
+    dev_nums = (10, 25, 50, 100)
+    adv_percentages = {
+        10: [int(0.1 * 10), int(0.2 * 10)],
+        25: [int(0.1 * 25), int(0.2 * 25)],
+        50: [int(0.06 * 50), int(0.1 * 50), int(0.2 * 50)],
+        100: [int(0.05 * 100), int(0.1 * 100), int(0.2 * 100)]
+    }
+
+    n_bars = len(iid_types) * len(attacks)
+    seed_range = 20
+    dataset_name = 'fmnist' # Remember to change for CIFAR10
+    dir_plots = '../../data/full_decentralized/finalized_plots/'
+    pwr = 100
+    # Define your colors
+    colors = {
+        'score_cent_dist_manual_weight_010': 'green', 
+        'least_overlap_area': 'black', 
+        'random_nodes': 'purple'
+    }
+
+    # Custom legend labels
+    legend_labels = [
+        'Eigenvector-Centrality Based Attack', 
+        'Random Choice Attack', 
+        'BLDFL Attack'
+    ]
+
+    # Create a list of Patch objects for the legend
+    handles = [mpatches.Patch(color=colors[attack], label=label) for attack, label in zip(colors.keys(), legend_labels)]
+
+    
+    # Assuming dir_names contain full paths to the directories with the data
+    # attacks is a list of attack names
+    # iid_types is a list containing 'iid' and 'non_iid'
+    # n_bars is the number of bars per group (should be len(attacks) * len(iid_types))
+    accuracies = {
+        dev_num: {
+            attack: {
+                iid: {
+                    (0 if attack == 'none' else adv_percent): []
+                    for adv_percent in (adv_percentages[dev_num] if attack != 'none' else [0])
+                } for iid in iid_types
+            } for attack in attacks
+        } for dev_num in dev_nums
+    }
+    gains = {
+        dev_num: {
+            attack: {
+                iid: {
+                    (0 if attack == 'none' else adv_percent): 0
+                    for adv_percent in (adv_percentages[dev_num] if attack != 'none' else [0])
+                } for iid in iid_types
+            } for attack in attacks
+        } for dev_num in dev_nums
+    }
+
+    
+    # Initialize the data structure to hold the gains
+    
+    for network in dir_names:
+        dir_data = '../../data/full_decentralized/%s/%s/' % (dataset_name, network)
+        n_clients_network = int((re.search('_c_(\d+)', network)).group(1))
+        for iid in iid_types:
+            for seed in range(seed_range):
+                file_name = 'acc_score_cent_dist_manual_weight_010_atk_FGSM_advs_0_adv_pow_0_atk_time_25_seed_%d_iid_type_%s_cent_none.csv' % (seed, iid)
+                file_data_path = os.path.join(dir_data, file_name)
+                with open(file_data_path, 'r') as acc_data_file:
+                    reader = csv.reader(acc_data_file)
+                    curr_seed_run = []
+                    for i, row in enumerate(reader):
+                        if i != 0:
+                            acc = ast.literal_eval(row[1])
+                            acc = sum(acc) / len(acc)
+                            curr_seed_run.append(acc)
+                    accuracies[n_clients_network]['none'][iid][0].append(curr_seed_run)
+            accuracies[n_clients_network]['none'][iid][0] = np.mean(accuracies[n_clients_network]['none'][iid][0], axis = 0)
+
+    for network in dir_names:
+        n_clients_network = int((re.search('_c_(\d+)', network)).group(1))
+        dir_data = '../../data/full_decentralized/%s/%s/' % (dataset_name, network)
+        for attack in attacks:
+            if attack == 'none':
+                continue
+            for iid in iid_types:
+                for adv_num in adv_percentages[n_clients_network]:
+                    for seed in range(seed_range):
+                        file_name = 'acc_%s_atk_FGSM_advs_%d_adv_pow_%d_atk_time_25_seed_%d_iid_type_%s_cent_eigenvector_centrality.csv' % (attack, adv_num, pwr, seed, iid)
+                        file_data_path = os.path.join(dir_data, file_name)
+                        with open(file_data_path, 'r') as acc_data_file:
+                            reader = csv.reader(acc_data_file)
+                            curr_seed_run = []
+                            for i, row in enumerate(reader):
+                                if i == 0:
+                                    attacked_nodes = ast.literal_eval(row[1])
+                                    attacked_nodes = [int(_) for _ in attacked_nodes]
+                                else:
+                                    acc = ast.literal_eval(row[1])
+                                    acc_honest = [_ for i, _ in enumerate(acc) if i not in attacked_nodes]
+                                    acc_honest = sum(acc_honest) / len(acc_honest)
+                                    curr_seed_run.append(acc_honest)
+                            accuracies[n_clients_network][attack][iid][adv_num].append(curr_seed_run)
+                    accuracies[n_clients_network][attack][iid][adv_num] = np.mean(accuracies[n_clients_network][attack][iid][adv_num], axis = 0)
+    
+    for network in dir_names:
+        dev_num = int((re.search('_c_(\d+)', network)).group(1))
+        for attack in attacks:
+            for iid in iid_types:
+                if attack == 'none':
+                    gains[dev_num]['none'][iid][0] = np.sum(accuracies[dev_num]['none'][iid][0][25:])
+                    continue
+                for adv_perc in adv_percentages[dev_num]:
+                    gains[dev_num][attack][iid][adv_perc] = (np.sum(accuracies[dev_num]['none'][iid][0][25:]) - np.sum(accuracies[dev_num][attack][iid][adv_perc][25:])) * 100 / 75
+    for i in adv_percentages.keys():
+        for advs in adv_percentages[i]:
+            print(f'{i}, {advs} ', end='')
+            if gains[i]['random_nodes']['iid'][advs] > gains[i]['score_cent_dist_manual_weight_010']['iid'][advs]:
+                x = gains[i]['random_nodes']['iid'][advs]
+            else:
+                x = gains[i]['score_cent_dist_manual_weight_010']['iid'][advs]
+            print((gains[i]['least_overlap_area']['iid'][advs] - x) / (x) * 100)
+
+    
+    # Plot
+    iid = 'iid'  # Focusing only on 'iid'
+    attacks = ['score_cent_dist_manual_weight_010', 'random_nodes', 'least_overlap_area']
+    bar_width = 0.2  # Width of the bars
+    opacity = 0.8
+
+    # Create a figure with 2x2 subplots
+    fig, axs = plt.subplots(2, 2, figsize=(15, 10))  # Adjust the size as needed
+    axs = axs.flatten()  # Flatten the 2x2 array for easy indexing
+
+    for idx, dev_num in enumerate([10, 25, 50, 100]):  # Order of dev_nums
+        adv_percentages = gains[dev_num][attacks[0]][iid].keys()
+
+        # Number of groups
+        n_groups = len(adv_percentages)
+
+        index = np.arange(n_groups)
+        for i, attack in enumerate(attacks):
+            gains_values = [gains[dev_num][attack][iid][adv_perc] for adv_perc in adv_percentages]
+            axs[idx].bar(index + i * bar_width, gains_values, bar_width, alpha=opacity, color=colors[attack], label=attack if idx == 0 else "")
+        if idx >= 2:
+            axs[idx].set_xlabel('Number of Adversarial Devices', fontsize=14)
+        if idx == 0 or idx == 2:
+            axs[idx].set_ylabel('Averaged Attack Accuracy Loss %', fontsize=14)
+        axs[idx].set_title(f'{idx + 1}) Network Size: {dev_num} Devices', fontsize=14)
+               
+        axs[idx].set_xticks(index + bar_width / 2)
+        axs[idx].tick_params(axis='y', labelsize=12)
+        axs[idx].set_xticklabels(adv_percentages, fontsize=12)
+
+    # Create a single legend for the entire figure
+    # Custom legend labels
+    legend_labels = [
+        'Eigenvector-Centrality Based Attack', 
+        'Random Choice Attack', 
+        'BLDFL Attack'
+    ]
+
+    # Create a single legend for the entire figure with custom labels
+    # Adjust the legend placement
+    handles = [handles[0], handles[2], handles[1]]
+    fig.legend(handles, legend_labels, loc='upper center', ncol=3, fontsize='large')
+    plt.tight_layout(rect=[0, 0, 1, 0.95])  # Adjust the layout to make space for the legend
+    plt.show()
+
+def plot_timing_attack(dir_name):
+    iid_types = ('iid', 'non_iid')
+    attacks = ('score_cent_dist_manual_weight_010', 'least_overlap_area', 'random_nodes', 'none')
+    n_bars = len(iid_types) * len(attacks)
+    attack_times = (25, 50, 75)
+    accuracies = {attack: {iid: {attack_time:[] for attack_time in attack_times} if attack != 'none' else 
+                           []  for iid in iid_types} for attack in attacks}
+    seed_range = 20
+    dataset_name = 'fmnist' # Remember to change for CIFAR10
+    pwr = 100
+    dir_data = '../../data/full_decentralized/%s/%s/' % (dataset_name, dir_name)
+            
+    for iid in iid_types:
+        for seed in range(seed_range):
+            file_name = 'acc_score_cent_dist_manual_weight_010_atk_FGSM_advs_0_adv_pow_0_atk_time_25_seed_%d_iid_type_%s_cent_none.csv' % (seed, iid)
+            file_data_path = os.path.join(dir_data, file_name)
+            with open(file_data_path, 'r') as acc_data_file:
+                reader = csv.reader(acc_data_file)
+                curr_seed_run = []
+                for i, row in enumerate(reader):
+                    if i != 0:
+                        acc = ast.literal_eval(row[1])
+                        acc = sum(acc) / len(acc)
+                        curr_seed_run.append(acc)
+                accuracies['none'][iid].append(curr_seed_run)
+        accuracies['none'][iid] = np.mean(accuracies['none'][iid], axis = 0)
+        accuracies['none'][iid] = np.multiply(100, accuracies['none'][iid])
+
+    for attack in attacks:
+        if attack == 'none':
+            continue
+        for iid in iid_types:
+            for attack_time in attack_times:
+                n_clients = int((re.search('_c_(\d+)', dir_name)).group(1))
+                adv_number = int(0.2 * n_clients)
+                for seed in range(seed_range):
+                    file_name = 'acc_%s_atk_FGSM_advs_%d_adv_pow_%d_atk_time_%d_seed_%d_iid_type_%s_cent_eigenvector_centrality.csv' % (attack, adv_number, pwr, attack_time, seed, iid)
+                    file_data_path = os.path.join(dir_data, file_name)
+                    with open(file_data_path, 'r') as acc_data_file:
+                        reader = csv.reader(acc_data_file)
+                        curr_seed_run = []
+                        for i, row in enumerate(reader):
+                            if i == 0:
+                                attacked_nodes = ast.literal_eval(row[1])
+                                attacked_nodes = [int(_) for _ in attacked_nodes]
+                            else:
+                                acc = ast.literal_eval(row[1])
+                                acc_honest = [_ for i, _ in enumerate(acc) if i not in attacked_nodes]
+                                acc_honest = sum(acc_honest) / len(acc_honest)
+                                curr_seed_run.append(acc_honest)
+                    accuracies[attack][iid][attack_time].append(curr_seed_run)
+                accuracies[attack][iid][attack_time] = np.mean(accuracies[attack][iid][attack_time], axis = 0)
+                accuracies[attack][iid][attack_time] = np.multiply(100, accuracies[attack][iid][attack_time])
+
+    # Plot
+    # Define colors for each attack
+    colors = {'score_cent_dist_manual_weight_010': 'green', 'least_overlap_area': 'black', 'random_nodes': 'purple', 'none': 'blue'}
+    legend = {'score_cent_dist_manual_weight_010': 'Eigenvector-Centrality Based Attack', 'least_overlap_area': 'BFDFL Attack', 'random_nodes': 'Random Choice Based Attack', 'none': 'No attack'}
+
+    fig, axs = plt.subplots(3, 2, figsize=(10, 9))
+    fig.subplots_adjust(hspace=0.3, wspace=0.3)
+    for i, attack_time in enumerate(attack_times):
+        for j, iid in enumerate(iid_types):
+            ax = axs[i, j]
+            for attack in attacks:
+                label = legend[attack]
+                if attack == 'none':
+                    ax.plot(accuracies[attack][iid], label=label, color=colors[attack])
+                else:
+                    ax.plot(accuracies[attack][iid][attack_time], label=label, color=colors[attack])
+            if iid == 'iid':
+                IID_name = ', IID'
+            else:
+                IID_name = ', Non-IID'
+            # Add vertical line
+            ax.axvline(x = attack_time, color = 'r', label = 'Attack begins')
+
+            # Customize the plot
+            ax.set_xticks([0, 20, 40, 60, 80, 100])
+            ax.set_title('%d) Attack Time = %d%s' % ((i * 2 + j + 1), attack_time, IID_name))
+            ax.grid()
+            print((i * 2 + j + 1), iid)
+            if iid == 'iid':
+                ax.set_yticks([10, 20, 30, 40, 50])
+                ax.set_ylim([10, 55])
+            else:
+                ax.set_yticks([10, 20, 30, 40, 50])
+                ax.set_ylim([10, 41])
+            if i == 2:
+                ax.set_xlabel('Epoch')
+            else:
+                ax.set_xlabel('')
+            if j == 0:
+                ax.set_ylabel('Average Accuracy for\nHonest Nodes %')
+            else:
+                ax.set_ylabel('')
+
+    handles, labels = ax.get_legend_handles_labels()
+    handles = [handles[0], handles[3], handles[2], handles[4], handles[1]]
+    labels = [labels[0], labels[3], labels[2], labels[4], labels[1]]
+    print(handles, labels)
+    # First row of legend
+    fig.legend(handles, labels, loc='upper center', ncol=3)
+    plt.show()
 
 if __name__ == '__main__':
-    plot_new_schemes('ER_graph_c_50_p_05', 'iid')
-    # measure_avg_dist_diff_schemes('ER_graph_c_25_p_01')
+    #plot_timing_attack('dir_geom_graph_c_25_type_2d_r_02')
+    calculate_attack_gain_size_and_adv_percent(['dir_geom_graph_c_10_type_2d_r_02',
+                           'dir_geom_graph_c_25_type_2d_r_02',
+                           'dir_geom_graph_c_50_type_2d_r_02',
+                           'dir_geom_graph_c_100_type_2d_r_02'])
+    #calculate_attack_gain_connectivity(['dir_geom_graph_c_25_type_2d_r_02',
+    #                                    'dir_geom_graph_c_25_type_2d_r_04',
+    #                                    'dir_geom_graph_c_25_type_2d_r_06'])
+    
+    #calculate_attack_gain_connectivity(['ER_graph_c_25_p_01',
+    #                                    'ER_graph_c_25_p_03',
+    #                                    'ER_graph_c_25_p_05'])
+    #plot_new_schemes('ER_graph_c_25_p_05', 'iid')
+    #plots_baseline = [('dir_geom_graph_c_25_type_2d_r_02', 'iid'), 
+    #                  ('dir_geom_graph_c_25_type_2d_r_02', 'non_iid'),
+    #                  ('ER_graph_c_25_p_05', 'iid'),
+    #                  ('ER_graph_c_25_p_05', 'non_iid')]
+    #create_composite_figure(plots_baseline)
+    #measure_avg_dist_diff_schemes('ER_graph_c_25_p_01')
     # make_graphs()    
     #for i in range(0, 11):
     #    score_graph_types_centralities_similarity('fmnist', float(i) / 10)
