@@ -14,7 +14,6 @@ import networkx as nx
 import csv
 import copy
 import time 
-import metis
 from collections import deque
 from split_data import *
 from sklearn.cluster import KMeans, SpectralClustering
@@ -493,28 +492,6 @@ def score_cent_dist_auto(n_clients, n_advs, graph_representation, cent_used = -1
     # TODO - do the same as above but the weights are chosen automatically based on the variance in centrality data/something else
     pass
 
-# Cluster nodes in the netowrk and select adversarial nodes based on most central node for each cluster
-# Uses the METIS algorithm for clustering
-def cluster_metis_alg(n_clients, n_advs, graph_representation, cent_used = -1):
-    cent_clients = calc_centralities(n_clients, graph_representation)
-    max_cent, min_cent = max(np.array(list(cent_clients.values()))[:, cent_used]), min(np.array(list(cent_clients.values()))[:, cent_used])
-    # Normalize the centrality values and make dictionary with only the specified centrality measure
-    for client in cent_clients.keys():
-        cent_clients[client][cent_used] = (cent_clients[client][cent_used] - min_cent) / (max_cent - min_cent)
-    client_cent_dict = {client:client_cent for client, client_cent in zip(cent_clients.keys(), np.array(list(cent_clients.values()))[:, cent_used])}
-    
-    # Initialize adversarial variables
-    adv_nodes = []  
-    
-    # Metis partitioning and node clustering
-    _, parts = metis.part_graph(graph_representation, n_advs)
-    clusters = {i:{} for i in range(n_advs)}
-    for client, centrality in client_cent_dict.items():
-        clusters[parts[client]][client] = centrality
-    # Find most central nodes for each cluster
-    for cluster in clusters.values():
-        adv_nodes.append(max(cluster, key = cluster.get))
-    return adv_nodes
 
 # Selects the nodes at random
 def random_nodes(n_clients, n_advs):

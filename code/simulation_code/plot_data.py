@@ -1662,10 +1662,15 @@ def plot_timing_attack(dir_name):
 
 if __name__ == '__main__':
     #plot_timing_attack('dir_geom_graph_c_25_type_2d_r_02')
-    calculate_attack_gain_size_and_adv_percent(['dir_geom_graph_c_10_type_2d_r_02',
-                           'dir_geom_graph_c_25_type_2d_r_02',
-                           'dir_geom_graph_c_50_type_2d_r_02',
-                           'dir_geom_graph_c_100_type_2d_r_02'])
+    for n_cls in [10, 25, 50, 100]:
+        for type_graph in ('sparse', 'medium', 'dense', 'dense_3'):
+            for seed in range(50):
+                graph_name = 'pref_attach_graph_c_%d_type_%s_seed_%d.txt' % (n_cls, type_graph, seed)
+                gen_pref_attach_graph(n_cls, type_graph, graph_name, seed)
+    #calculate_attack_gain_size_and_adv_percent(['dir_geom_graph_c_10_type_2d_r_02',
+    #                       'dir_geom_graph_c_25_type_2d_r_02',
+    #                       'dir_geom_graph_c_50_type_2d_r_02',
+    #                       'dir_geom_graph_c_100_type_2d_r_02'])
     #calculate_attack_gain_connectivity(['dir_geom_graph_c_25_type_2d_r_02',
     #                                    'dir_geom_graph_c_25_type_2d_r_04',
     #                                    'dir_geom_graph_c_25_type_2d_r_06'])
