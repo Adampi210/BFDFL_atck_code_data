@@ -55,7 +55,7 @@ graph_type_used = graph_type[4]
 # This is the source for network topology
 
 # ADJUSTABLE #####
-designated_clients = 50
+designated_clients = 100
 # ER
 if graph_type_used == 'ER':
     prob_conn = 5
