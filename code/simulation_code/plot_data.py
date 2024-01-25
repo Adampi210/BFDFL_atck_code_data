@@ -1233,6 +1233,7 @@ def create_composite_figure(graph_iid_tuples):
             if i == 0:
                 handle = Line2D([], [], color=color_scheme[line.get_label()], label=line.get_label())
                 custom_legend_handles.append(handle)
+            print(color_scheme[line.get_label()])
             line_color = color_scheme.get(line.get_label(), color_scheme[line.get_label()])  # Default to black if not specified
             axs[i].plot(line.get_xdata(), [100 * x for x in line.get_ydata()], label=line.get_label(), color=line_color)
 
@@ -1671,19 +1672,19 @@ if __name__ == '__main__':
     #                       'dir_geom_graph_c_25_type_2d_r_02',
     #                       'dir_geom_graph_c_50_type_2d_r_02',
     #                       'dir_geom_graph_c_100_type_2d_r_02'])
-    #calculate_attack_gain_connectivity(['dir_geom_graph_c_25_type_2d_r_02',
-    #                                    'dir_geom_graph_c_25_type_2d_r_04',
-    #                                    'dir_geom_graph_c_25_type_2d_r_06'])
+    calculate_attack_gain_connectivity(['dir_geom_graph_c_25_type_2d_r_02',
+                                        'dir_geom_graph_c_25_type_2d_r_04',
+                                        'dir_geom_graph_c_25_type_2d_r_06'])
     
     #calculate_attack_gain_connectivity(['ER_graph_c_25_p_01',
     #                                    'ER_graph_c_25_p_03',
     #                                    'ER_graph_c_25_p_05'])
-    #plot_new_schemes('ER_graph_c_25_p_05', 'iid')
-    #plots_baseline = [('dir_geom_graph_c_25_type_2d_r_02', 'iid'), 
-    #                  ('dir_geom_graph_c_25_type_2d_r_02', 'non_iid'),
-    #                  ('ER_graph_c_25_p_05', 'iid'),
-    #                  ('ER_graph_c_25_p_05', 'non_iid')]
-    #create_composite_figure(plots_baseline)
+    #plot_new_schemes('pref_attach_graph_c_25_type_sparse', 'iid')
+    plots_baseline = [('dir_geom_graph_c_25_type_2d_r_02', 'iid'), 
+                      ('dir_geom_graph_c_25_type_2d_r_02', 'non_iid'),
+                      ('ER_graph_c_25_p_05', 'iid'),
+                      ('ER_graph_c_25_p_05', 'non_iid')]
+    create_composite_figure(plots_baseline)
     #measure_avg_dist_diff_schemes('ER_graph_c_25_p_01')
     # make_graphs()    
     #for i in range(0, 11):
