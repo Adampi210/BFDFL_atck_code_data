@@ -55,7 +55,7 @@ graph_type_used = graph_type[4]
 # This is the source for network topology
 
 # ADJUSTABLE #####
-designated_clients = 100
+designated_clients = 10
 # ER
 if graph_type_used == 'ER':
     prob_conn = 5
@@ -75,8 +75,8 @@ elif graph_type_used == 'k_out':
     network_topology = '%s_graph_c_%d_k_%d_seed_%d.txt' % (graph_type_used, designated_clients, k_used, seed)
 # PREF_ATTACH
 elif graph_type_used == 'pref_attach':
-    pref_attach_configs = ('sparse', 'medium', 'dense')
-    config_used = 0
+    pref_attach_configs = ('sparse', 'medium', 'dense', 'dense_3')
+    config_used = 1
     data_dir_name = dir_data + '%s_graph_c_%d_type_%s/' % (graph_type_used, designated_clients, pref_attach_configs[config_used])
     network_topology = '%s_graph_c_%d_type_%s_seed_%d.txt' % (graph_type_used, designated_clients, pref_attach_configs[config_used], seed)
 # SNAP
@@ -127,7 +127,7 @@ N_SERVERS  = 0        # Number of servers
 iid_type = 'iid'      # 'iid' or 'non_iid'
 N_LOCAL_EPOCHS  = 10  # Number of epochs for local training
 N_GLOBAL_EPOCHS = 100 # Number of epochs for global training
-BATCH_SIZE = 500 # Batch size while training
+BATCH_SIZE = 500      # Batch size while training
 
 # Adversarial parameters
 attacks = ('none', 'FGSM', 'PGD', 'noise')      # Available attacks
@@ -190,10 +190,7 @@ def run_and_save_simulation(train_split, valid_split, adj_matrix, centrality_mea
         else:
             nodes_to_atk_centrality = score_cent_dist_manual(score_cent_dist_weight, N_CLIENTS, adv_number, graph_representation, centrality_measure - 1)
     elif 'cluster_metis_alg' in prefix_name:
-        if centralities[centrality_measure] == 'none':
-            nodes_to_atk_centrality = []
-        else:
-            nodes_to_atk_centrality = cluster_metis_alg(N_CLIENTS, adv_number, graph_representation, centrality_measure - 1)
+        pass
     elif 'random_nodes' in prefix_name:
         if centralities[centrality_measure] == 'none':
             nodes_to_atk_centrality = []

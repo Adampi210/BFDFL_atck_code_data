@@ -1,7 +1,6 @@
 import sys
 import os
 import re
-
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -55,7 +54,8 @@ graph_type_used = graph_type[4]
 # This is the source for network topology
 
 # ADJUSTABLE #####
-designated_clients = 100
+designated_clients = 10
+
 # ER
 if graph_type_used == 'ER':
     prob_conn = 5
@@ -76,7 +76,7 @@ elif graph_type_used == 'k_out':
 # PREF_ATTACH
 elif graph_type_used == 'pref_attach':
     pref_attach_configs = ('sparse', 'medium', 'dense', 'dense_3')
-    config_used = 0
+    config_used = 1
     data_dir_name = dir_data + '%s_graph_c_%d_type_%s/' % (graph_type_used, designated_clients, pref_attach_configs[config_used])
     network_topology = '%s_graph_c_%d_type_%s_seed_%d.txt' % (graph_type_used, designated_clients, pref_attach_configs[config_used], seed)
 # SNAP
