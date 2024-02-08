@@ -432,6 +432,20 @@ def gen_pref_attach_graph(n_clients, graph_type = 'sparse', graph_name = '', see
 
     return graph, adj_matrix
 
+# Used to generate WS small world graphs
+def gen_WS_graph(n_clients, k = 4, prob_con = 0.5, graph_name = '', seed = 0):
+    dir_networks = '../../data/full_decentralized/network_topologies/'
+    graph = None
+    is_connected = False
+    while not is_connected:
+        graph = nx.watts_strogatz_graph(n_clients, k, prob_con, seed)
+        is_connected = nx.is_connected(graph)
+        seed += 100 
+    
+    adj_matrix = nx.adjacency_matrix(graph)
+    np.savetxt(dir_networks + graph_name, adj_matrix.todense(), fmt='%d')
+    return graph, adj_matrix
+
 def make_graphs():
     dir_networks = '../../data/full_decentralized/network_topologies/'
     graph_type = ('ER', 'dir_scale_free', 'dir_geom', 'k_out', 'pref_attach')
@@ -1664,27 +1678,28 @@ def plot_timing_attack(dir_name):
 if __name__ == '__main__':
     #plot_timing_attack('dir_geom_graph_c_25_type_2d_r_02')
     for n_cls in [10, 25, 50, 100]:
-        for type_graph in ('sparse', 'medium', 'dense', 'dense_3'):
-            for seed in range(50):
-                graph_name = 'pref_attach_graph_c_%d_type_%s_seed_%d.txt' % (n_cls, type_graph, seed)
-                gen_pref_attach_graph(n_cls, type_graph, graph_name, seed)
+        for prob_con in [0.3, 0.5, 0.7]:
+            for k in [2, 4, 7]:
+                for seed in range(50):
+                    graph_name = 'WS_graph_c_%d_p_0%d_k_%d_seed_%d.txt' % (n_cls, int(prob_con * 10), k, seed)
+                    gen_WS_graph(n_cls, k, prob_con, graph_name, seed)
     #calculate_attack_gain_size_and_adv_percent(['dir_geom_graph_c_10_type_2d_r_02',
     #                       'dir_geom_graph_c_25_type_2d_r_02',
     #                       'dir_geom_graph_c_50_type_2d_r_02',
     #                       'dir_geom_graph_c_100_type_2d_r_02'])
-    calculate_attack_gain_connectivity(['dir_geom_graph_c_25_type_2d_r_02',
-                                        'dir_geom_graph_c_25_type_2d_r_04',
-                                        'dir_geom_graph_c_25_type_2d_r_06'])
+    #calculate_attack_gain_connectivity(['dir_geom_graph_c_25_type_2d_r_02',
+    #                                    'dir_geom_graph_c_25_type_2d_r_04',
+    #                                    'dir_geom_graph_c_25_type_2d_r_06'])
     
     #calculate_attack_gain_connectivity(['ER_graph_c_25_p_01',
     #                                    'ER_graph_c_25_p_03',
     #                                    'ER_graph_c_25_p_05'])
     #plot_new_schemes('pref_attach_graph_c_25_type_sparse', 'iid')
-    plots_baseline = [('dir_geom_graph_c_25_type_2d_r_02', 'iid'), 
-                      ('dir_geom_graph_c_25_type_2d_r_02', 'non_iid'),
-                      ('ER_graph_c_25_p_05', 'iid'),
-                      ('ER_graph_c_25_p_05', 'non_iid')]
-    create_composite_figure(plots_baseline)
+    #plots_baseline = [('dir_geom_graph_c_25_type_2d_r_02', 'iid'), 
+    #                  ('dir_geom_graph_c_25_type_2d_r_02', 'non_iid'),
+    #                  ('ER_graph_c_25_p_05', 'iid'),
+    #                  ('ER_graph_c_25_p_05', 'non_iid')]
+    #create_composite_figure(plots_baseline)
     #measure_avg_dist_diff_schemes('ER_graph_c_25_p_01')
     # make_graphs()    
     #for i in range(0, 11):
