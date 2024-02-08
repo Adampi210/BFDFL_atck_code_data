@@ -35,7 +35,7 @@ if device_used != torch.device('cuda:0'):
 
 start_time = time.time()
 # Set hyperparameters
-seed = 0 # Seed for PRNGs 
+seed = 35 # Seed for PRNGs 
 random.seed(seed)
 torch.manual_seed(seed)
 np.random.seed(seed)
@@ -55,7 +55,7 @@ graph_type_used = graph_type[4]
 # This is the source for network topology
 
 # ADJUSTABLE #####
-designated_clients = 10
+designated_clients = 50
 # ER
 if graph_type_used == 'ER':
     prob_conn = 5
@@ -76,7 +76,7 @@ elif graph_type_used == 'k_out':
 # PREF_ATTACH
 elif graph_type_used == 'pref_attach':
     pref_attach_configs = ('sparse', 'medium', 'dense', 'dense_3')
-    config_used = 2
+    config_used = 3
     data_dir_name = dir_data + '%s_graph_c_%d_type_%s/' % (graph_type_used, designated_clients, pref_attach_configs[config_used])
     network_topology = '%s_graph_c_%d_type_%s_seed_%d.txt' % (graph_type_used, designated_clients, pref_attach_configs[config_used], seed)
 # SNAP
@@ -124,7 +124,7 @@ with open(data_dir_name + 'node_centrality'+ '.csv', 'w', newline = '') as centr
 # Training parameters
 N_CLIENTS = len(adj_matrix[0]) # Number of clients
 N_SERVERS  = 0        # Number of servers
-iid_type = 'iid'      # 'iid' or 'non_iid'
+iid_type = 'non_iid'      # 'iid' or 'non_iid'
 N_LOCAL_EPOCHS  = 10  # Number of epochs for local training
 N_GLOBAL_EPOCHS = 100 # Number of epochs for global training
 BATCH_SIZE = 500      # Batch size while training
