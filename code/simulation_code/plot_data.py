@@ -1118,6 +1118,8 @@ def measure_avg_dist_diff_schemes(network_type):
         for seed in range(50):
             graph_topology = network_type + '_seed_%d.txt' % seed
             network_topology_filepath = os.path.join(dir_networks, graph_topology)
+            if not os.path.isfile(network_topology_filepath):
+                continue
             adj_matrix = np.loadtxt(network_topology_filepath) 
             graph_representation = create_graph(adj_matrix)
             if adv_scheme == 'score_cent_dist_manual_weight_010':
@@ -1131,7 +1133,7 @@ def measure_avg_dist_diff_schemes(network_type):
 
     for adv_scheme in adv_schemes.keys():
         adv_schemes[adv_scheme] = np.mean(adv_schemes[adv_scheme])
-    print(adv_schemes)
+    return adv_schemes
 
 def plot_new_schemes(network_type, iid_type, label_in_plot = 0):
     plot_labels = ('1) ', '2) ', '3) ', '4) ')
@@ -1689,13 +1691,73 @@ def plot_timing_attack(dir_name):
     fig.legend(handles, labels, loc='upper center', ncol=3)
     plt.show()
 
+def add_edges_to_make_strongly_connected(adjacency_matrix):
+    graph = nx.DiGraph(adjacency_matrix)
+    
+    # Identify strongly connected components (SCCs)
+    sccs = list(nx.strongly_connected_components(graph))
+    if len(sccs) == 1:
+        print("The graph is already strongly connected.")
+        return adjacency_matrix  # The graph is already strongly connected
+    
+    # Create a condensed graph of SCCs
+    condensed_graph = nx.condensation(graph, sccs)
+    
+    # Find nodes in the condensed graph with no incoming or outgoing edges
+    nodes_with_no_incoming = [node for node in condensed_graph.nodes() if condensed_graph.in_degree(node) == 0]
+    nodes_with_no_outgoing = [node for node in condensed_graph.nodes() if condensed_graph.out_degree(node) == 0]
+    
+    # To make the graph strongly connected, connect the SCCs in a cycle. For simplicity, connect end nodes to start nodes
+    for start_node in nodes_with_no_incoming:
+        for end_node in nodes_with_no_outgoing:
+            # Find representative nodes from the original graph
+            start_rep = next(iter(sccs[start_node]))
+            end_rep = next(iter(sccs[end_node]))
+            
+            # Add edge to the original adjacency matrix
+            adjacency_matrix[end_rep][start_rep] = 1
+    
+    return adjacency_matrix
+
+def make_graph_strongly_connected_and_update_matrix(graph_name):
+    # Load the adjacency matrix from a file
+    dir_graphs = '../../data/full_decentralized/network_topologies/'
+
+    adjacency_matrix = np.loadtxt(dir_graphs + graph_name)  # Assuming CSV format for simplicity
+
+    # Update the adjacency matrix to make the graph strongly connected
+    updated_matrix = add_edges_to_make_strongly_connected(adjacency_matrix)
+    
+    # Optionally, save the updated matrix back to a file or return it
+    # np.savetxt("updated_matrix.csv", updated_matrix, delimiter=',')
+    return updated_matrix
+
+def get_aver_dist_diff_graphs(dir_with_data):
+    with open('dist_vals.txt', 'w') as distance_file:
+        distance_file.write('Graph Type                      ; Eigenvector Centrality; MaxSpanFL; Random Nodes')
+        graph_data = os.listdir(dir_with_data)
+        graphs = []
+        for graph in graph_data:
+            if 'SNAP' not in graph and 'hypercube' not in graph:
+                graphs.append(graph)
+        graphs.remove('dir_geom_graph_c_100_type_2d_r_02')
+        for graph in graphs:
+            dists = measure_avg_dist_diff_schemes(graph)
+            eig_dist = dists['score_cent_dist_manual_weight_010']
+            least_overlap_dist = dists['least_overlap_area']
+            rand_dist = dists['random_nodes']
+            distance_file.write(f'\n{graph:<40}  {eig_dist:.4f};          {least_overlap_dist:.4f};      {rand_dist:.4f}')
+
 if __name__ == '__main__':
+    snap_graph = 'SNAP_Cisco_c_28_type_g20_seed_0.txt'
+    new_adj = make_graph_strongly_connected_and_update_matrix(snap_graph)
+    print(new_adj)
     #plot_timing_attack('dir_geom_graph_c_25_type_2d_r_02')
-    for n_dim in [3, 5, 8]:
-        for seed in range(1):
-            n_cls = 2 ** n_dim
-            graph_name = 'hypercube_graph_c_%d_n_dim_%d_seed_%d.txt' % (n_cls, n_dim, seed)
-            gen_hypercube_graph(n_dim, graph_name)
+    #for n_dim in [3, 5, 8]:
+    #    for seed in range(1):
+    #        n_cls = 2 ** n_dim
+    #        graph_name = 'hypercube_graph_c_%d_n_dim_%d_seed_%d.txt' % (n_cls, n_dim, seed)
+    #        gen_hypercube_graph(n_dim, graph_name)
     #calculate_attack_gain_size_and_adv_percent(['dir_geom_graph_c_10_type_2d_r_02',
     #                       'dir_geom_graph_c_25_type_2d_r_02',
     #                       'dir_geom_graph_c_50_type_2d_r_02',
@@ -1703,7 +1765,6 @@ if __name__ == '__main__':
     #calculate_attack_gain_connectivity(['dir_geom_graph_c_25_type_2d_r_02',
     #                                    'dir_geom_graph_c_25_type_2d_r_04',
     #                                    'dir_geom_graph_c_25_type_2d_r_06'])
-    
     #calculate_attack_gain_connectivity(['ER_graph_c_25_p_01',
     #                                    'ER_graph_c_25_p_03',
     #                                    'ER_graph_c_25_p_05'])
@@ -1713,7 +1774,8 @@ if __name__ == '__main__':
     #                  ('ER_graph_c_25_p_05', 'iid'),
     #                  ('ER_graph_c_25_p_05', 'non_iid')]
     #create_composite_figure(plots_baseline)
-    #measure_avg_dist_diff_schemes('ER_graph_c_25_p_01')
+    # measure_avg_dist_diff_schemes('WS_graph_c_25_p_05_k_4')
+    # get_aver_dist_diff_graphs('../../data/full_decentralized/fmnist/')
     # make_graphs()    
     #for i in range(0, 11):
     #    score_graph_types_centralities_similarity('fmnist', float(i) / 10)

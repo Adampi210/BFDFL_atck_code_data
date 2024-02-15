@@ -16,7 +16,7 @@ import copy
 import time 
 from collections import deque
 from split_data import *
-from sklearn.cluster import KMeans, SpectralClustering
+# from sklearn.cluster import KMeans, SpectralClustering
 from neural_net_architectures import *
 
 from cleverhans.torch.attacks.fast_gradient_method import fast_gradient_method # FGSM
