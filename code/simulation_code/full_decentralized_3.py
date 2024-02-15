@@ -34,7 +34,7 @@ if device_used != torch.device('cuda:0'):
 
 start_time = time.time()
 # Set hyperparameters
-seed = 0 # Seed for PRNGs 
+seed = 34 # Seed for PRNGs 
 random.seed(seed)
 torch.manual_seed(seed)
 np.random.seed(seed)
@@ -49,8 +49,8 @@ aggregation_mechanism = aggreg_schemes[1]
 # Create directory for the network data. Will include accuracy sub-directories
 dir_networks = '../../data/full_decentralized/network_topologies'
 dir_data = '../../data/full_decentralized/%s/' % dataset_name
-graph_type = ('ER', 'dir_scale_free', 'dir_geom', 'k_out', 'pref_attach', 'SNAP_Cisco', 'WS_graph')
-graph_type_used = graph_type[6]
+graph_type = ('ER', 'dir_scale_free', 'dir_geom', 'k_out', 'pref_attach', 'SNAP_Cisco', 'WS_graph', 'hypercube_graph')
+graph_type_used = graph_type[7]
 # This is the source for network topology
 
 # ADJUSTABLE #####
@@ -85,6 +85,12 @@ elif graph_type_used == 'WS_graph':
     k = 4         # Can be 2 4 7
     data_dir_name = dir_data + '%s_c_%d_p_0%d_k_%d/' % (graph_type_used, designated_clients, prob_conn, k)
     network_topology = '%s_c_%d_p_0%d_k_%d_seed_%d.txt' % (graph_type_used, designated_clients, prob_conn, k, seed)
+# hypercube
+elif graph_type_used == 'hypercube_graph':
+    n_dim = 5
+    n_cls = 2 ** n_dim
+    data_dir_name = dir_data + 'hypercube_graph_c_%d_n_dim_%d/' % (n_cls, n_dim)
+    network_topology = 'hypercube_graph_c_%d_n_dim_%d_seed_%d.txt' % (n_cls, n_dim, 0)
 # SNAP
 elif graph_type_used == 'SNAP_Cisco':
     client_val_used = 0

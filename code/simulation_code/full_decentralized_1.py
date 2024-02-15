@@ -27,14 +27,14 @@ from nn_FL_de_cent import *
 from neural_net_architectures import *
 # Device configuration
 # Always check first if GPU is avaialble
-device_used = torch.device('cuda:1' if torch.cuda.is_available() else 'cpu')
+device_used = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 # If CUDA is not avaialbe, print message that CPU will be used
-if device_used != torch.device('cuda:1'):
+if device_used != torch.device('cuda:0'):
     print(f'CUDA not available, have to use {device_used}')
 
 start_time = time.time()
 # Set hyperparameters
-seed = 0 # Seed for PRNGs 
+seed = 30 # Seed for PRNGs 
 random.seed(seed)
 torch.manual_seed(seed)
 np.random.seed(seed)
@@ -49,8 +49,8 @@ aggregation_mechanism = aggreg_schemes[1]
 # Create directory for the network data. Will include accuracy sub-directories
 dir_networks = '../../data/full_decentralized/network_topologies'
 dir_data = '../../data/full_decentralized/%s/' % dataset_name
-graph_type = ('ER', 'dir_scale_free', 'dir_geom', 'k_out', 'pref_attach', 'SNAP_Cisco', 'WS_graph')
-graph_type_used = graph_type[6]
+graph_type = ('ER', 'dir_scale_free', 'dir_geom', 'k_out', 'pref_attach', 'SNAP_Cisco', 'WS_graph', 'hypercube_graph')
+graph_type_used = graph_type[7]
 # This is the source for network topology
 
 # ADJUSTABLE #####
@@ -85,6 +85,12 @@ elif graph_type_used == 'WS_graph':
     k = 4         # Can be 2 4 7
     data_dir_name = dir_data + '%s_c_%d_p_0%d_k_%d/' % (graph_type_used, designated_clients, prob_conn, k)
     network_topology = '%s_c_%d_p_0%d_k_%d_seed_%d.txt' % (graph_type_used, designated_clients, prob_conn, k, seed)
+# hypercube
+elif graph_type_used == 'hypercube_graph':
+    n_dim = 5
+    n_cls = 2 ** n_dim
+    data_dir_name = dir_data + 'hypercube_graph_c_%d_n_dim_%d/' % (n_cls, n_dim)
+    network_topology = 'hypercube_graph_c_%d_n_dim_%d_seed_%d.txt' % (n_cls, n_dim, 0)
 # SNAP
 elif graph_type_used == 'SNAP_Cisco':
     client_val_used = 0
@@ -140,8 +146,8 @@ attacks = ('none', 'FGSM', 'PGD', 'noise')      # Available attacks
 architectures = ('star', 'full_decentralized')  # Architecture used
 attack_used = 1                                 # Which attack from the list was used
 attack = attacks[0]                             # Always start with no attack (attack at some point)
-adv_pow = 0                                     # Power of the attack
-adv_percent = 0.0                               # Percentage of adversaries
+adv_pow = 100                                     # Power of the attack
+adv_percent = 0.2                               # Percentage of adversaries
 # adv_percent /= 10                             # If below 10%
 adv_number = int(adv_percent * N_CLIENTS)       # Number of adversaries
 # adv_list = list(range(adv_number))
@@ -153,7 +159,7 @@ nb_iter = 15   # Number of epochs for PGD attack
 
 # Define centrality measures and directories
 centralities = ('none', 'in_deg_centrality', 'out_deg_centrality', 'closeness_centrality', 'betweeness_centrality', 'eigenvector_centrality')
-cent_measure_used = 0
+cent_measure_used = 5
 
 # Split the data for the specified number of clients and servers
 if iid_type == 'iid':

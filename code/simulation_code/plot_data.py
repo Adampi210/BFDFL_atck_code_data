@@ -443,7 +443,21 @@ def gen_WS_graph(n_clients, k = 4, prob_con = 0.5, graph_name = '', seed = 0):
         seed += 100 
     
     adj_matrix = nx.adjacency_matrix(graph)
-    np.savetxt(dir_networks + graph_name, adj_matrix.todense(), fmt='%d')
+    np.savetxt(dir_networks + graph_name, adj_matrix.todense(), fmt = '%d')
+    return graph, adj_matrix
+
+# Used to generate hypercube graphs
+# Connectivty depends on the hypercube dimension
+# Sparse connectivity: n_dim = 2, 3
+# Moderate connectivity: n_dim = 4, 5, 6
+# Dense connectivity: n_dim = 8, 9, 10
+def gen_hypercube_graph(n_dim = 5, graph_name = ''):
+    dir_networks='../../data/full_decentralized/network_topologies/'
+    graph = nx.hypercube_graph(n_dim)
+    adj_matrix = nx.adjacency_matrix(graph)
+
+    np.savetxt(dir_networks + graph_name, adj_matrix.todense(), fmt = '%d')
+
     return graph, adj_matrix
 
 def make_graphs():
@@ -1677,12 +1691,11 @@ def plot_timing_attack(dir_name):
 
 if __name__ == '__main__':
     #plot_timing_attack('dir_geom_graph_c_25_type_2d_r_02')
-    for n_cls in [10, 25, 50, 100]:
-        for prob_con in [0.3, 0.5, 0.7]:
-            for k in [2, 4, 7]:
-                for seed in range(50):
-                    graph_name = 'WS_graph_c_%d_p_0%d_k_%d_seed_%d.txt' % (n_cls, int(prob_con * 10), k, seed)
-                    gen_WS_graph(n_cls, k, prob_con, graph_name, seed)
+    for n_dim in [3, 5, 8]:
+        for seed in range(1):
+            n_cls = 2 ** n_dim
+            graph_name = 'hypercube_graph_c_%d_n_dim_%d_seed_%d.txt' % (n_cls, n_dim, seed)
+            gen_hypercube_graph(n_dim, graph_name)
     #calculate_attack_gain_size_and_adv_percent(['dir_geom_graph_c_10_type_2d_r_02',
     #                       'dir_geom_graph_c_25_type_2d_r_02',
     #                       'dir_geom_graph_c_50_type_2d_r_02',
