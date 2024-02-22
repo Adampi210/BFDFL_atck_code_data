@@ -521,6 +521,46 @@ def average_distance_between_advs(G, adv_list):
     avg_distance = total_distance / count
     return avg_distance
 
+def add_edges_to_make_strongly_connected(adjacency_matrix):
+    graph = nx.DiGraph(adjacency_matrix)
+    
+    # Identify strongly connected components (SCCs)
+    sccs = list(nx.strongly_connected_components(graph))
+    if len(sccs) == 1:
+        print("The graph is already strongly connected.")
+        return adjacency_matrix  # The graph is already strongly connected
+    
+    # Create a condensed graph of SCCs
+    condensed_graph = nx.condensation(graph, sccs)
+    
+    # Find nodes in the condensed graph with no incoming or outgoing edges
+    nodes_with_no_incoming = [node for node in condensed_graph.nodes() if condensed_graph.in_degree(node) == 0]
+    nodes_with_no_outgoing = [node for node in condensed_graph.nodes() if condensed_graph.out_degree(node) == 0]
+    
+    # To make the graph strongly connected, connect the SCCs in a cycle. For simplicity, connect end nodes to start nodes
+    for start_node in nodes_with_no_incoming:
+        for end_node in nodes_with_no_outgoing:
+            # Find representative nodes from the original graph
+            start_rep = next(iter(sccs[start_node]))
+            end_rep = next(iter(sccs[end_node]))
+            
+            # Add edge to the original adjacency matrix
+            adjacency_matrix[end_rep][start_rep] = 1
+    
+    return adjacency_matrix
+
+def make_graph_strongly_connected_and_update_matrix(graph_name):
+    # Load the adjacency matrix from a file
+    dir_graphs = '../../data/full_decentralized/network_topologies/'
+
+    adjacency_matrix = np.loadtxt(dir_graphs + graph_name)  # Assuming CSV format for simplicity
+
+    # Update the adjacency matrix to make the graph strongly connected
+    updated_matrix = add_edges_to_make_strongly_connected(adjacency_matrix)
+    
+    # Optionally, save the updated matrix back to a file or return it
+    # np.savetxt("updated_matrix.csv", updated_matrix, delimiter=',')
+    return updated_matrix
 
 
 if __name__ == "__main__":
