@@ -379,7 +379,7 @@ def create_clients_graph(node_list, plain_adj_matrix, aggregation_mechanism):
     for device in node_list:
         i = device.client_id
         for j in range(len(node_list)):
-            if plain_adj_matrix[i][j]:
+            if np.array(plain_adj_matrix)[i][j]:
                 device.add_out_neighbor(node_list[j])
                 graph.add_edge(i, j)
     # Then create the adjacency matrix
@@ -455,7 +455,6 @@ def score_cent_dist_manual(cent_weight, n_clients, n_advs, graph_representation,
 
     return adv_nodes
 
-
 # Selects the nodes at random
 def random_nodes(n_clients, n_advs):
     return list(np.random.choice(np.arange(n_clients), n_advs))
@@ -504,12 +503,59 @@ def least_overlap_area(n_clients, n_advs, graph_representation):
     
     return adv_nodes
 
+# Extension of least overlap area with centrality hopping
+# TODO Add modification to make hop distance depend on the graph structure
+def MaxSpANFL_w_centrality_hopping(n_clients, n_advs, graph_representation, hop_distance, cent_used = -1):
+    # Get initial adversaries
+    adv_nodes = least_overlap_area(n_clients, n_advs, graph_representation)
+    cent_clients = calc_centralities(n_clients, graph_representation)
+    cent_clients = {client: cent[cent_used] for client, cent in cent_clients.items()}
+    adv_nodes_hop = []
+    # Run centrality-based hopping for each adversarial node
+    for i in range(len(adv_nodes)):
+        current_node = adv_nodes[i]
+        for _ in range(hop_distance):
+            # Check for variance (i.e. if not much difference stay)
+            neighbors = [i for i in graph_representation.neighbors(current_node)]
+            neighbors.append(current_node) 
+            # Don't choose duplicate nodes     
+            for node in adv_nodes_hop:
+                if node in neighbors:
+                    neighbors.remove(node)
+            # Get most central current node
+            current_node = max(neighbors, key = lambda x: cent_clients[x])
+        adv_nodes_hop.append(current_node)
+    return adv_nodes_hop
+    
+# Same as above but hop to random neighbor instead most central
+def MaxSpANFL_w_random_hopping(n_clients, n_advs, graph_representation, hop_distance, cent_used = -1):
+    # Get initial adversaries
+    adv_nodes = least_overlap_area(n_clients, n_advs, graph_representation)
+    cent_clients = calc_centralities(n_clients, graph_representation)
+    cent_clients = {client: cent[cent_used] for client, cent in cent_clients.items()}
+    adv_nodes_hop = []
+    # Run centrality-based hopping for each adversarial node
+    for i in range(len(adv_nodes)):
+        current_node = adv_nodes[i]
+        for _ in range(hop_distance):
+            # Check for variance (i.e. if not much difference stay)
+            neighbors = [i for i in graph_representation.neighbors(current_node)]
+            neighbors.append(current_node) 
+            # Don't choose duplicate nodes     
+            for node in adv_nodes_hop:
+                if node in neighbors:
+                    neighbors.remove(node)
+            # Get most central current node
+            current_node = np.random.choice(neighbors)
+        adv_nodes_hop.append(current_node)
+    return adv_nodes_hop
+
 # Calculate average distance between adversarial nodes
 def average_distance_between_advs(G, adv_list):
     total_distance = 0
     count = 0
     for i in range(len(adv_list)):
-        for j in range(i+1, len(adv_list)):
+        for j in range(i + 1, len(adv_list)):
             try:
                 distance = nx.shortest_path_length(G, source = adv_list[i], target = adv_list[j])
                 total_distance += distance
@@ -562,38 +608,36 @@ def make_graph_strongly_connected_and_update_matrix(graph_name):
     # np.savetxt("updated_matrix.csv", updated_matrix, delimiter=',')
     return updated_matrix
 
+def extract_strongly_connected_subgraph(adj_matrix, target_nodes):
+    # Create a directed graph from the adjacency matrix
+    adj_matrix = add_edges_to_make_strongly_connected(adj_matrix)
+    G = nx.from_numpy_matrix(adj_matrix, create_using = nx.DiGraph)
+    
+    # If the graph already matches the target size, return its adjacency matrix
+    if G.number_of_nodes() == target_nodes:
+        return nx.adjacency_matrix(G)
+    
+    # While the graph has more nodes than desired, remove nodes with minimal impact
+    while len(G.nodes()) > target_nodes:
+        # Compute betweenness centrality for all nodes
+        centrality = nx.betweenness_centrality(G)
+        
+        # Find the node with the lowest centrality score
+        min_centrality_node = min(centrality, key=centrality.get)
+        
+        # Remove this node from the graph
+        G.remove_node(min_centrality_node)
+        new_adj_matrix = nx.adjacency_matrix(G)
+        G = nx.from_numpy_matrix(new_adj_matrix, create_using = nx.DiGraph)
+        # After removal, the graph may not be strongly connected
+        # Find the largest strongly connected component
+            
+    # After reducing the graph to the target size, return its adjacency matrix
+    return nx.adjacency_matrix(G)
 
 if __name__ == "__main__":
-    # Example usage
-    time_start = time.time()
-    N_CLIENTS = 2
-    device_used = torch.device('cuda:1' if torch.cuda.is_available() else 'cpu')
-    train_dset_split, valid_dset_split = split_data_iid_excl_server(N_CLIENTS, 'fmnist')
-    node_list = [client_FL(i, device = device_used) for i in range(N_CLIENTS)]
-    [node.get_data(train_dset_split[i], valid_dset_split[i]) for node, i in zip(node_list, range(N_CLIENTS))]
-    [node.init_compiled_model(FashionMNIST_Classifier()) for node in node_list]
-    print([x.dset_size for x in node_list])
-    node_list[0].if_adv_client = True
-    # Run the training
-    for i in range(20):
-        # Update values if attacking
-        if i == 10:
-            attack = 'FGSM'
-            for node in node_list:
-                if node.if_adv_client:
-                    node.attack = attack
-                    node.adv_pow = 100
-        # Train and aggregate
-        print(f'global epoch: {i}')
-        # Exchange models and aggregate, MAIN PART
-        [node.exchange_models() for node in node_list]
-        [node.aggregate_SAB(10000, 2, False) for node in node_list]
-        
-        # Save accuracies
-        for node in node_list:
-            curr_loss, curr_acc = node.validate_client()
-            print(f'Client: {node.client_id}, Accuracy: {curr_acc}')
-    print(f'Total time: {time.time() - time_start}s')
+    pass
+
 # Increase number of epochs 3-5 times the current one, check different learning rates
 # Decrease step size significantly, increase the sizes of minibatchs
 # Use strongly convex loss (different loss functions)

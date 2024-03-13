@@ -19,7 +19,7 @@ sed -i "s/iid_type = '$prev_iid_style'/iid_type = '$init_iid_style'/g" full_dece
 sed -i "s/cent_measure_used = $prev_cent_used/cent_measure_used = $init_cent_used/g" full_decentralized_1.py
 sed -i "s/designated_clients = $prev_designated_clients/designated_clients = $init_designated_clients/g" full_decentralized_1.py
 
-for designated_clients in 10
+for designated_clients in 25
 do
     for iid_style in 'iid'
     do
