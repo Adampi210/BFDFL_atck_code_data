@@ -1140,7 +1140,7 @@ def plot_new_schemes(network_type, iid_type, label_in_plot = 0):
     dataset_name = 'fmnist' # Remember to change for CIFAR10
     dir_data = '../../data/full_decentralized/%s/%s/' % (dataset_name, network_type)
     dir_plots = '../../data/full_decentralized/finalized_plots/'
-    adv_schemes = {'score_cent_dist_manual_weight_010': [], 'least_overlap_area': [], 'random_nodes': [], 'none': []} # All
+    adv_schemes = {'score_cent_dist_manual_weight_010': [], 'least_overlap_area': [], 'random_nodes': [], 'none': [], 'MaxSpANFL_w_centrality_hopping': [], 'MaxSpANFL_w_random_hopping': []} # All
     # adv_schemes = {'least_overlap_area': [], 'random_nodes': [], 'none': []} # Missing eigenv 
     # adv_schemes = {'score_cent_dist_manual_weight_010': [], 'least_overlap_area': [], 'none': []} # Missibg random
     n_clients = int((re.search('_c_(\d+)', network_type)).group(1))
@@ -1149,7 +1149,7 @@ def plot_new_schemes(network_type, iid_type, label_in_plot = 0):
     if 'non_iid' in iid_type:
         seed_range = 20
     else:
-        seed_range = 50
+        seed_range = 20
     pwr = 100
     # First get the data for none
     none_avail = True
@@ -1191,7 +1191,7 @@ def plot_new_schemes(network_type, iid_type, label_in_plot = 0):
         adv_schemes[scheme] = np.mean(adv_schemes[scheme], axis = 0)
 
     # Finally make legend and plot
-    legend = {'score_cent_dist_manual_weight_010': 'Eigenvector-Centrality Based Attack', 'least_overlap_area': 'BFDFL Attack', 'random_nodes': 'Random Choice Based Attack', 'none': 'No attack'}
+    legend = {'score_cent_dist_manual_weight_010': 'Eigenvector-Centrality Based Attack', 'least_overlap_area': 'BFDFL Attack', 'random_nodes': 'Random Choice Based Attack', 'none': 'No attack', 'MaxSpANFL_w_centrality_hopping' : 'New with centrality hop', 'MaxSpANFL_w_random_hopping': 'New with random hop'}
     # Create the figure and axis
     fig, ax = plt.subplots(figsize = (16, 9))
 
@@ -1229,6 +1229,8 @@ def plot_new_schemes(network_type, iid_type, label_in_plot = 0):
     ax.grid()
     # plt.savefig(dir_plots + 'plot' + '_' + dataset_name + '_' + network_type + '_' + iid_type + '_FGSM_advs_%d_adv_pow_%d_atk_time_25_seed' % (adv_number, pwr) +'.png')
     print(title, [(i, adv_schemes[i][-1]) for i in adv_schemes.keys()])
+    plt.show()
+    plt.savefig('%s_%s_plot.png' % (network_type, iid_type_title))
     return adv_schemes, fig, ax, title
 
 def create_composite_figure(graph_iid_tuples):    
@@ -1294,6 +1296,7 @@ def create_composite_figure(graph_iid_tuples):
     # Save the composite figure
     plt.savefig('composite_figure.png', dpi=300, bbox_inches='tight')
     plt.show()  # If you want to display the figure as well
+    
 
 def calculate_attack_gain_connectivity(dir_names):
     iid_types = ('iid', 'non_iid')
@@ -1729,11 +1732,11 @@ if __name__ == '__main__':
     #                                    'ER_graph_c_25_p_03',
     #                                    'ER_graph_c_25_p_05'])
     #plot_new_schemes('pref_attach_graph_c_25_type_sparse', 'iid')
-    #plots_baseline = [('dir_geom_graph_c_25_type_2d_r_02', 'iid'), 
-    #                  ('dir_geom_graph_c_25_type_2d_r_02', 'non_iid'),
-    #                  ('ER_graph_c_25_p_05', 'iid'),
-    #                  ('ER_graph_c_25_p_05', 'non_iid')]
-    #create_composite_figure(plots_baseline)
+    plots_baseline = [('dir_geom_graph_c_25_type_2d_r_02', 'iid'), 
+                      ('pref_attach_graph_c_25_type_dense_3', 'iid'),
+                    ]
+    # create_composite_figure(plots_baseline)
+    plot_new_schemes('dir_geom_graph_c_25_type_2d_r_02', 'iid')
     # measure_avg_dist_diff_schemes('WS_graph_c_25_p_05_k_4')
     # get_aver_dist_diff_graphs('../../data/full_decentralized/fmnist/')
     # make_graphs()    

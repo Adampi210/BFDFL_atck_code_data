@@ -76,7 +76,7 @@ elif graph_type_used == 'k_out':
 # PREF_ATTACH
 elif graph_type_used == 'pref_attach':
     pref_attach_configs = ('sparse', 'medium', 'dense', 'dense_3')
-    config_used = 3
+    config_used = 2
     data_dir_name = dir_data + '%s_graph_c_%d_type_%s/' % (graph_type_used, designated_clients, pref_attach_configs[config_used])
     network_topology = '%s_graph_c_%d_type_%s_seed_%d.txt' % (graph_type_used, designated_clients, pref_attach_configs[config_used], seed)
 # WS
