@@ -1736,7 +1736,7 @@ if __name__ == '__main__':
                       ('pref_attach_graph_c_25_type_dense_3', 'iid'),
                     ]
     # create_composite_figure(plots_baseline)
-    plot_new_schemes('dir_geom_graph_c_25_type_2d_r_02', 'iid')
+    plot_new_schemes('pref_attach_graph_c_25_type_sparse', 'iid')
     # measure_avg_dist_diff_schemes('WS_graph_c_25_p_05_k_4')
     # get_aver_dist_diff_graphs('../../data/full_decentralized/fmnist/')
     # make_graphs()    
