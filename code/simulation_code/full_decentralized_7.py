@@ -1,7 +1,6 @@
 import sys
 import os
 import re
-
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -50,15 +49,16 @@ aggregation_mechanism = aggreg_schemes[1]
 # Create directory for the network data. Will include accuracy sub-directories
 dir_networks = '../../data/full_decentralized/network_topologies'
 dir_data = '../../data/full_decentralized/%s/' % dataset_name
-graph_type = ('ER', 'dir_scale_free', 'dir_geom', 'k_out', 'pref_attach', 'SNAP_Cisco')
-graph_type_used = graph_type[0]
+graph_type = ('ER', 'dir_scale_free', 'dir_geom', 'k_out', 'pref_attach', 'SNAP_Cisco', 'WS_graph', 'hypercube_graph')
+graph_type_used = graph_type[4]
 # This is the source for network topology
 
 # ADJUSTABLE #####
-designated_clients = 100
+designated_clients = 10
+
 # ER
 if graph_type_used == 'ER':
-    prob_conn = 3
+    prob_conn = 5
     data_dir_name = dir_data + '%s_graph_c_%d_p_0%d/' % (graph_type_used, designated_clients, prob_conn)
     network_topology = '%s_graph_c_%d_p_0%d_seed_%d.txt' % (graph_type_used, designated_clients, prob_conn, seed)
 # DIR GEOM
@@ -75,13 +75,25 @@ elif graph_type_used == 'k_out':
     network_topology = '%s_graph_c_%d_k_%d_seed_%d.txt' % (graph_type_used, designated_clients, k_used, seed)
 # PREF_ATTACH
 elif graph_type_used == 'pref_attach':
-    pref_attach_configs = ('sparse', 'medium', 'dense')
+    pref_attach_configs = ('sparse', 'medium', 'dense', 'dense_3')
     config_used = 0
     data_dir_name = dir_data + '%s_graph_c_%d_type_%s/' % (graph_type_used, designated_clients, pref_attach_configs[config_used])
     network_topology = '%s_graph_c_%d_type_%s_seed_%d.txt' % (graph_type_used, designated_clients, pref_attach_configs[config_used], seed)
+# WS
+elif graph_type_used == 'WS_graph':
+    prob_conn = 5 # Can be 3 5 7
+    k = 4         # Can be 2 4 7
+    data_dir_name = dir_data + '%s_c_%d_p_0%d_k_%d/' % (graph_type_used, designated_clients, prob_conn, k)
+    network_topology = '%s_c_%d_p_0%d_k_%d_seed_%d.txt' % (graph_type_used, designated_clients, prob_conn, k, seed)
+# hypercube
+elif graph_type_used == 'hypercube_graph':
+    n_dim = 5 # 3, 5, 8
+    n_cls = 2 ** n_dim
+    data_dir_name = dir_data + 'hypercube_graph_c_%d_n_dim_%d/' % (n_cls, n_dim)
+    network_topology = 'hypercube_graph_c_%d_n_dim_%d_seed_%d.txt' % (n_cls, n_dim, 0)
 # SNAP
 elif graph_type_used == 'SNAP_Cisco':
-    client_val_used = 0
+    client_val_used = 2
     seed_graph = 0
     client_vals = []
     graph_types = {}
@@ -96,12 +108,16 @@ elif graph_type_used == 'SNAP_Cisco':
                 client_vals.append(int(match.group(1)))
                 graph_types[int(match.group(1))] = match.group(2)
     client_vals = sorted(client_vals)
-    data_dir_name = dir_data + '%s_c_%d_type_%s/' % (graph_type_used, client_vals[client_val_used], graph_types[client_vals[client_val_used]])
+    data_dir_name = dir_data + '%s_c_%d_type_%s_subgraph_size_%d/' % (graph_type_used, client_vals[client_val_used], graph_types[client_vals[client_val_used]], designated_clients)
     network_topology = '%s_c_%d_type_%s_seed_%d.txt' % (graph_type_used, client_vals[client_val_used], graph_types[client_vals[client_val_used]], seed_graph)
 
 ##################
 network_topology_filepath = os.path.join(dir_networks, network_topology)
-adj_matrix = np.loadtxt(network_topology_filepath)
+if graph_type_used != 'SNAP_Cisco':
+    adj_matrix = np.loadtxt(network_topology_filepath)
+else:
+    adj_matrix = np.loadtxt(network_topology_filepath)
+    adj_matrix = extract_strongly_connected_subgraph(adj_matrix, designated_clients)
 os.makedirs(data_dir_name, exist_ok = True)
 
 # Save the adjacency matrix, the graph graphical representation, and the client centralities
@@ -127,7 +143,7 @@ N_SERVERS  = 0        # Number of servers
 iid_type = 'iid'      # 'iid' or 'non_iid'
 N_LOCAL_EPOCHS  = 10  # Number of epochs for local training
 N_GLOBAL_EPOCHS = 100 # Number of epochs for global training
-BATCH_SIZE = 500 # Batch size while training
+BATCH_SIZE = 500      # Batch size while training
 
 # Adversarial parameters
 attacks = ('none', 'FGSM', 'PGD', 'noise')      # Available attacks
@@ -136,6 +152,7 @@ attack_used = 1                                 # Which attack from the list was
 attack = attacks[0]                             # Always start with no attack (attack at some point)
 adv_pow = 0                                     # Power of the attack
 adv_percent = 0.0                               # Percentage of adversaries
+hop_distance = int(0.05 * N_CLIENTS)
 # adv_percent /= 10                             # If below 10%
 adv_number = int(adv_percent * N_CLIENTS)       # Number of adversaries
 # adv_list = list(range(adv_number))
@@ -178,22 +195,39 @@ def run_and_save_simulation(train_split, valid_split, adj_matrix, centrality_mea
     # nodes_to_atk_centrality = sort_by_centrality(centrality_data) # For normal operation
     # New framework #########################
     score_cent_dist_weight = 1 # 1 is the same as original, only choose by centralities, 0 chooses most spread out nodes
-    prefix_name = 'score_cent_dist_manual_weight_0%d' % int(10 * score_cent_dist_weight) # For centrality-distance tradeoff
+    # prefix_name = 'score_cent_dist_manual_weight_0%d' % int(10 * score_cent_dist_weight) # For centrality-distance tradeoff
     # prefix_name = 'cluster_metis_alg' # For creating clusters based on the metis algorithm and choosing most central node for each cluster
     # prefix_name = 'least_overlap_area' # For creating clusters based on the new least overlap area algorithm
     # prefix_name = 'random_nodes'
     # prefix_name = 'entropy_rand_walk'
+    # prefix_name = 'MaxSpANFL_w_centrality_hopping'
+    # prefix_name = 'MaxSpANFL_w_random_hopping'
+    prefix_name = 'MaxSpANFL_w_smart_hopping'
+    
     print(f'Scheme used: {prefix_name}')
+    if 'MaxSpANFL_w_centrality_hopping' in prefix_name:
+        if centralities[centrality_measure] == 'none':
+            nodes_to_atk_centrality = []
+        else:
+            nodes_to_atk_centrality = MaxSpANFL_w_centrality_hopping(N_CLIENTS, adv_number, graph_representation, hop_distance, cent_measure_used - 1)
+    if 'MaxSpANFL_w_smart_hopping' in prefix_name:
+        if centralities[centrality_measure] == 'none':
+            nodes_to_atk_centrality = []
+        else:
+            nodes_to_atk_centrality = MaxSpANFL_w_smart_hopping(N_CLIENTS, adv_number, graph_representation, cent_measure_used - 1)
+
+    if 'MaxSpANFL_w_random_hopping' in prefix_name:
+        if centralities[centrality_measure] == 'none':
+            nodes_to_atk_centrality = []
+        else:
+            nodes_to_atk_centrality = MaxSpANFL_w_random_hopping(N_CLIENTS, adv_number, graph_representation, hop_distance, cent_measure_used - 1)
     if 'score_cent_dist_manual_weight_0' in prefix_name:
         if centralities[centrality_measure] == 'none':
             nodes_to_atk_centrality = []
         else:
             nodes_to_atk_centrality = score_cent_dist_manual(score_cent_dist_weight, N_CLIENTS, adv_number, graph_representation, centrality_measure - 1)
     elif 'cluster_metis_alg' in prefix_name:
-        if centralities[centrality_measure] == 'none':
-            nodes_to_atk_centrality = []
-        else:
-            nodes_to_atk_centrality = cluster_metis_alg(N_CLIENTS, adv_number, graph_representation, centrality_measure - 1)
+        pass
     elif 'random_nodes' in prefix_name:
         if centralities[centrality_measure] == 'none':
             nodes_to_atk_centrality = []
@@ -204,6 +238,7 @@ def run_and_save_simulation(train_split, valid_split, adj_matrix, centrality_mea
             nodes_to_atk_centrality = []
         else:
             nodes_to_atk_centrality = least_overlap_area(N_CLIENTS, adv_number, graph_representation)
+
     # Init accuracy and loss values and files
     curr_loss, curr_acc = 0, 0
     centrality_used = centralities[centrality_measure]

@@ -27,9 +27,9 @@ from nn_FL_de_cent import *
 from neural_net_architectures import *
 # Device configuration
 # Always check first if GPU is avaialble
-device_used = torch.device('cuda:2' if torch.cuda.is_available() else 'cpu')
+device_used = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 # If CUDA is not avaialbe, print message that CPU will be used
-if device_used != torch.device('cuda:2'):
+if device_used != torch.device('cuda:0'):
     print(f'CUDA not available, have to use {device_used}')
 
 start_time = time.time()
@@ -64,7 +64,7 @@ if graph_type_used == 'ER':
 # DIR GEOM
 elif graph_type_used == 'dir_geom':
     geo_graph_configs = ('2d_r_02', '2d_r_04', '2d_r_06')
-    config_used = 2
+    config_used = 1
     data_dir_name = dir_data + '%s_graph_c_%d_type_%s/' % (graph_type_used, designated_clients, geo_graph_configs[config_used])
     network_topology = '%s_graph_c_%d_type_%s_seed_%d.txt' % (graph_type_used, designated_clients, geo_graph_configs[config_used], seed)
 # K-OUT
@@ -76,7 +76,7 @@ elif graph_type_used == 'k_out':
 # PREF_ATTACH
 elif graph_type_used == 'pref_attach':
     pref_attach_configs = ('sparse', 'medium', 'dense', 'dense_3')
-    config_used = 3
+    config_used = 0
     data_dir_name = dir_data + '%s_graph_c_%d_type_%s/' % (graph_type_used, designated_clients, pref_attach_configs[config_used])
     network_topology = '%s_graph_c_%d_type_%s_seed_%d.txt' % (graph_type_used, designated_clients, pref_attach_configs[config_used], seed)
 # WS
@@ -200,8 +200,9 @@ def run_and_save_simulation(train_split, valid_split, adj_matrix, centrality_mea
     # prefix_name = 'least_overlap_area' # For creating clusters based on the new least overlap area algorithm
     # prefix_name = 'random_nodes'
     # prefix_name = 'entropy_rand_walk'
-    prefix_name = 'MaxSpANFL_w_centrality_hopping'
+    # prefix_name = 'MaxSpANFL_w_centrality_hopping'
     # prefix_name = 'MaxSpANFL_w_random_hopping'
+    prefix_name = 'MaxSpANFL_w_smart_hopping'
     
     print(f'Scheme used: {prefix_name}')
     if 'MaxSpANFL_w_centrality_hopping' in prefix_name:
@@ -209,6 +210,12 @@ def run_and_save_simulation(train_split, valid_split, adj_matrix, centrality_mea
             nodes_to_atk_centrality = []
         else:
             nodes_to_atk_centrality = MaxSpANFL_w_centrality_hopping(N_CLIENTS, adv_number, graph_representation, hop_distance, cent_measure_used - 1)
+    if 'MaxSpANFL_w_smart_hopping' in prefix_name:
+        if centralities[centrality_measure] == 'none':
+            nodes_to_atk_centrality = []
+        else:
+            nodes_to_atk_centrality = MaxSpANFL_w_smart_hopping(N_CLIENTS, adv_number, graph_representation, cent_measure_used - 1)
+
     if 'MaxSpANFL_w_random_hopping' in prefix_name:
         if centralities[centrality_measure] == 'none':
             nodes_to_atk_centrality = []

@@ -200,8 +200,9 @@ def run_and_save_simulation(train_split, valid_split, adj_matrix, centrality_mea
     # prefix_name = 'least_overlap_area' # For creating clusters based on the new least overlap area algorithm
     # prefix_name = 'random_nodes'
     # prefix_name = 'entropy_rand_walk'
-    prefix_name = 'MaxSpANFL_w_centrality_hopping'
+    # prefix_name = 'MaxSpANFL_w_centrality_hopping'
     # prefix_name = 'MaxSpANFL_w_random_hopping'
+    prefix_name = 'MaxSpANFL_w_smart_hopping'
     
     print(f'Scheme used: {prefix_name}')
     if 'MaxSpANFL_w_centrality_hopping' in prefix_name:
@@ -209,6 +210,12 @@ def run_and_save_simulation(train_split, valid_split, adj_matrix, centrality_mea
             nodes_to_atk_centrality = []
         else:
             nodes_to_atk_centrality = MaxSpANFL_w_centrality_hopping(N_CLIENTS, adv_number, graph_representation, hop_distance, cent_measure_used - 1)
+    if 'MaxSpANFL_w_smart_hopping' in prefix_name:
+        if centralities[centrality_measure] == 'none':
+            nodes_to_atk_centrality = []
+        else:
+            nodes_to_atk_centrality = MaxSpANFL_w_smart_hopping(N_CLIENTS, adv_number, graph_representation, cent_measure_used - 1)
+
     if 'MaxSpANFL_w_random_hopping' in prefix_name:
         if centralities[centrality_measure] == 'none':
             nodes_to_atk_centrality = []
