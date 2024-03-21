@@ -594,7 +594,7 @@ def MaxSpANFL_w_smart_hopping(n_clients, n_advs, graph_representation, cent_used
     std_degree = np.std(degrees)
     cv_degree = std_degree / mean_degree
 
-    cv_threshold = 1.0  # Adjust this value based on your specific requirements
+    cv_threshold = 1.0
 
     if hop_distance > 0:
         for i in range(len(adv_nodes)):
