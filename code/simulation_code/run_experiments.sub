@@ -1,0 +1,20 @@
+#!/bin/bash
+#SBATCH -A standby
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=1
+#SBATCH --gpus-per-node=1
+#SBATCH --time=5:00:00
+
+# Variables
+conda_env_used='maxspan_fl_env'
+
+# Load necessary stuff
+module load cuda/12.1.1
+module load anaconda
+
+# Activate desired environment
+conda activate $conda_env_used
+
+# Run the experiment code
+./run_attacks_diff_decentralized_0.sh
