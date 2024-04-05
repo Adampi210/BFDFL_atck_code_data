@@ -597,7 +597,6 @@ def MaxSpANFL_w_smart_hopping(n_clients, n_advs, graph_representation, decay_fac
         hop_prob = hopping_probability(graph_representation, current_node)
         while True:
             if np.random.rand() < hop_prob:
-                hops += 1
                 neighbors = [n for n in graph_representation.neighbors(current_node) if n not in adv_nodes_hop]
                 if neighbors:
                     current_node = max(neighbors, key = lambda x: cent_clients[x])
