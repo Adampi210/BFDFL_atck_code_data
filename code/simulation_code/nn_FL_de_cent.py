@@ -13,6 +13,7 @@ import numpy as np
 import networkx as nx
 import csv
 import copy
+import os
 import glob
 import time 
 from collections import deque
@@ -551,74 +552,64 @@ def MaxSpANFL_w_random_hopping(n_clients, n_advs, graph_representation, hop_dist
         adv_nodes_hop.append(current_node)
     return adv_nodes_hop
 
-# Determines number of hops based on graph structure
-def hop_based_on_graph(n_clients, graph_representation):
-    degrees = list(dict(graph_representation.degree()).values())
-    mean_degree = np.mean(degrees)
-    std_degree = np.std(degrees)
-    # Coefficient of variantion for the degrees
-    cv_degree = std_degree / mean_degree
-
-    # Adjustable thresholds (think about learning?)
-    cv_threshold_low = 0.5  
-    cv_threshold_high = 1 
-
-    # Determine the number of hops based on the CV of degrees
-    if cv_degree < cv_threshold_low:
-        # Graphs with low CV of degrees (e.g., directed geometric graphs)
-        num_hops = 0
-    elif cv_degree < cv_threshold_high:
-        # Graphs with medium CV of degrees (e.g., sparse preferential attachment graphs)
-        num_hops = int(np.log2(n_clients) / 4)  # Assign a lower number of hops
+def hopping_probability(G, node, coeff_prob = 10):
+    # Variables for determining the hop probability
+    clustering_coef = nx.clustering(G, node)
+    degree_sequence = [d for _, d in G.degree()]
+    degree_variance = np.var(degree_sequence)
+    
+    # Calculate the minimum and maximum clustering coefficient in the graph
+    min_clustering_coef = min(nx.clustering(G).values())
+    max_clustering_coef = max(nx.clustering(G).values())
+    
+    # Calculate the minimum and maximum degree in the graph
+    min_degree = min(dict(G.degree()).values())
+    max_degree = max(dict(G.degree()).values())
+    
+    # Normalize the clustering coefficient
+    if max_clustering_coef - min_clustering_coef != 0:
+        norm_cc = (clustering_coef - min_clustering_coef) / (max_clustering_coef - min_clustering_coef)
     else:
-        # Graphs with high CV of degrees (e.g., dense preferential attachment graphs)
-        num_hops = int(np.log2(n_clients) / 3)  # Assign a higher number of hops
+        norm_cc = 0
+    
+    # Normalize the degree variance
+    if max_degree - min_degree != 0:
+        norm_dv = (degree_variance - min_degree) / (max_degree - min_degree)
+    else:
+        norm_dv = 0
+    
+    # Calculate the hop probability using the modified sigmoid function
+    hop_prob = 1 / (1 + np.exp(-coeff_prob * (norm_cc - 0.5) * (1 - norm_dv)))
+    
+    return hop_prob
 
-    return num_hops
-
-def hopping_stochasticity(n_clients, graph_representation):
-    pass
-
-def MaxSpANFL_w_smart_hopping(n_clients, n_advs, graph_representation, cent_used=-1):
+def MaxSpANFL_w_smart_hopping(n_clients, n_advs, graph_representation, decay_factor = 1):
     # Get initial adversaries
     adv_nodes = least_overlap_area(n_clients, n_advs, graph_representation)
 
     cent_clients = calc_centralities(n_clients, graph_representation)
-    cent_clients = {client: cent[cent_used] for client, cent in cent_clients.items()}
+    cent_clients = {client: cent[-1] for client, cent in cent_clients.items()}
 
     adv_nodes_hop = []
-    hop_distance = hop_based_on_graph(n_clients, graph_representation)
-
-    degrees = list(dict(graph_representation.degree()).values())
-    mean_degree = np.mean(degrees)
-    std_degree = np.std(degrees)
-    cv_degree = std_degree / mean_degree
-
-    cv_threshold = 1.0
-
-    if hop_distance > 0:
-        for i in range(len(adv_nodes)):
-            current_node = adv_nodes[i]
-
-            for _ in range(hop_distance):
-                neighbors = [i for i in graph_representation.neighbors(current_node)]
-                neighbors.append(current_node)
-
-                for node in adv_nodes_hop:
-                    if node in neighbors:
-                        neighbors.remove(node)
-
-                if cv_degree > cv_threshold:
+    for i in range(len(adv_nodes)):
+        elapsed_time = 0
+        current_node = adv_nodes[i]
+        hop_prob = hopping_probability(graph_representation, current_node)
+        while True:
+            if np.random.rand() < hop_prob:
+                hops += 1
+                neighbors = [n for n in graph_representation.neighbors(current_node) if n not in adv_nodes_hop]
+                if neighbors:
                     current_node = max(neighbors, key = lambda x: cent_clients[x])
+                    elapsed_time += 1
+                    hop_prob = hopping_probability(graph_representation, current_node) * np.exp(-decay_factor * elapsed_time / np.log(n_clients))
                 else:
-                    current_node = np.random.choice(neighbors)
+                    break
+            else:
+                break
 
-            adv_nodes_hop.append(current_node)
-    else:
-        adv_nodes_hop = adv_nodes
-
+        adv_nodes_hop.append(current_node)
     return adv_nodes_hop
-
 
 # Calculate average distance between adversarial nodes
 def average_distance_between_advs(G, adv_list):
@@ -705,85 +696,102 @@ def extract_strongly_connected_subgraph(adj_matrix, target_nodes):
     # After reducing the graph to the target size, return its adjacency matrix
     return nx.adjacency_matrix(G)
 
+# Get all network names in a directory
+def find_network_names(directory):
+    network_names = set()
+    for filename in os.listdir(directory):
+        if filename.endswith(".txt"):
+            network_name = filename.split("_seed_")[0]
+            if '500' not in network_name and 'SNAP' not in network_name:
+                network_names.add(network_name)
+    return sorted(list(network_names))
+
+# Run a function on all seeds given a netwrk
+def process_networks(network_names, directory, func):
+    results = {}
+    for network_name in network_names:
+        network_paths = []
+        seed_num = 0
+        while True:
+            filename = f"{network_name}_seed_{seed_num}.txt"
+            network_path = os.path.join(directory, filename)
+            if os.path.exists(network_path):
+                network_paths.append(network_path)
+                seed_num += 1
+            else:
+                break
+        
+        if len(network_paths) > 0:
+            print(f'Running {network_name}', end = ' ')
+            result = func(network_paths)
+            results[network_name] = result
+            print(f'done')
+    
+    return results
+
+# Calculates averaged network props for different networks
+def calculate_network_properties(network_paths):
+    def calculate_properties(G):
+        degree_sequence = [d for _, d in G.degree()]
+        degree_mean = np.mean(degree_sequence)
+        degree_variance = np.var(degree_sequence)
+        clustering_coef = nx.average_clustering(G)
+        density = nx.density(G)
+        try:
+            centrality = nx.eigenvector_centrality(G, max_iter = 1000)
+        except nx.PowerIterationFailedConvergence:
+            centrality = {'a':[0, ]}
+        centrality_variance = np.var(list(centrality.values()))
+        centrality_mean = np.mean(list(centrality.values()))
+        
+        return {
+            "degree_mean": degree_mean,
+            "degree_variance": degree_variance,
+            "clustering_coef": clustering_coef,
+            "density": density,
+            "centrality_variance": centrality_variance,
+            "centrality_mean": centrality_mean
+        }
+    
+    # Get results for each network
+    results = {}
+    for network_path in network_paths:
+        G = create_graph(np.loadtxt(network_path))
+        results[network_path] = calculate_properties(G)
+    
+    # Average results
+    averaged_results = {measure:[] for measure in results[list(results.keys())[0]].keys()}
+    for network_path, network_results in results.items():
+        for measure in averaged_results.keys():
+            averaged_results[measure].append(network_results[measure])
+    
+    for measure in averaged_results.keys():
+        averaged_results[measure] = np.mean(averaged_results[measure])    
+    return averaged_results
+
+def save_graph_props_to_csv(results):
+    pred_file = './graphs_props.csv'
+    with open(pred_file, 'w', newline = '') as csvfile:
+        categories = ['network_name']
+        for measure in results[list(results.keys())[0]].keys():
+            categories.append(measure)
+        
+        writer = csv.writer(csvfile)
+        writer.writerow(categories)
+        measures = results[list(results.keys())[0]].keys()
+        for net_name, result_vals in results.items():
+            data = [net_name, ] + [result_vals[measure] for measure in measures]
+            writer.writerow(data)
+    
+
 if __name__ == "__main__":
     network_dir = '../../data/full_decentralized/network_topologies/'
+    network_names = find_network_names(network_dir)
+    network_props = process_networks(network_names, network_dir, calculate_network_properties)
+    save_graph_props_to_csv(network_props)
     # Define the parameter values to iterate over
-    print('dir_geom')
-    client_values = [10, 25, 50, 100]  # Add more values as needed
-    radius_values = [2, 4, 6]  # Add more values as needed
-
-    results = {}
-
-    for c in client_values:
-        for r in radius_values:
-            # Create the file pattern for the current parameter values
-            
-            file_pattern = f"dir_geom_graph_c_{c}_type_2d_r_0{r}_*.txt"
-            key = f'dir_geom_graph_c_{c}_type_2d_r_0{r}'
-            # Get the list of files matching the pattern
-            file_list = glob.glob(os.path.join(network_dir, file_pattern))
-            
-            hop_counts = []
-            
-            for file_path in file_list:
-                # Read the adjacency matrix from the file
-                adj_matrix = np.loadtxt(file_path, dtype = int)
-                
-                # Create a graph representation using NetworkX
-                graph_representation = nx.from_numpy_array(adj_matrix)
-                
-                # Calculate the hop count for the current graph
-                hop_count = hop_based_on_graph(c, graph_representation)
-                hop_counts.append(hop_count)
-            
-            # Calculate the average hop count for the current group of files
-            avg_hop_count = np.mean(hop_counts)
-            
-            # Store the result in the dictionary
-            results[key] = avg_hop_count
-
-    # Print the results
-    for key, value in results.items():
-        print(f"{key}: Average Hop Count = {value:.2f}")
     
-    print('pref_attach')
     
-    client_values = [10, 25, 50, 100]
-    type_values = ['sparse', 'medium', 'dense', 'dense_3']
-
-    results = {}
-
-    for c in client_values:
-        for t in type_values:
-            # Create the file pattern for the current parameter values
-            file_pattern = f"pref_attach_graph_c_{c}_type_{t}_seed_*.txt"
-            
-            # Get the list of files matching the pattern
-            file_list = glob.glob(os.path.join(network_dir, file_pattern))
-            
-            hop_counts = []
-            
-            for file_path in file_list:
-                # Read the adjacency matrix from the file
-                adj_matrix = np.loadtxt(file_path, dtype=int)
-                
-                # Create a graph representation using NetworkX
-                graph_representation = nx.from_numpy_array(adj_matrix)
-                
-                # Calculate the hop count for the current graph
-                hop_count = hop_based_on_graph(c, graph_representation)
-                hop_counts.append(hop_count)
-            
-            # Calculate the average hop count for the current group of files
-            avg_hop_count = np.mean(hop_counts)
-            
-            # Store the result in the dictionary using the desired key format
-            key = f"pref_attach_graph_c_{c}_type_{t}"
-            results[key] = avg_hop_count
-
-    # Print the results
-    for key, value in results.items():
-        print(f"{key}: Average Hop Count = {value:.2f}")
 # Increase number of epochs 3-5 times the current one, check different learning rates
 # Decrease step size significantly, increase the sizes of minibatchs
 # Use strongly convex loss (different loss functions)
