@@ -308,7 +308,7 @@ if __name__ == '__main__':
     print(f'Seed: {seed}, Adv percent: {adv_percent}, Adv power: {adv_pow}')
     print(f'iid_type: {iid_type}')
     print(f'Centrality: {centralities[cent_measure_used]}')
-    # run_and_save_simulation(train_dset_split, valid_dset_split, adj_matrix, cent_measure_used)
+    run_and_save_simulation(train_dset_split, valid_dset_split, adj_matrix, cent_measure_used)
     print('Total time %lfs' % (time.time() - start_time))
     
 
