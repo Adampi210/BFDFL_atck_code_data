@@ -24,4 +24,4 @@ module load anaconda
 conda activate $conda_env_used
 
 # Run the experiment code
-./run_attacks_diff_decentralized_0.sh
+./run_all_shell.sh

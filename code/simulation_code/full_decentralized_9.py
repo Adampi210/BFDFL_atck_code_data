@@ -50,7 +50,7 @@ aggregation_mechanism = aggreg_schemes[1]
 dir_networks = '../../data/full_decentralized/network_topologies'
 dir_data = '../../data/full_decentralized/%s/' % dataset_name
 graph_type = ('ER', 'dir_scale_free', 'dir_geom', 'k_out', 'pref_attach', 'SNAP_Cisco', 'WS_graph', 'hypercube_graph')
-graph_type_used = graph_type[4]
+graph_type_used = graph_type[0]
 # This is the source for network topology
 
 # ADJUSTABLE #####
@@ -58,7 +58,7 @@ designated_clients = 10
 
 # ER
 if graph_type_used == 'ER':
-    prob_conn = 5
+    prob_conn = 7
     data_dir_name = dir_data + '%s_graph_c_%d_p_0%d/' % (graph_type_used, designated_clients, prob_conn)
     network_topology = '%s_graph_c_%d_p_0%d_seed_%d.txt' % (graph_type_used, designated_clients, prob_conn, seed)
 # DIR GEOM
@@ -76,7 +76,7 @@ elif graph_type_used == 'k_out':
 # PREF_ATTACH
 elif graph_type_used == 'pref_attach':
     pref_attach_configs = ('sparse', 'medium', 'dense', 'dense_3')
-    config_used = 0
+    config_used = 2
     data_dir_name = dir_data + '%s_graph_c_%d_type_%s/' % (graph_type_used, designated_clients, pref_attach_configs[config_used])
     network_topology = '%s_graph_c_%d_type_%s_seed_%d.txt' % (graph_type_used, designated_clients, pref_attach_configs[config_used], seed)
 # WS
@@ -113,6 +113,7 @@ elif graph_type_used == 'SNAP_Cisco':
 
 ##################
 network_topology_filepath = os.path.join(dir_networks, network_topology)
+
 if graph_type_used != 'SNAP_Cisco':
     adj_matrix = np.loadtxt(network_topology_filepath)
 else:
@@ -307,7 +308,7 @@ if __name__ == '__main__':
     print(f'Seed: {seed}, Adv percent: {adv_percent}, Adv power: {adv_pow}')
     print(f'iid_type: {iid_type}')
     print(f'Centrality: {centralities[cent_measure_used]}')
-    run_and_save_simulation(train_dset_split, valid_dset_split, adj_matrix, cent_measure_used)
+    # run_and_save_simulation(train_dset_split, valid_dset_split, adj_matrix, cent_measure_used)
     print('Total time %lfs' % (time.time() - start_time))
     
 

@@ -64,7 +64,7 @@ if graph_type_used == 'ER':
 # DIR GEOM
 elif graph_type_used == 'dir_geom':
     geo_graph_configs = ('2d_r_02', '2d_r_04', '2d_r_06')
-    config_used = 1
+    config_used = 2
     data_dir_name = dir_data + '%s_graph_c_%d_type_%s/' % (graph_type_used, designated_clients, geo_graph_configs[config_used])
     network_topology = '%s_graph_c_%d_type_%s_seed_%d.txt' % (graph_type_used, designated_clients, geo_graph_configs[config_used], seed)
 # K-OUT
@@ -76,7 +76,7 @@ elif graph_type_used == 'k_out':
 # PREF_ATTACH
 elif graph_type_used == 'pref_attach':
     pref_attach_configs = ('sparse', 'medium', 'dense', 'dense_3')
-    config_used = 0
+    config_used = 2
     data_dir_name = dir_data + '%s_graph_c_%d_type_%s/' % (graph_type_used, designated_clients, pref_attach_configs[config_used])
     network_topology = '%s_graph_c_%d_type_%s_seed_%d.txt' % (graph_type_used, designated_clients, pref_attach_configs[config_used], seed)
 # WS
@@ -113,6 +113,7 @@ elif graph_type_used == 'SNAP_Cisco':
 
 ##################
 network_topology_filepath = os.path.join(dir_networks, network_topology)
+
 if graph_type_used != 'SNAP_Cisco':
     adj_matrix = np.loadtxt(network_topology_filepath)
 else:
@@ -307,7 +308,7 @@ if __name__ == '__main__':
     print(f'Seed: {seed}, Adv percent: {adv_percent}, Adv power: {adv_pow}')
     print(f'iid_type: {iid_type}')
     print(f'Centrality: {centralities[cent_measure_used]}')
-    run_and_save_simulation(train_dset_split, valid_dset_split, adj_matrix, cent_measure_used)
+    # run_and_save_simulation(train_dset_split, valid_dset_split, adj_matrix, cent_measure_used)
     print('Total time %lfs' % (time.time() - start_time))
     
 

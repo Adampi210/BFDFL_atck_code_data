@@ -1140,7 +1140,7 @@ def plot_new_schemes(network_type, iid_type, label_in_plot = 0):
     dataset_name = 'fmnist' # Remember to change for CIFAR10
     dir_data = '../../data/full_decentralized/%s/%s/' % (dataset_name, network_type)
     dir_plots = '../../data/full_decentralized/finalized_plots/'
-    adv_schemes = {'score_cent_dist_manual_weight_010': [], 'least_overlap_area': [], 'random_nodes': [], 'none': [], 'MaxSpANFL_w_centrality_hopping': [], 'MaxSpANFL_w_random_hopping': []} # All
+    adv_schemes = {'score_cent_dist_manual_weight_010': [], 'least_overlap_area': [], 'random_nodes': [], 'none': [], 'MaxSpANFL_w_centrality_hopping': [], 'MaxSpANFL_w_random_hopping': [], 'MaxSpANFL_w_smart_hopping': []} # All
     # adv_schemes = {'least_overlap_area': [], 'random_nodes': [], 'none': []} # Missing eigenv 
     # adv_schemes = {'score_cent_dist_manual_weight_010': [], 'least_overlap_area': [], 'none': []} # Missibg random
     n_clients = int((re.search('_c_(\d+)', network_type)).group(1))
@@ -1191,7 +1191,7 @@ def plot_new_schemes(network_type, iid_type, label_in_plot = 0):
         adv_schemes[scheme] = np.mean(adv_schemes[scheme], axis = 0)
 
     # Finally make legend and plot
-    legend = {'score_cent_dist_manual_weight_010': 'Eigenvector-Centrality Based Attack', 'least_overlap_area': 'BFDFL Attack', 'random_nodes': 'Random Choice Based Attack', 'none': 'No attack', 'MaxSpANFL_w_centrality_hopping' : 'New with centrality hop', 'MaxSpANFL_w_random_hopping': 'New with random hop'}
+    legend = {'score_cent_dist_manual_weight_010': 'Eigenvector-Centrality Based Attack', 'least_overlap_area': 'BFDFL Attack', 'random_nodes': 'Random Choice Based Attack', 'none': 'No attack', 'MaxSpANFL_w_centrality_hopping' : 'New with centrality hop', 'MaxSpANFL_w_random_hopping': 'New with random hop', 'MaxSpANFL_w_smart_hopping': 'New with smart hop'}
     # Create the figure and axis
     fig, ax = plt.subplots(figsize = (16, 9))
 
@@ -1736,7 +1736,7 @@ if __name__ == '__main__':
                       ('pref_attach_graph_c_25_type_dense_3', 'iid'),
                     ]
     # create_composite_figure(plots_baseline)
-    plot_new_schemes('dir_geom_graph_c_25_type_2d_r_02', 'iid')
+    plot_new_schemes('dir_geom_graph_c_25_type_2d_r_06', 'iid')
     # measure_avg_dist_diff_schemes('WS_graph_c_25_p_05_k_4')
     # get_aver_dist_diff_graphs('../../data/full_decentralized/fmnist/')
     # make_graphs()    

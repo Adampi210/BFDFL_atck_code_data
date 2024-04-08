@@ -16,6 +16,7 @@ import copy
 import os
 import glob
 import time 
+import re
 from collections import deque
 from split_data import *
 # from sklearn.cluster import KMeans, SpectralClustering
@@ -552,26 +553,17 @@ def MaxSpANFL_w_random_hopping(n_clients, n_advs, graph_representation, hop_dist
         adv_nodes_hop.append(current_node)
     return adv_nodes_hop
 
-def hopping_probability(G, node, coeff_prob = 10):
+def hopping_probability(G, node, coeff_prob = 100):
     # Variables for determining the hop probability
     clustering_coef = nx.clustering(G, node)
     degree_sequence = [d for _, d in G.degree()]
     degree_variance = np.var(degree_sequence)
     
-    # Calculate the minimum and maximum clustering coefficient in the graph
-    min_clustering_coef = min(nx.clustering(G).values())
-    max_clustering_coef = max(nx.clustering(G).values())
-    
     # Calculate the minimum and maximum degree in the graph
     min_degree = min(dict(G.degree()).values())
     max_degree = max(dict(G.degree()).values())
-    
-    # Normalize the clustering coefficient
-    if max_clustering_coef - min_clustering_coef != 0:
-        norm_cc = (clustering_coef - min_clustering_coef) / (max_clustering_coef - min_clustering_coef)
-    else:
-        norm_cc = 0
-    
+
+    norm_cc = clustering_coef
     # Normalize the degree variance
     if max_degree - min_degree != 0:
         norm_dv = (degree_variance - min_degree) / (max_degree - min_degree)
@@ -579,7 +571,7 @@ def hopping_probability(G, node, coeff_prob = 10):
         norm_dv = 0
     
     # Calculate the hop probability using the modified sigmoid function
-    hop_prob = 1 / (1 + np.exp(-coeff_prob * (norm_cc - 0.5) * (1 - norm_dv)))
+    hop_prob = 1 / (1 + np.exp(coeff_prob * (norm_cc) * (norm_dv)))
     
     return hop_prob
 
@@ -589,7 +581,7 @@ def MaxSpANFL_w_smart_hopping(n_clients, n_advs, graph_representation, decay_fac
 
     cent_clients = calc_centralities(n_clients, graph_representation)
     cent_clients = {client: cent[-1] for client, cent in cent_clients.items()}
-
+    num_hops = 0
     adv_nodes_hop = []
     for i in range(len(adv_nodes)):
         elapsed_time = 0
@@ -598,17 +590,18 @@ def MaxSpANFL_w_smart_hopping(n_clients, n_advs, graph_representation, decay_fac
         while True:
             if np.random.rand() < hop_prob:
                 neighbors = [n for n in graph_representation.neighbors(current_node) if n not in adv_nodes_hop]
+                num_hops += 1
                 if neighbors:
                     current_node = max(neighbors, key = lambda x: cent_clients[x])
                     elapsed_time += 1
-                    hop_prob = hopping_probability(graph_representation, current_node) * np.exp(-decay_factor * elapsed_time / np.log(n_clients))
+                    hop_prob = hopping_probability(graph_representation, current_node, n_clients * n_advs) * np.exp(-decay_factor * elapsed_time / np.log(n_clients))
                 else:
                     break
             else:
                 break
 
         adv_nodes_hop.append(current_node)
-    return adv_nodes_hop
+    return adv_nodes_hop, num_hops
 
 # Calculate average distance between adversarial nodes
 def average_distance_between_advs(G, adv_list):
@@ -782,13 +775,46 @@ def save_graph_props_to_csv(results):
             data = [net_name, ] + [result_vals[measure] for measure in measures]
             writer.writerow(data)
     
+def calc_average_num_hops(dir_networks):
+    network_types = find_network_names(dir_networks)
+    network_types = [x for x in network_types if 'WS_' not in x ]
+    network_types = [x for x in network_types if 'hypercube_graph_' not in x ]
+    network_types = [x for x in network_types if 'ER_' not in x ]
+    avg_hop_dist = {}
+    for network_type in network_types:
+        pattern = r"c_(\d+)"
+        match = re.search(pattern, network_type)
+        n_cls = int(match.group(1))
+        if n_cls > 30:
+            continue
+        n_advs = int(n_cls * 0.2)
+        avg_hop_dist[network_type] = []
+        for seed_num in range(50):
+            filename = f"{network_type}_seed_{seed_num}.txt"
+            network_path = os.path.join(dir_networks, filename)
+            if os.path.exists(network_path):
+                adj_matrix = np.loadtxt(network_path)
+                graph_representation = create_graph(adj_matrix)
+                avg_hop_dist[network_type].append(MaxSpANFL_w_smart_hopping(n_cls, n_advs, graph_representation, 1)[-1])
+        avg_hop_dist[network_type] = np.mean(avg_hop_dist[network_type])
+        print(f'{network_type} {avg_hop_dist[network_type]}')
+    
+    output_file = "./average_num_hops.txt"
+    with open(output_file, "w") as f:
+        f.write("Network Type                  Avg Hop Dist\n")
+        for network_type, hop_dist in avg_hop_dist.items():
+            f.write(f"{network_type:20s} {hop_dist:.2f}\n")
+    
 
 if __name__ == "__main__":
+    # Graph properties analysis
     network_dir = '../../data/full_decentralized/network_topologies/'
-    network_names = find_network_names(network_dir)
-    network_props = process_networks(network_names, network_dir, calculate_network_properties)
-    save_graph_props_to_csv(network_props)
+    # network_names = find_network_names(network_dir)
+    # network_props = process_networks(network_names, network_dir, calculate_network_properties)
+    # save_graph_props_to_csv(network_props)
     # Define the parameter values to iterate over
+    # Hop num analysis
+    calc_average_num_hops(network_dir)
     
     
 # Increase number of epochs 3-5 times the current one, check different learning rates
