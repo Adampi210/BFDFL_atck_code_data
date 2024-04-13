@@ -1140,16 +1140,13 @@ def plot_new_schemes(network_type, iid_type, label_in_plot = 0):
     dataset_name = 'fmnist' # Remember to change for CIFAR10
     dir_data = '../../data/full_decentralized/%s/%s/' % (dataset_name, network_type)
     dir_plots = '../../data/full_decentralized/finalized_plots/'
-    adv_schemes = {'score_cent_dist_manual_weight_010': [], 'least_overlap_area': [], 'random_nodes': [], 'none': [], 'MaxSpANFL_w_centrality_hopping': [], 'MaxSpANFL_w_random_hopping': [], 'MaxSpANFL_w_smart_hopping': []} # All
+    adv_schemes = {'score_cent_dist_manual_weight_010': [], 'least_overlap_area': [], 'random_nodes': [], 'none': [], 'MaxSpANFL_w_smart_hopping': []} # All
     # adv_schemes = {'least_overlap_area': [], 'random_nodes': [], 'none': []} # Missing eigenv 
     # adv_schemes = {'score_cent_dist_manual_weight_010': [], 'least_overlap_area': [], 'none': []} # Missibg random
     n_clients = int((re.search('_c_(\d+)', network_type)).group(1))
     adv_frac = 0.2
     adv_number = int(float(n_clients) * adv_frac)
-    if 'non_iid' in iid_type:
-        seed_range = 20
-    else:
-        seed_range = 20
+    seed_range = 20
     pwr = 100
     # First get the data for none
     none_avail = True
@@ -1181,6 +1178,8 @@ def plot_new_schemes(network_type, iid_type, label_in_plot = 0):
                 for i, row in enumerate(reader):
                     if i == 0:
                         attacked_nodes = ast.literal_eval(row[1])
+                        if type(attacked_nodes) == type((1,)):
+                            attacked_nodes = attacked_nodes[0]
                         attacked_nodes = [int(_) for _ in attacked_nodes]
                     else:
                         acc = ast.literal_eval(row[1])
@@ -1210,7 +1209,7 @@ def plot_new_schemes(network_type, iid_type, label_in_plot = 0):
     ax.set_ylabel('Average Accuracy for Honest Nodes', fontsize=10)
     ax.tick_params(axis='both', which='major', labelsize=8)
     ax.tick_params(axis='both', which='minor', labelsize=8)
-    ax.legend(fontsize=8)
+    # ax.legend(fontsize=8)
     ax.grid(True)
     network_name = ''
     if 'dir_geom_graph' in network_type and n_clients != 20:
@@ -1229,60 +1228,66 @@ def plot_new_schemes(network_type, iid_type, label_in_plot = 0):
     ax.grid()
     # plt.savefig(dir_plots + 'plot' + '_' + dataset_name + '_' + network_type + '_' + iid_type + '_FGSM_advs_%d_adv_pow_%d_atk_time_25_seed' % (adv_number, pwr) +'.png')
     print(title, [(i, adv_schemes[i][-1]) for i in adv_schemes.keys()])
-    plt.show()
     plt.savefig('%s_%s_plot.png' % (network_type, iid_type_title))
     return adv_schemes, fig, ax, title
 
-def create_composite_figure(graph_iid_tuples):    
+def create_composite_figure(graph_iid_tuples):
     # Define the color scheme for the lines
     color_scheme = {
         'No attack': 'blue',
         'Eigenvector-Centrality Based Attack': 'green',
         'BFDFL Attack': 'black',  # Assuming this is the BLDFL attack
         'Random Choice Based Attack': 'purple',
+        'New with smart hop': 'orange',
         'Attack begins': 'red'  # Assuming this is the vertical line you mentioned
     }
-    
+
     # Create a figure with subplots and a shared legend
-    fig, axs = plt.subplots(1, 4, figsize=(20, 4))  # Adjust the size as needed
-    
+    fig, axs = plt.subplots(2, 3, figsize=(15, 8))  # Adjust the size as needed
+
     # To collect legend handles
-    legend_handles = []  
+    legend_handles = []
     custom_legend_handles = []
+
     # Iterate over each graph_iid_tuple and plot in the respective subplot
     for i, (network_type, iid_type) in enumerate(graph_iid_tuples):
         # Generate each subplot
         _, fig_single, ax_single, title_plot = plot_new_schemes(network_type, iid_type, i)
-        
+
         # Get the lines from the single plot and get the legend handles
         lines, labels = ax_single.get_legend_handles_labels()
+
+        if i % 3 == 0:
+            axs[i // 3, i % 3].set_ylabel('Average Accuracy for\nHonest Nodes %', fontsize=12)
+
         if i == 0:
-            axs[i].set_ylabel('Average Accuracy for\nHonest Nodes %', fontsize=12)
             legend_handles.extend(lines)
-            
+
         # Now, let's plot the same lines on the subplot axis with the specified colors
         for line in lines:
             if i == 0:
                 handle = Line2D([], [], color=color_scheme[line.get_label()], label=line.get_label())
                 custom_legend_handles.append(handle)
+
             print(color_scheme[line.get_label()])
             line_color = color_scheme.get(line.get_label(), color_scheme[line.get_label()])  # Default to black if not specified
-            axs[i].plot(line.get_xdata(), [100 * x for x in line.get_ydata()], label=line.get_label(), color=line_color)
+            axs[i // 3, i % 3].plot(line.get_xdata(), [100 * x for x in line.get_ydata()], label=line.get_label(), color=line_color)
 
         # Set the same x and y labels and title
-        axs[i].set_xlabel('Global Epoch', fontsize=12)
-        axs[i].set_title(title_plot, fontsize=12)
-        axs[i].set_xticks([0, 20, 40, 60, 80, 100])
+        axs[i // 3, i % 3].set_xlabel('Global Epoch', fontsize=12)
+        axs[i // 3, i % 3].set_title(title_plot, fontsize=12)
+        axs[i // 3, i % 3].set_xticks([0, 20, 40, 60, 80, 100])
+
         # Set the same grid
-        axs[i].grid(True)
-        
+        axs[i // 3, i % 3].grid(True)
+
         # Set the same limits on all subplots, if needed
         if 'Non' in title_plot:
-            axs[i].set_yticks([10, 20, 30, 40, 50])
-            axs[i].set_ylim([7, 41])
+            axs[i // 3, i % 3].set_yticks([10, 20, 30, 40, 50])
+            axs[i // 3, i % 3].set_ylim([7, 41])
         else:
-            axs[i].set_yticks([10, 20, 30, 40, 50])
-            axs[i].set_ylim([10, 55])
+            axs[i // 3, i % 3].set_yticks([10, 20, 30, 40, 50])
+            axs[i // 3, i % 3].set_ylim([10, 55])
 
     # Create a shared legend above the subplots
     order_legend = [3, 0, 2, 1, 4]
@@ -1296,7 +1301,6 @@ def create_composite_figure(graph_iid_tuples):
     # Save the composite figure
     plt.savefig('composite_figure.png', dpi=300, bbox_inches='tight')
     plt.show()  # If you want to display the figure as well
-    
 
 def calculate_attack_gain_connectivity(dir_names):
     iid_types = ('iid', 'non_iid')
@@ -1694,7 +1698,7 @@ def plot_timing_attack(dir_name):
     fig.legend(handles, labels, loc='upper center', ncol=3)
     plt.show()
 
-
+    
 def get_aver_dist_diff_graphs(dir_with_data):
     with open('dist_vals.txt', 'w') as distance_file:
         distance_file.write('Graph Type                      ; Eigenvector Centrality; MaxSpanFL; Random Nodes')
@@ -1712,9 +1716,14 @@ def get_aver_dist_diff_graphs(dir_with_data):
             distance_file.write(f'\n{graph:<40}  {eig_dist:.4f};          {least_overlap_dist:.4f};      {rand_dist:.4f}')
 
 if __name__ == '__main__':
-    snap_graph = 'SNAP_Cisco_c_28_type_g20_seed_0.txt'
-    new_adj = make_graph_strongly_connected_and_update_matrix(snap_graph)
-    print(new_adj)
+    # plot_new_schemes('ER_graph_c_25_p_01', 'iid')
+    create_composite_figure([('dir_geom_graph_c_25_type_2d_r_02', 'iid'),
+                             ('dir_geom_graph_c_25_type_2d_r_02', 'non_iid'),
+                             ('ER_graph_c_25_p_01', 'iid'), 
+                             ('ER_graph_c_25_p_01', 'non_iid'), 
+                             ('pref_attach_graph_c_25_type_dense', 'iid'), 
+                             ('pref_attach_graph_c_25_type_dense', 'non_iid')])
+    
     #plot_timing_attack('dir_geom_graph_c_25_type_2d_r_02')
     #for n_dim in [3, 5, 8]:
     #    for seed in range(1):
@@ -1732,11 +1741,11 @@ if __name__ == '__main__':
     #                                    'ER_graph_c_25_p_03',
     #                                    'ER_graph_c_25_p_05'])
     #plot_new_schemes('pref_attach_graph_c_25_type_sparse', 'iid')
-    plots_baseline = [('dir_geom_graph_c_25_type_2d_r_02', 'iid'), 
-                      ('pref_attach_graph_c_25_type_dense_3', 'iid'),
-                    ]
+    # plots_baseline = [('dir_geom_graph_c_25_type_2d_r_02', 'iid'), 
+    #                   ('pref_attach_graph_c_25_type_dense_3', 'iid'),
+    #                ]
     # create_composite_figure(plots_baseline)
-    plot_new_schemes('dir_geom_graph_c_25_type_2d_r_06', 'iid')
+    # plot_new_schemes('dir_geom_graph_c_25_type_2d_r_06', 'iid')
     # measure_avg_dist_diff_schemes('WS_graph_c_25_p_05_k_4')
     # get_aver_dist_diff_graphs('../../data/full_decentralized/fmnist/')
     # make_graphs()    

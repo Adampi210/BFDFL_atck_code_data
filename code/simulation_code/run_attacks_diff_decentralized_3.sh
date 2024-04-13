@@ -4,7 +4,7 @@ init_adv_perc=0
 init_seed=0
 init_iid_style='iid'
 init_cent_used=0
-init_designated_clients=10
+init_designated_clients=25
 prev_power=$init_power
 prev_adv_perc=$init_adv_perc
 prev_seed=$init_seed
@@ -19,13 +19,13 @@ sed -i "s/iid_type = '$prev_iid_style'/iid_type = '$init_iid_style'/g" full_dece
 sed -i "s/cent_measure_used = $prev_cent_used/cent_measure_used = $init_cent_used/g" full_decentralized_3.py
 sed -i "s/designated_clients = $prev_designated_clients/designated_clients = $init_designated_clients/g" full_decentralized_3.py
 
-for designated_clients in 25
+for designated_clients in 100
 do
     for iid_style in 'iid'
     do
         for power in 100
         do
-            for adv_prec in 2
+            for adv_prec in 5
             do
                 for seed in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20
                 do 
