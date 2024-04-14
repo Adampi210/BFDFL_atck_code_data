@@ -27,14 +27,14 @@ from nn_FL_de_cent import *
 from neural_net_architectures import *
 # Device configuration
 # Always check first if GPU is avaialble
-device_used = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+device_used = torch.device('cuda:2' if torch.cuda.is_available() else 'cpu')
 # If CUDA is not avaialbe, print message that CPU will be used
-if device_used != torch.device('cuda:0'):
+if device_used != torch.device('cuda:2'):
     print(f'CUDA not available, have to use {device_used}')
 
 start_time = time.time()
 # Set hyperparameters
-seed = 0 # Seed for PRNGs 
+seed = 3 # Seed for PRNGs 
 random.seed(seed)
 torch.manual_seed(seed)
 np.random.seed(seed)
@@ -50,15 +50,15 @@ aggregation_mechanism = aggreg_schemes[1]
 dir_networks = '../../data/full_decentralized/network_topologies'
 dir_data = '../../data/full_decentralized/%s/' % dataset_name
 graph_type = ('ER', 'dir_scale_free', 'dir_geom', 'k_out', 'pref_attach', 'SNAP_Cisco', 'WS_graph', 'hypercube_graph')
-graph_type_used = graph_type[4]
+graph_type_used = graph_type[0]
 # This is the source for network topology
 
 # ADJUSTABLE #####
-designated_clients = 10
+designated_clients = 25
 
 # ER
 if graph_type_used == 'ER':
-    prob_conn = 5
+    prob_conn = 1
     data_dir_name = dir_data + '%s_graph_c_%d_p_0%d/' % (graph_type_used, designated_clients, prob_conn)
     network_topology = '%s_graph_c_%d_p_0%d_seed_%d.txt' % (graph_type_used, designated_clients, prob_conn, seed)
 # DIR GEOM
@@ -76,7 +76,7 @@ elif graph_type_used == 'k_out':
 # PREF_ATTACH
 elif graph_type_used == 'pref_attach':
     pref_attach_configs = ('sparse', 'medium', 'dense', 'dense_3')
-    config_used = 2
+    config_used = 0
     data_dir_name = dir_data + '%s_graph_c_%d_type_%s/' % (graph_type_used, designated_clients, pref_attach_configs[config_used])
     network_topology = '%s_graph_c_%d_type_%s_seed_%d.txt' % (graph_type_used, designated_clients, pref_attach_configs[config_used], seed)
 # WS
@@ -151,8 +151,8 @@ attacks = ('none', 'FGSM', 'PGD', 'noise')      # Available attacks
 architectures = ('star', 'full_decentralized')  # Architecture used
 attack_used = 1                                 # Which attack from the list was used
 attack = attacks[0]                             # Always start with no attack (attack at some point)
-adv_pow = 0                                     # Power of the attack
-adv_percent = 0.0                               # Percentage of adversaries
+adv_pow = 100                                     # Power of the attack
+adv_percent = 0.2                               # Percentage of adversaries
 hop_distance = int(0.05 * N_CLIENTS)
 # adv_percent /= 10                             # If below 10%
 adv_number = int(adv_percent * N_CLIENTS)       # Number of adversaries
@@ -165,7 +165,7 @@ nb_iter = 15   # Number of epochs for PGD attack
 
 # Define centrality measures and directories
 centralities = ('none', 'in_deg_centrality', 'out_deg_centrality', 'closeness_centrality', 'betweeness_centrality', 'eigenvector_centrality')
-cent_measure_used = 0
+cent_measure_used = 5
 
 # Split the data for the specified number of clients and servers
 if iid_type == 'iid':
@@ -215,7 +215,7 @@ def run_and_save_simulation(train_split, valid_split, adj_matrix, centrality_mea
         if centralities[centrality_measure] == 'none':
             nodes_to_atk_centrality = []
         else:
-            nodes_to_atk_centrality = MaxSpANFL_w_smart_hopping(N_CLIENTS, adv_number, graph_representation, cent_measure_used - 1)
+            nodes_to_atk_centrality = MaxSpANFL_w_smart_hopping(N_CLIENTS, adv_number, graph_representation, cent_measure_used - 1)[0]
 
     if 'MaxSpANFL_w_random_hopping' in prefix_name:
         if centralities[centrality_measure] == 'none':
@@ -272,6 +272,7 @@ def run_and_save_simulation(train_split, valid_split, adj_matrix, centrality_mea
                 node.if_adv_client = False
                 # Only for adversarial clients
                 if node.client_id in adv_list:
+                    print(f'id: {node.client_id} node: {node}')
                     node.if_adv_client = True
                     node.eps_iter = eps_iter
                     node.nb_iter = nb_iter

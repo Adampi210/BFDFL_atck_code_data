@@ -1136,7 +1136,7 @@ def measure_avg_dist_diff_schemes(network_type):
     return adv_schemes
 
 def plot_new_schemes(network_type, iid_type, label_in_plot = 0):
-    plot_labels = ('1) ', '2) ', '3) ', '4) ')
+    plot_labels = ('1) ', '2) ', '3) ', '4) ', '5) ', '6) ')
     dataset_name = 'fmnist' # Remember to change for CIFAR10
     dir_data = '../../data/full_decentralized/%s/%s/' % (dataset_name, network_type)
     dir_plots = '../../data/full_decentralized/finalized_plots/'
@@ -1190,7 +1190,7 @@ def plot_new_schemes(network_type, iid_type, label_in_plot = 0):
         adv_schemes[scheme] = np.mean(adv_schemes[scheme], axis = 0)
 
     # Finally make legend and plot
-    legend = {'score_cent_dist_manual_weight_010': 'Eigenvector-Centrality Based Attack', 'least_overlap_area': 'BFDFL Attack', 'random_nodes': 'Random Choice Based Attack', 'none': 'No attack', 'MaxSpANFL_w_centrality_hopping' : 'New with centrality hop', 'MaxSpANFL_w_random_hopping': 'New with random hop', 'MaxSpANFL_w_smart_hopping': 'New with smart hop'}
+    legend = {'score_cent_dist_manual_weight_010': 'Eigenvector-Centrality Based Attack', 'least_overlap_area': 'MaxSpAN-FL Attack', 'random_nodes': 'Random Choice Based Attack', 'none': 'No attack', 'MaxSpANFL_w_centrality_hopping' : 'New with centrality hop', 'MaxSpANFL_w_random_hopping': 'New with random hop', 'MaxSpANFL_w_smart_hopping': 'Hopping-augmented MaxSpAN-FL Attack'}
     # Create the figure and axis
     fig, ax = plt.subplots(figsize = (16, 9))
 
@@ -1204,11 +1204,12 @@ def plot_new_schemes(network_type, iid_type, label_in_plot = 0):
 
     # Customize the plot
     ax.set_xticks([0, 20, 40, 60, 80, 100])
+
     # Customize the plot to match IEEE format
     ax.set_xlabel('Epoch', fontsize=10)
     ax.set_ylabel('Average Accuracy for Honest Nodes', fontsize=10)
-    ax.tick_params(axis='both', which='major', labelsize=8)
-    ax.tick_params(axis='both', which='minor', labelsize=8)
+    ax.tick_params(axis='both', which='major', labelsize=12)
+    ax.tick_params(axis='both', which='minor', labelsize=12)
     # ax.legend(fontsize=8)
     ax.grid(True)
     network_name = ''
@@ -1217,18 +1218,21 @@ def plot_new_schemes(network_type, iid_type, label_in_plot = 0):
         network_name = 'Directed Geometric Graph'
     elif 'ER_graph' in network_type:
         probability = int((re.search('_p_0(\d+)', network_type)).group(1))
-        network_name = 'ER graph'
+        network_name = 'ER Graph'
+    elif 'pref_attach' in network_type:
+        network_name = 'PA Graph'
     if 'non_iid' in iid_type:
         iid_type_title = 'Non-IID'
     else:
         iid_type_title = 'IID'
-    title = '%s %s %s data' % (plot_labels[label_in_plot], network_name, iid_type_title)
+    title = '%s %s' % (plot_labels[label_in_plot], network_name)
     ax.set_title(title)
     # ax.legend()
     ax.grid()
     # plt.savefig(dir_plots + 'plot' + '_' + dataset_name + '_' + network_type + '_' + iid_type + '_FGSM_advs_%d_adv_pow_%d_atk_time_25_seed' % (adv_number, pwr) +'.png')
     print(title, [(i, adv_schemes[i][-1]) for i in adv_schemes.keys()])
     plt.savefig('%s_%s_plot.png' % (network_type, iid_type_title))
+    plt.close()
     return adv_schemes, fig, ax, title
 
 def create_composite_figure(graph_iid_tuples):
@@ -1236,14 +1240,14 @@ def create_composite_figure(graph_iid_tuples):
     color_scheme = {
         'No attack': 'blue',
         'Eigenvector-Centrality Based Attack': 'green',
-        'BFDFL Attack': 'black',  # Assuming this is the BLDFL attack
+        'MaxSpAN-FL Attack': 'black',  # Assuming this is the BLDFL attack
         'Random Choice Based Attack': 'purple',
-        'New with smart hop': 'orange',
+        'Hopping-augmented MaxSpAN-FL Attack': 'orange',
         'Attack begins': 'red'  # Assuming this is the vertical line you mentioned
     }
 
     # Create a figure with subplots and a shared legend
-    fig, axs = plt.subplots(2, 3, figsize=(15, 8))  # Adjust the size as needed
+    fig, axs = plt.subplots(2, 3, figsize=(18, 10))  # Adjust the size as needed
 
     # To collect legend handles
     legend_handles = []
@@ -1258,8 +1262,12 @@ def create_composite_figure(graph_iid_tuples):
         lines, labels = ax_single.get_legend_handles_labels()
 
         if i % 3 == 0:
-            axs[i // 3, i % 3].set_ylabel('Average Accuracy for\nHonest Nodes %', fontsize=12)
-
+            if i // 3 == 0:
+                axs[i // 3, i % 3].set_ylabel('Average Accuracy for\nHonest Nodes % (IID data)', fontsize=16)
+            else:
+                axs[i // 3, i % 3].set_ylabel('Average Accuracy for\nHonest Nodes % (Non-IID data)', fontsize=16)
+        if i // 3 == 1:
+            axs[i // 3, i % 3].set_xlabel('Global Epoch', fontsize=16)
         if i == 0:
             legend_handles.extend(lines)
 
@@ -1269,34 +1277,32 @@ def create_composite_figure(graph_iid_tuples):
                 handle = Line2D([], [], color=color_scheme[line.get_label()], label=line.get_label())
                 custom_legend_handles.append(handle)
 
-            print(color_scheme[line.get_label()])
             line_color = color_scheme.get(line.get_label(), color_scheme[line.get_label()])  # Default to black if not specified
             axs[i // 3, i % 3].plot(line.get_xdata(), [100 * x for x in line.get_ydata()], label=line.get_label(), color=line_color)
-
         # Set the same x and y labels and title
-        axs[i // 3, i % 3].set_xlabel('Global Epoch', fontsize=12)
-        axs[i // 3, i % 3].set_title(title_plot, fontsize=12)
+        axs[i // 3, i % 3].set_title(title_plot, fontsize=16)
         axs[i // 3, i % 3].set_xticks([0, 20, 40, 60, 80, 100])
 
         # Set the same grid
         axs[i // 3, i % 3].grid(True)
 
         # Set the same limits on all subplots, if needed
-        if 'Non' in title_plot:
-            axs[i // 3, i % 3].set_yticks([10, 20, 30, 40, 50])
-            axs[i // 3, i % 3].set_ylim([7, 41])
-        else:
+        if '1' in title_plot or '2' in title_plot or '3' in title_plot:
             axs[i // 3, i % 3].set_yticks([10, 20, 30, 40, 50])
             axs[i // 3, i % 3].set_ylim([10, 55])
+        else:
+            axs[i // 3, i % 3].set_yticks([10, 20, 30, 40, 50])
+            axs[i // 3, i % 3].set_ylim([7, 41])
+
 
     # Create a shared legend above the subplots
-    order_legend = [3, 0, 2, 1, 4]
+    order_legend = [3, 5, 2, 0, 1, 4]
     ordered_custom_legend_handles = [custom_legend_handles[i] for i in order_legend]
     ordered_legend_handles = [legend_handles[i] for i in order_legend]
-    fig.legend(ordered_custom_legend_handles, [h.get_label() for h in ordered_legend_handles], loc='upper center', bbox_to_anchor=(0.5, 1), ncol=5, fontsize=12)
+    fig.legend(ordered_custom_legend_handles, [h.get_label() for h in ordered_legend_handles], loc='upper center', bbox_to_anchor=(0.5, 1), ncol=3, fontsize=14)
 
     # Adjust the layout to prevent overlap, leaving space for the legend at the top
-    fig.subplots_adjust(top=0.8)
+    # fig.subplots_adjust(top=0.8)
 
     # Save the composite figure
     plt.savefig('composite_figure.png', dpi=300, bbox_inches='tight')
@@ -1650,7 +1656,7 @@ def plot_timing_attack(dir_name):
     # Plot
     # Define colors for each attack
     colors = {'score_cent_dist_manual_weight_010': 'green', 'least_overlap_area': 'black', 'random_nodes': 'purple', 'none': 'blue'}
-    legend = {'score_cent_dist_manual_weight_010': 'Eigenvector-Centrality Based Attack', 'least_overlap_area': 'BFDFL Attack', 'random_nodes': 'Random Choice Based Attack', 'none': 'No attack'}
+    legend = {'score_cent_dist_manual_weight_010': 'Eigenvector-Centrality Based Attack', 'least_overlap_area': 'MaxSpAN-FL Attack', 'random_nodes': 'Random Choice Based Attack', 'none': 'No attack'}
 
     fig, axs = plt.subplots(3, 2, figsize=(10, 9))
     fig.subplots_adjust(hspace=0.3, wspace=0.3)
@@ -1717,12 +1723,12 @@ def get_aver_dist_diff_graphs(dir_with_data):
 
 if __name__ == '__main__':
     # plot_new_schemes('ER_graph_c_25_p_01', 'iid')
-    create_composite_figure([('dir_geom_graph_c_25_type_2d_r_02', 'iid'),
-                             ('dir_geom_graph_c_25_type_2d_r_02', 'non_iid'),
-                             ('ER_graph_c_25_p_01', 'iid'), 
-                             ('ER_graph_c_25_p_01', 'non_iid'), 
-                             ('pref_attach_graph_c_25_type_dense', 'iid'), 
-                             ('pref_attach_graph_c_25_type_dense', 'non_iid')])
+    create_composite_figure([('dir_geom_graph_c_25_type_2d_r_04', 'iid'),            
+                             ('ER_graph_c_25_p_05', 'iid'), 
+                             ('pref_attach_graph_c_25_type_sparse', 'iid'), 
+                             ('dir_geom_graph_c_25_type_2d_r_04', 'non_iid'),
+                             ('ER_graph_c_25_p_05', 'non_iid'), 
+                             ('pref_attach_graph_c_25_type_dense_3', 'iid')])
     
     #plot_timing_attack('dir_geom_graph_c_25_type_2d_r_02')
     #for n_dim in [3, 5, 8]:

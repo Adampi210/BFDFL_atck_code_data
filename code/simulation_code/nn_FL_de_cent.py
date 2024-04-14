@@ -810,12 +810,12 @@ if __name__ == "__main__":
     # Graph properties analysis
     network_dir = '../../data/full_decentralized/network_topologies/'
     network_names = find_network_names(network_dir)
-    print(network_names)
-    # network_props = process_networks(network_names, network_dir, calculate_network_properties)
-    # save_graph_props_to_csv(network_props)
+    # print(network_names)
+    network_props = process_networks(network_names, network_dir, calculate_network_properties)
+    save_graph_props_to_csv(network_props)
     # Define the parameter values to iterate over
     # Hop num analysis
-    # calc_average_num_hops(network_dir)
+    calc_average_num_hops(network_dir)
     
     
 # Increase number of epochs 3-5 times the current one, check different learning rates
