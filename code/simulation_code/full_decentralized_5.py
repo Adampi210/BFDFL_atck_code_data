@@ -34,7 +34,7 @@ if device_used != torch.device('cuda:1'):
 
 start_time = time.time()
 # Set hyperparameters
-seed = 8 # Seed for PRNGs 
+seed = 11 # Seed for PRNGs 
 random.seed(seed)
 torch.manual_seed(seed)
 np.random.seed(seed)
