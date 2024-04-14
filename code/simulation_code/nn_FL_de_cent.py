@@ -554,6 +554,7 @@ def MaxSpANFL_w_random_hopping(n_clients, n_advs, graph_representation, hop_dist
     return adv_nodes_hop
 
 def hopping_probability(G, node, coeff_prob = 100):
+    alpha_0, alpha_1 = 0.1, 0
     # Variables for determining the hop probability
     clustering_coef = nx.clustering(G, node)
     degree_sequence = [d for _, d in G.degree()]
@@ -571,7 +572,7 @@ def hopping_probability(G, node, coeff_prob = 100):
         norm_dv = 0
     
     # Calculate the hop probability using the modified sigmoid function
-    hop_prob = 1 / (1 + np.exp(coeff_prob * (norm_cc) * (norm_dv)))
+    hop_prob = 1 / (1 + np.exp(coeff_prob * (norm_cc - alpha_0) * (norm_dv - alpha_1)))
     
     return hop_prob
 
@@ -811,8 +812,8 @@ if __name__ == "__main__":
     network_dir = '../../data/full_decentralized/network_topologies/'
     network_names = find_network_names(network_dir)
     # print(network_names)
-    network_props = process_networks(network_names, network_dir, calculate_network_properties)
-    save_graph_props_to_csv(network_props)
+    # network_props = process_networks(network_names, network_dir, calculate_network_properties)
+    # save_graph_props_to_csv(network_props)
     # Define the parameter values to iterate over
     # Hop num analysis
     calc_average_num_hops(network_dir)

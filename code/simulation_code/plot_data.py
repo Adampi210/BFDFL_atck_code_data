@@ -1723,11 +1723,11 @@ def get_aver_dist_diff_graphs(dir_with_data):
 
 if __name__ == '__main__':
     # plot_new_schemes('ER_graph_c_25_p_01', 'iid')
-    create_composite_figure([('dir_geom_graph_c_25_type_2d_r_04', 'iid'),            
-                             ('ER_graph_c_25_p_05', 'iid'), 
+    create_composite_figure([('dir_geom_graph_c_25_type_2d_r_02', 'iid'),            
+                             ('ER_graph_c_25_p_03', 'iid'), 
                              ('pref_attach_graph_c_25_type_sparse', 'iid'), 
-                             ('dir_geom_graph_c_25_type_2d_r_04', 'non_iid'),
-                             ('ER_graph_c_25_p_05', 'non_iid'), 
+                             ('dir_geom_graph_c_25_type_2d_r_02', 'non_iid'),
+                             ('ER_graph_c_25_p_03', 'non_iid'), 
                              ('pref_attach_graph_c_25_type_dense_3', 'iid')])
     
     #plot_timing_attack('dir_geom_graph_c_25_type_2d_r_02')

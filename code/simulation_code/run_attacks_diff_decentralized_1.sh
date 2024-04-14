@@ -21,7 +21,7 @@ sed -i "s/designated_clients = $prev_designated_clients/designated_clients = $in
 
 for designated_clients in 25
 do
-    for iid_style in 'iid'
+    for iid_style in 'iid' 'non_iid'
     do
         for power in 100
         do
