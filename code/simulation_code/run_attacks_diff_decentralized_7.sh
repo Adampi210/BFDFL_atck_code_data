@@ -21,13 +21,13 @@ sed -i "s/designated_clients = $prev_designated_clients/designated_clients = $in
 
 for designated_clients in 25
 do
-    for iid_style in 'non_iid'
+    for iid_style in 'iid' 'non_iid'
     do
         for power in 100
         do
             for adv_prec in 2
             do
-                for seed in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20
+                for seed in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19
                 do 
                     for cent_used in 5
                     do
