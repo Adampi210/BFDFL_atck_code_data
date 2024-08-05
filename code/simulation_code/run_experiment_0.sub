@@ -1,10 +1,10 @@
 #!/bin/bash
-#SBATCH -A standby
+#SBATCH -A cgb-n
 #SBATCH --nodes=1
-#SBATCH --ntasks=1
+#SBATCH --ntasks=18
 #SBATCH --cpus-per-task=1
 #SBATCH --gpus-per-node=1
-#SBATCH --time=5:00:00
+#SBATCH --time=48:00:00
 
 # Some useful commands
 # run the job:          sbatch run_experiments.sub
@@ -24,4 +24,4 @@ module load anaconda
 conda activate $conda_env_used
 
 # Run the experiment code
-./run_all_shell.sh
+./run_attacks_diff_decentralized_0.sh

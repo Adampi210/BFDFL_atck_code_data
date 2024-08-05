@@ -1,0 +1,27 @@
+#!/bin/bash
+#SBATCH -A cgb2-n
+#SBATCH --nodes=1
+#SBATCH --ntasks=18
+#SBATCH --cpus-per-task=1
+#SBATCH --gpus-per-node=1
+#SBATCH --time=48:00:00
+
+# Some useful commands
+# run the job:          sbatch run_experiments.sub
+# check job status:     squeue -u $USERNAME ($USERNAME==apiasecz)
+# check job details:    scontrol show job_id (job id from job status)
+# interactive session:  sinteractive -A cgb-l -N1 -n32 --gpus-per-node=1 (this is for the H100, -A standby for A100, other options same as above)
+# 
+
+# Variables
+conda_env_used='maxspan_fl_env'
+
+# Load necessary stuff
+module load cuda/12.1.1
+module load anaconda
+
+# Activate desired environment
+conda activate $conda_env_used
+
+# Run the experiment code
+./run_attacks_diff_decentralized_1.sh

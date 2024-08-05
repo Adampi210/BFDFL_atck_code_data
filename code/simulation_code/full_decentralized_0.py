@@ -50,7 +50,7 @@ aggregation_mechanism = aggreg_schemes[1]
 dir_networks = '../../data/full_decentralized/network_topologies'
 dir_data = '../../data/full_decentralized/%s/' % dataset_name
 graph_type = ('ER', 'dir_scale_free', 'dir_geom', 'k_out', 'pref_attach', 'SNAP_Cisco', 'WS_graph', 'hypercube_graph')
-graph_type_used = graph_type[0]
+graph_type_used = graph_type[2]
 # This is the source for network topology
 
 # ADJUSTABLE #####
@@ -141,7 +141,7 @@ with open(data_dir_name + 'node_centrality'+ '.csv', 'w', newline = '') as centr
 # Training parameters
 N_CLIENTS = len(adj_matrix[0]) # Number of clients
 N_SERVERS  = 0        # Number of servers
-iid_type = 'iid'      # 'iid' or 'non_iid'
+iid_type = 'iid' # Any of ('extreme_non_iid', 'non_iid', 'medium_non_iid', 'mild_non_iid', 'iid')
 N_LOCAL_EPOCHS  = 10  # Number of epochs for local training
 N_GLOBAL_EPOCHS = 100 # Number of epochs for global training
 BATCH_SIZE = 500      # Batch size while training
@@ -171,7 +171,17 @@ cent_measure_used = 0
 if iid_type == 'iid':
     train_dset_split, valid_dset_split = split_data_iid_excl_server(N_CLIENTS, dataset_name)
 elif iid_type == 'non_iid':
-    train_dset_split, valid_dset_split = split_data_non_iid_excl_server(N_CLIENTS, dataset_name)
+    N_CLASS = 3
+    train_dset_split, valid_dset_split = split_data_non_iid_excl_server(N_CLIENTS, dataset_name, N_CLASS)
+elif iid_type == 'extreme_non_iid':
+    N_CLASS = 1
+    train_dset_split, valid_dset_split = split_data_non_iid_excl_server(N_CLIENTS, dataset_name, N_CLASS)
+elif iid_type == 'medium_non_iid':
+    N_CLASS = 5
+    train_dset_split, valid_dset_split = split_data_non_iid_excl_server(N_CLIENTS, dataset_name, N_CLASS)
+elif iid_type == 'mild_non_iid':
+    N_CLASS = 7
+    train_dset_split, valid_dset_split = split_data_non_iid_excl_server(N_CLIENTS, dataset_name, N_CLASS)
 
 # Set the model used
 if dataset_name == 'fmnist':

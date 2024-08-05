@@ -87,12 +87,13 @@ def split_data_iid_excl_server(num_clients, dataset_name):
     return train_list_dsets, valid_list_dsets
 
 # Splits the dataset in a non-iid way, excluding server (servers should have all data)
-def non_iid_excl_split(data_set, num_clients, client_class_split = None):
+def non_iid_excl_split(data_set, num_clients, num_classes_non_iid = NUM_CLASSES_NONIID, client_class_split = None):
+    print(f'Classes: {num_classes_non_iid}')
     # Calculate number of classes
     num_classes = len(data_set.classes)
     # Split the classes among clients, if not already
     if client_class_split == None:
-        client_classes = [random.sample(list(range(num_classes)), NUM_CLASSES_NONIID) for _ in range(num_clients)]
+        client_classes = [random.sample(list(range(num_classes)), num_classes_non_iid) for _ in range(num_clients)]
     else:
         client_classes = client_class_split
     # For each class, calculate how many clients use it
@@ -266,7 +267,7 @@ def split_data_non_iid_incl_server(num_servers, num_clients, dataset_name):
     return train_list_dsets, valid_list_dsets
 
 # Split data betweeen clients non-iid
-def split_data_non_iid_excl_server(num_clients, dataset_name):
+def split_data_non_iid_excl_server(num_clients, dataset_name, num_classes_non_iid = NUM_CLASSES_NONIID):
     # Data directory
     data_dir = '~/data/datasets' + dataset_name
     # Get the data, currently 3 datasets available
@@ -283,7 +284,7 @@ def split_data_non_iid_excl_server(num_clients, dataset_name):
         print(f'Currently {dataset_name} is not supported')
         return -1
     # Split the training and validation data
-    train_list_dsets, client_class_split = non_iid_excl_split(train_data, num_clients)
+    train_list_dsets, client_class_split = non_iid_excl_split(train_data, num_clients, num_classes_non_iid)
     valid_list_dsets = iid_split(validation_data, num_clients, dataset_name)
     # Return the split datasets
     return train_list_dsets, valid_list_dsets
