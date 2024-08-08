@@ -1,0 +1,1042 @@
+
+The following have been reloaded with a version change:
+  1) cuda/11.2.0 => cuda/12.1.1
+
+/home/apiasecz/.conda/envs/cent7/2020.11-py38/maxspan_fl_env/lib/python3.9/site-packages/torch/cuda/__init__.py:141: UserWarning: CUDA initialization: CUDA driver initialization failed, you might not have a CUDA gpu. (Triggered internally at /opt/conda/conda-bld/pytorch_1711403380164/work/c10/cuda/CUDAFunctions.cpp:108.)
+  return torch._C._cuda_getDeviceCount() > 0
+CUDA not available, have to use cpu
+Classes: 1
+File network: dir_geom_graph_c_25_type_2d_r_02_seed_0.txt
+Seed: 0, Adv percent: 0.2, Adv power: 100
+iid_type: extreme_non_iid
+Centrality: eigenvector_centrality
+Scheme used: MaxSpANFL_w_smart_hopping
+id: 0 node: <nn_FL_de_cent.client_FL object at 0x2b0e686733a0>
+id: 1 node: <nn_FL_de_cent.client_FL object at 0x2b0e68673400>
+id: 2 node: <nn_FL_de_cent.client_FL object at 0x2b0e68673430>
+id: 4 node: <nn_FL_de_cent.client_FL object at 0x2b0e68673490>
+id: 15 node: <nn_FL_de_cent.client_FL object at 0x2b0e686736a0>
+global epoch: 0
+global epoch: 1
+global epoch: 2
+global epoch: 3
+global epoch: 4
+global epoch: 5
+global epoch: 6
+global epoch: 7
+global epoch: 8
+global epoch: 9
+global epoch: 10
+global epoch: 11
+global epoch: 12
+global epoch: 13
+global epoch: 14
+global epoch: 15
+global epoch: 16
+global epoch: 17
+global epoch: 18
+global epoch: 19
+global epoch: 20
+global epoch: 21
+global epoch: 22
+global epoch: 23
+global epoch: 24
+global epoch: 25
+global epoch: 26
+global epoch: 27
+global epoch: 28
+global epoch: 29
+global epoch: 30
+global epoch: 31
+global epoch: 32
+global epoch: 33
+global epoch: 34
+global epoch: 35
+global epoch: 36
+global epoch: 37
+global epoch: 38
+global epoch: 39
+global epoch: 40
+global epoch: 41
+global epoch: 42
+global epoch: 43
+global epoch: 44
+global epoch: 45
+global epoch: 46
+global epoch: 47
+global epoch: 48
+global epoch: 49
+global epoch: 50
+global epoch: 51
+global epoch: 52
+global epoch: 53
+global epoch: 54
+global epoch: 55
+global epoch: 56
+global epoch: 57
+global epoch: 58
+global epoch: 59
+global epoch: 60
+global epoch: 61
+global epoch: 62
+global epoch: 63
+global epoch: 64
+global epoch: 65
+global epoch: 66
+global epoch: 67
+global epoch: 68
+global epoch: 69
+global epoch: 70
+global epoch: 71
+global epoch: 72
+global epoch: 73
+global epoch: 74
+global epoch: 75
+global epoch: 76
+global epoch: 77
+global epoch: 78
+global epoch: 79
+global epoch: 80
+global epoch: 81
+global epoch: 82
+global epoch: 83
+global epoch: 84
+global epoch: 85
+global epoch: 86
+global epoch: 87
+global epoch: 88
+global epoch: 89
+global epoch: 90
+global epoch: 91
+global epoch: 92
+global epoch: 93
+global epoch: 94
+global epoch: 95
+global epoch: 96
+global epoch: 97
+global epoch: 98
+global epoch: 99
+Total time 18293.391942s
+/home/apiasecz/.conda/envs/cent7/2020.11-py38/maxspan_fl_env/lib/python3.9/site-packages/torch/cuda/__init__.py:141: UserWarning: CUDA initialization: CUDA driver initialization failed, you might not have a CUDA gpu. (Triggered internally at /opt/conda/conda-bld/pytorch_1711403380164/work/c10/cuda/CUDAFunctions.cpp:108.)
+  return torch._C._cuda_getDeviceCount() > 0
+CUDA not available, have to use cpu
+Classes: 1
+File network: dir_geom_graph_c_25_type_2d_r_02_seed_1.txt
+Seed: 1, Adv percent: 0.2, Adv power: 100
+iid_type: extreme_non_iid
+Centrality: eigenvector_centrality
+Scheme used: MaxSpANFL_w_smart_hopping
+id: 0 node: <nn_FL_de_cent.client_FL object at 0x2b1842ef43d0>
+id: 6 node: <nn_FL_de_cent.client_FL object at 0x2b1842ef4520>
+id: 10 node: <nn_FL_de_cent.client_FL object at 0x2b1842ef45e0>
+id: 18 node: <nn_FL_de_cent.client_FL object at 0x2b1842ef4760>
+id: 21 node: <nn_FL_de_cent.client_FL object at 0x2b1842ef47f0>
+global epoch: 0
+global epoch: 1
+global epoch: 2
+global epoch: 3
+global epoch: 4
+global epoch: 5
+global epoch: 6
+global epoch: 7
+global epoch: 8
+global epoch: 9
+global epoch: 10
+global epoch: 11
+global epoch: 12
+global epoch: 13
+global epoch: 14
+global epoch: 15
+global epoch: 16
+global epoch: 17
+global epoch: 18
+global epoch: 19
+global epoch: 20
+global epoch: 21
+global epoch: 22
+global epoch: 23
+global epoch: 24
+global epoch: 25
+global epoch: 26
+global epoch: 27
+global epoch: 28
+global epoch: 29
+global epoch: 30
+global epoch: 31
+global epoch: 32
+global epoch: 33
+global epoch: 34
+global epoch: 35
+global epoch: 36
+global epoch: 37
+global epoch: 38
+global epoch: 39
+global epoch: 40
+global epoch: 41
+global epoch: 42
+global epoch: 43
+global epoch: 44
+global epoch: 45
+global epoch: 46
+global epoch: 47
+global epoch: 48
+global epoch: 49
+global epoch: 50
+global epoch: 51
+global epoch: 52
+global epoch: 53
+global epoch: 54
+global epoch: 55
+global epoch: 56
+global epoch: 57
+global epoch: 58
+global epoch: 59
+global epoch: 60
+global epoch: 61
+global epoch: 62
+global epoch: 63
+global epoch: 64
+global epoch: 65
+global epoch: 66
+global epoch: 67
+global epoch: 68
+global epoch: 69
+global epoch: 70
+global epoch: 71
+global epoch: 72
+global epoch: 73
+global epoch: 74
+global epoch: 75
+global epoch: 76
+global epoch: 77
+global epoch: 78
+global epoch: 79
+global epoch: 80
+global epoch: 81
+global epoch: 82
+global epoch: 83
+global epoch: 84
+global epoch: 85
+global epoch: 86
+global epoch: 87
+global epoch: 88
+global epoch: 89
+global epoch: 90
+global epoch: 91
+global epoch: 92
+global epoch: 93
+global epoch: 94
+global epoch: 95
+global epoch: 96
+global epoch: 97
+global epoch: 98
+global epoch: 99
+Total time 17703.450708s
+/home/apiasecz/.conda/envs/cent7/2020.11-py38/maxspan_fl_env/lib/python3.9/site-packages/torch/cuda/__init__.py:141: UserWarning: CUDA initialization: CUDA driver initialization failed, you might not have a CUDA gpu. (Triggered internally at /opt/conda/conda-bld/pytorch_1711403380164/work/c10/cuda/CUDAFunctions.cpp:108.)
+  return torch._C._cuda_getDeviceCount() > 0
+CUDA not available, have to use cpu
+Classes: 1
+File network: dir_geom_graph_c_25_type_2d_r_02_seed_2.txt
+Seed: 2, Adv percent: 0.2, Adv power: 100
+iid_type: extreme_non_iid
+Centrality: eigenvector_centrality
+Scheme used: MaxSpANFL_w_smart_hopping
+id: 0 node: <nn_FL_de_cent.client_FL object at 0x2b320b7df130>
+id: 3 node: <nn_FL_de_cent.client_FL object at 0x2b320b7df1f0>
+id: 6 node: <nn_FL_de_cent.client_FL object at 0x2b320b7df280>
+id: 15 node: <nn_FL_de_cent.client_FL object at 0x2b320b7df430>
+id: 19 node: <nn_FL_de_cent.client_FL object at 0x2b320b7df4f0>
+global epoch: 0
+global epoch: 1
+global epoch: 2
+global epoch: 3
+global epoch: 4
+global epoch: 5
+global epoch: 6
+global epoch: 7
+global epoch: 8
+global epoch: 9
+global epoch: 10
+global epoch: 11
+global epoch: 12
+global epoch: 13
+global epoch: 14
+global epoch: 15
+global epoch: 16
+global epoch: 17
+global epoch: 18
+global epoch: 19
+global epoch: 20
+global epoch: 21
+global epoch: 22
+global epoch: 23
+global epoch: 24
+global epoch: 25
+global epoch: 26
+global epoch: 27
+global epoch: 28
+global epoch: 29
+global epoch: 30
+global epoch: 31
+global epoch: 32
+global epoch: 33
+global epoch: 34
+global epoch: 35
+global epoch: 36
+global epoch: 37
+global epoch: 38
+global epoch: 39
+global epoch: 40
+global epoch: 41
+global epoch: 42
+global epoch: 43
+global epoch: 44
+global epoch: 45
+global epoch: 46
+global epoch: 47
+global epoch: 48
+global epoch: 49
+global epoch: 50
+global epoch: 51
+global epoch: 52
+global epoch: 53
+global epoch: 54
+global epoch: 55
+global epoch: 56
+global epoch: 57
+global epoch: 58
+global epoch: 59
+global epoch: 60
+global epoch: 61
+global epoch: 62
+global epoch: 63
+global epoch: 64
+global epoch: 65
+global epoch: 66
+global epoch: 67
+global epoch: 68
+global epoch: 69
+global epoch: 70
+global epoch: 71
+global epoch: 72
+global epoch: 73
+global epoch: 74
+global epoch: 75
+global epoch: 76
+global epoch: 77
+global epoch: 78
+global epoch: 79
+global epoch: 80
+global epoch: 81
+global epoch: 82
+global epoch: 83
+global epoch: 84
+global epoch: 85
+global epoch: 86
+global epoch: 87
+global epoch: 88
+global epoch: 89
+global epoch: 90
+global epoch: 91
+global epoch: 92
+global epoch: 93
+global epoch: 94
+global epoch: 95
+global epoch: 96
+global epoch: 97
+global epoch: 98
+global epoch: 99
+Total time 17944.971794s
+/home/apiasecz/.conda/envs/cent7/2020.11-py38/maxspan_fl_env/lib/python3.9/site-packages/torch/cuda/__init__.py:141: UserWarning: CUDA initialization: CUDA driver initialization failed, you might not have a CUDA gpu. (Triggered internally at /opt/conda/conda-bld/pytorch_1711403380164/work/c10/cuda/CUDAFunctions.cpp:108.)
+  return torch._C._cuda_getDeviceCount() > 0
+CUDA not available, have to use cpu
+Classes: 1
+File network: dir_geom_graph_c_25_type_2d_r_02_seed_3.txt
+Seed: 3, Adv percent: 0.2, Adv power: 100
+iid_type: extreme_non_iid
+Centrality: eigenvector_centrality
+Scheme used: MaxSpANFL_w_smart_hopping
+id: 0 node: <nn_FL_de_cent.client_FL object at 0x2ab83e43e3d0>
+id: 1 node: <nn_FL_de_cent.client_FL object at 0x2ab83e43e430>
+id: 2 node: <nn_FL_de_cent.client_FL object at 0x2ab83e43e460>
+id: 7 node: <nn_FL_de_cent.client_FL object at 0x2ab83e43e550>
+id: 12 node: <nn_FL_de_cent.client_FL object at 0x2ab83e43e640>
+global epoch: 0
+global epoch: 1
+global epoch: 2
+global epoch: 3
+global epoch: 4
+global epoch: 5
+global epoch: 6
+global epoch: 7
+global epoch: 8
+global epoch: 9
+global epoch: 10
+global epoch: 11
+global epoch: 12
+global epoch: 13
+global epoch: 14
+global epoch: 15
+global epoch: 16
+global epoch: 17
+global epoch: 18
+global epoch: 19
+global epoch: 20
+global epoch: 21
+global epoch: 22
+global epoch: 23
+global epoch: 24
+global epoch: 25
+global epoch: 26
+global epoch: 27
+global epoch: 28
+global epoch: 29
+global epoch: 30
+global epoch: 31
+global epoch: 32
+global epoch: 33
+global epoch: 34
+global epoch: 35
+global epoch: 36
+global epoch: 37
+global epoch: 38
+global epoch: 39
+global epoch: 40
+global epoch: 41
+global epoch: 42
+global epoch: 43
+global epoch: 44
+global epoch: 45
+global epoch: 46
+global epoch: 47
+global epoch: 48
+global epoch: 49
+global epoch: 50
+global epoch: 51
+global epoch: 52
+global epoch: 53
+global epoch: 54
+global epoch: 55
+global epoch: 56
+global epoch: 57
+global epoch: 58
+global epoch: 59
+global epoch: 60
+global epoch: 61
+global epoch: 62
+global epoch: 63
+global epoch: 64
+global epoch: 65
+global epoch: 66
+global epoch: 67
+global epoch: 68
+global epoch: 69
+global epoch: 70
+global epoch: 71
+global epoch: 72
+global epoch: 73
+global epoch: 74
+global epoch: 75
+global epoch: 76
+global epoch: 77
+global epoch: 78
+global epoch: 79
+global epoch: 80
+global epoch: 81
+global epoch: 82
+global epoch: 83
+global epoch: 84
+global epoch: 85
+global epoch: 86
+global epoch: 87
+global epoch: 88
+global epoch: 89
+global epoch: 90
+global epoch: 91
+global epoch: 92
+global epoch: 93
+global epoch: 94
+global epoch: 95
+global epoch: 96
+global epoch: 97
+global epoch: 98
+global epoch: 99
+Total time 17524.144244s
+/home/apiasecz/.conda/envs/cent7/2020.11-py38/maxspan_fl_env/lib/python3.9/site-packages/torch/cuda/__init__.py:141: UserWarning: CUDA initialization: CUDA driver initialization failed, you might not have a CUDA gpu. (Triggered internally at /opt/conda/conda-bld/pytorch_1711403380164/work/c10/cuda/CUDAFunctions.cpp:108.)
+  return torch._C._cuda_getDeviceCount() > 0
+CUDA not available, have to use cpu
+Classes: 1
+File network: dir_geom_graph_c_25_type_2d_r_02_seed_4.txt
+Seed: 4, Adv percent: 0.2, Adv power: 100
+iid_type: extreme_non_iid
+Centrality: eigenvector_centrality
+Scheme used: MaxSpANFL_w_smart_hopping
+id: 0 node: <nn_FL_de_cent.client_FL object at 0x2b380ef0c370>
+id: 1 node: <nn_FL_de_cent.client_FL object at 0x2b380ef0c3d0>
+id: 9 node: <nn_FL_de_cent.client_FL object at 0x2b380ef0c550>
+id: 15 node: <nn_FL_de_cent.client_FL object at 0x2b380ef0c670>
+id: 24 node: <nn_FL_de_cent.client_FL object at 0x2b380ef0c820>
+global epoch: 0
+global epoch: 1
+global epoch: 2
+global epoch: 3
+global epoch: 4
+global epoch: 5
+global epoch: 6
+global epoch: 7
+global epoch: 8
+global epoch: 9
+global epoch: 10
+global epoch: 11
+global epoch: 12
+global epoch: 13
+global epoch: 14
+global epoch: 15
+global epoch: 16
+global epoch: 17
+global epoch: 18
+global epoch: 19
+global epoch: 20
+global epoch: 21
+global epoch: 22
+global epoch: 23
+global epoch: 24
+global epoch: 25
+global epoch: 26
+global epoch: 27
+global epoch: 28
+global epoch: 29
+global epoch: 30
+global epoch: 31
+global epoch: 32
+global epoch: 33
+global epoch: 34
+global epoch: 35
+global epoch: 36
+global epoch: 37
+global epoch: 38
+global epoch: 39
+global epoch: 40
+global epoch: 41
+global epoch: 42
+global epoch: 43
+global epoch: 44
+global epoch: 45
+global epoch: 46
+global epoch: 47
+global epoch: 48
+global epoch: 49
+global epoch: 50
+global epoch: 51
+global epoch: 52
+global epoch: 53
+global epoch: 54
+global epoch: 55
+global epoch: 56
+global epoch: 57
+global epoch: 58
+global epoch: 59
+global epoch: 60
+global epoch: 61
+global epoch: 62
+global epoch: 63
+global epoch: 64
+global epoch: 65
+global epoch: 66
+global epoch: 67
+global epoch: 68
+global epoch: 69
+global epoch: 70
+global epoch: 71
+global epoch: 72
+global epoch: 73
+global epoch: 74
+global epoch: 75
+global epoch: 76
+global epoch: 77
+global epoch: 78
+global epoch: 79
+global epoch: 80
+global epoch: 81
+global epoch: 82
+global epoch: 83
+global epoch: 84
+global epoch: 85
+global epoch: 86
+global epoch: 87
+global epoch: 88
+global epoch: 89
+global epoch: 90
+global epoch: 91
+global epoch: 92
+global epoch: 93
+global epoch: 94
+global epoch: 95
+global epoch: 96
+global epoch: 97
+global epoch: 98
+global epoch: 99
+Total time 17951.639679s
+/home/apiasecz/.conda/envs/cent7/2020.11-py38/maxspan_fl_env/lib/python3.9/site-packages/torch/cuda/__init__.py:141: UserWarning: CUDA initialization: CUDA driver initialization failed, you might not have a CUDA gpu. (Triggered internally at /opt/conda/conda-bld/pytorch_1711403380164/work/c10/cuda/CUDAFunctions.cpp:108.)
+  return torch._C._cuda_getDeviceCount() > 0
+CUDA not available, have to use cpu
+Classes: 1
+File network: dir_geom_graph_c_25_type_2d_r_02_seed_5.txt
+Seed: 5, Adv percent: 0.2, Adv power: 100
+iid_type: extreme_non_iid
+Centrality: eigenvector_centrality
+Scheme used: MaxSpANFL_w_smart_hopping
+id: 0 node: <nn_FL_de_cent.client_FL object at 0x2b7fe9cea8b0>
+id: 1 node: <nn_FL_de_cent.client_FL object at 0x2b7fe9ceadc0>
+id: 9 node: <nn_FL_de_cent.client_FL object at 0x2b7fe9f99160>
+id: 16 node: <nn_FL_de_cent.client_FL object at 0x2b7fe9f992b0>
+id: 20 node: <nn_FL_de_cent.client_FL object at 0x2b7fe9f99370>
+global epoch: 0
+global epoch: 1
+global epoch: 2
+global epoch: 3
+global epoch: 4
+global epoch: 5
+global epoch: 6
+global epoch: 7
+global epoch: 8
+global epoch: 9
+global epoch: 10
+global epoch: 11
+global epoch: 12
+global epoch: 13
+global epoch: 14
+global epoch: 15
+global epoch: 16
+global epoch: 17
+global epoch: 18
+global epoch: 19
+global epoch: 20
+global epoch: 21
+global epoch: 22
+global epoch: 23
+global epoch: 24
+global epoch: 25
+global epoch: 26
+global epoch: 27
+global epoch: 28
+global epoch: 29
+global epoch: 30
+global epoch: 31
+global epoch: 32
+global epoch: 33
+global epoch: 34
+global epoch: 35
+global epoch: 36
+global epoch: 37
+global epoch: 38
+global epoch: 39
+global epoch: 40
+global epoch: 41
+global epoch: 42
+global epoch: 43
+global epoch: 44
+global epoch: 45
+global epoch: 46
+global epoch: 47
+global epoch: 48
+global epoch: 49
+global epoch: 50
+global epoch: 51
+global epoch: 52
+global epoch: 53
+global epoch: 54
+global epoch: 55
+global epoch: 56
+global epoch: 57
+global epoch: 58
+global epoch: 59
+global epoch: 60
+global epoch: 61
+global epoch: 62
+global epoch: 63
+global epoch: 64
+global epoch: 65
+global epoch: 66
+global epoch: 67
+global epoch: 68
+global epoch: 69
+global epoch: 70
+global epoch: 71
+global epoch: 72
+global epoch: 73
+global epoch: 74
+global epoch: 75
+global epoch: 76
+global epoch: 77
+global epoch: 78
+global epoch: 79
+global epoch: 80
+global epoch: 81
+global epoch: 82
+global epoch: 83
+global epoch: 84
+global epoch: 85
+global epoch: 86
+global epoch: 87
+global epoch: 88
+global epoch: 89
+global epoch: 90
+global epoch: 91
+global epoch: 92
+global epoch: 93
+global epoch: 94
+global epoch: 95
+global epoch: 96
+global epoch: 97
+global epoch: 98
+global epoch: 99
+Total time 18742.612670s
+/home/apiasecz/.conda/envs/cent7/2020.11-py38/maxspan_fl_env/lib/python3.9/site-packages/torch/cuda/__init__.py:141: UserWarning: CUDA initialization: CUDA driver initialization failed, you might not have a CUDA gpu. (Triggered internally at /opt/conda/conda-bld/pytorch_1711403380164/work/c10/cuda/CUDAFunctions.cpp:108.)
+  return torch._C._cuda_getDeviceCount() > 0
+CUDA not available, have to use cpu
+Classes: 1
+File network: dir_geom_graph_c_25_type_2d_r_02_seed_6.txt
+Seed: 6, Adv percent: 0.2, Adv power: 100
+iid_type: extreme_non_iid
+Centrality: eigenvector_centrality
+Scheme used: MaxSpANFL_w_smart_hopping
+id: 0 node: <nn_FL_de_cent.client_FL object at 0x2ab505487190>
+id: 2 node: <nn_FL_de_cent.client_FL object at 0x2ab505487220>
+id: 7 node: <nn_FL_de_cent.client_FL object at 0x2ab505487310>
+id: 10 node: <nn_FL_de_cent.client_FL object at 0x2ab5054873a0>
+id: 13 node: <nn_FL_de_cent.client_FL object at 0x2ab505487430>
+global epoch: 0
+global epoch: 1
+global epoch: 2
+global epoch: 3
+global epoch: 4
+global epoch: 5
+global epoch: 6
+global epoch: 7
+global epoch: 8
+global epoch: 9
+global epoch: 10
+global epoch: 11
+global epoch: 12
+global epoch: 13
+global epoch: 14
+global epoch: 15
+global epoch: 16
+global epoch: 17
+global epoch: 18
+global epoch: 19
+global epoch: 20
+global epoch: 21
+global epoch: 22
+global epoch: 23
+global epoch: 24
+global epoch: 25
+global epoch: 26
+global epoch: 27
+global epoch: 28
+global epoch: 29
+global epoch: 30
+global epoch: 31
+global epoch: 32
+global epoch: 33
+global epoch: 34
+global epoch: 35
+global epoch: 36
+global epoch: 37
+global epoch: 38
+global epoch: 39
+global epoch: 40
+global epoch: 41
+global epoch: 42
+global epoch: 43
+global epoch: 44
+global epoch: 45
+global epoch: 46
+global epoch: 47
+global epoch: 48
+global epoch: 49
+global epoch: 50
+global epoch: 51
+global epoch: 52
+global epoch: 53
+global epoch: 54
+global epoch: 55
+global epoch: 56
+global epoch: 57
+global epoch: 58
+global epoch: 59
+global epoch: 60
+global epoch: 61
+global epoch: 62
+global epoch: 63
+global epoch: 64
+global epoch: 65
+global epoch: 66
+global epoch: 67
+global epoch: 68
+global epoch: 69
+global epoch: 70
+global epoch: 71
+global epoch: 72
+global epoch: 73
+global epoch: 74
+global epoch: 75
+global epoch: 76
+global epoch: 77
+global epoch: 78
+global epoch: 79
+global epoch: 80
+global epoch: 81
+global epoch: 82
+global epoch: 83
+global epoch: 84
+global epoch: 85
+global epoch: 86
+global epoch: 87
+global epoch: 88
+global epoch: 89
+global epoch: 90
+global epoch: 91
+global epoch: 92
+global epoch: 93
+global epoch: 94
+global epoch: 95
+global epoch: 96
+global epoch: 97
+global epoch: 98
+global epoch: 99
+Total time 17927.447940s
+/home/apiasecz/.conda/envs/cent7/2020.11-py38/maxspan_fl_env/lib/python3.9/site-packages/torch/cuda/__init__.py:141: UserWarning: CUDA initialization: CUDA driver initialization failed, you might not have a CUDA gpu. (Triggered internally at /opt/conda/conda-bld/pytorch_1711403380164/work/c10/cuda/CUDAFunctions.cpp:108.)
+  return torch._C._cuda_getDeviceCount() > 0
+CUDA not available, have to use cpu
+Classes: 1
+File network: dir_geom_graph_c_25_type_2d_r_02_seed_7.txt
+Seed: 7, Adv percent: 0.2, Adv power: 100
+iid_type: extreme_non_iid
+Centrality: eigenvector_centrality
+Scheme used: MaxSpANFL_w_smart_hopping
+id: 0 node: <nn_FL_de_cent.client_FL object at 0x2b3a99ad62b0>
+id: 3 node: <nn_FL_de_cent.client_FL object at 0x2b3a99ad6370>
+id: 7 node: <nn_FL_de_cent.client_FL object at 0x2b3a99ad6430>
+id: 9 node: <nn_FL_de_cent.client_FL object at 0x2b3a99ad6490>
+id: 12 node: <nn_FL_de_cent.client_FL object at 0x2b3a99ad6520>
+global epoch: 0
+global epoch: 1
+global epoch: 2
+global epoch: 3
+global epoch: 4
+global epoch: 5
+global epoch: 6
+global epoch: 7
+global epoch: 8
+global epoch: 9
+global epoch: 10
+global epoch: 11
+global epoch: 12
+global epoch: 13
+global epoch: 14
+global epoch: 15
+global epoch: 16
+global epoch: 17
+global epoch: 18
+global epoch: 19
+global epoch: 20
+global epoch: 21
+global epoch: 22
+global epoch: 23
+global epoch: 24
+global epoch: 25
+global epoch: 26
+global epoch: 27
+global epoch: 28
+global epoch: 29
+global epoch: 30
+global epoch: 31
+global epoch: 32
+global epoch: 33
+global epoch: 34
+global epoch: 35
+global epoch: 36
+global epoch: 37
+global epoch: 38
+global epoch: 39
+global epoch: 40
+global epoch: 41
+global epoch: 42
+global epoch: 43
+global epoch: 44
+global epoch: 45
+global epoch: 46
+global epoch: 47
+global epoch: 48
+global epoch: 49
+global epoch: 50
+global epoch: 51
+global epoch: 52
+global epoch: 53
+global epoch: 54
+global epoch: 55
+global epoch: 56
+global epoch: 57
+global epoch: 58
+global epoch: 59
+global epoch: 60
+global epoch: 61
+global epoch: 62
+global epoch: 63
+global epoch: 64
+global epoch: 65
+global epoch: 66
+global epoch: 67
+global epoch: 68
+global epoch: 69
+global epoch: 70
+global epoch: 71
+global epoch: 72
+global epoch: 73
+global epoch: 74
+global epoch: 75
+global epoch: 76
+global epoch: 77
+global epoch: 78
+global epoch: 79
+global epoch: 80
+global epoch: 81
+global epoch: 82
+global epoch: 83
+global epoch: 84
+global epoch: 85
+global epoch: 86
+global epoch: 87
+global epoch: 88
+global epoch: 89
+global epoch: 90
+global epoch: 91
+global epoch: 92
+global epoch: 93
+global epoch: 94
+global epoch: 95
+global epoch: 96
+global epoch: 97
+global epoch: 98
+global epoch: 99
+Total time 17921.309174s
+/home/apiasecz/.conda/envs/cent7/2020.11-py38/maxspan_fl_env/lib/python3.9/site-packages/torch/cuda/__init__.py:141: UserWarning: CUDA initialization: CUDA driver initialization failed, you might not have a CUDA gpu. (Triggered internally at /opt/conda/conda-bld/pytorch_1711403380164/work/c10/cuda/CUDAFunctions.cpp:108.)
+  return torch._C._cuda_getDeviceCount() > 0
+CUDA not available, have to use cpu
+Classes: 1
+File network: dir_geom_graph_c_25_type_2d_r_02_seed_8.txt
+Seed: 8, Adv percent: 0.2, Adv power: 100
+iid_type: extreme_non_iid
+Centrality: eigenvector_centrality
+Scheme used: MaxSpANFL_w_smart_hopping
+id: 0 node: <nn_FL_de_cent.client_FL object at 0x2b34f60a1be0>
+id: 10 node: <nn_FL_de_cent.client_FL object at 0x2b34f639a220>
+id: 12 node: <nn_FL_de_cent.client_FL object at 0x2b34f639a280>
+id: 20 node: <nn_FL_de_cent.client_FL object at 0x2b34f639a400>
+id: 21 node: <nn_FL_de_cent.client_FL object at 0x2b34f639a430>
+global epoch: 0
+global epoch: 1
+global epoch: 2
+global epoch: 3
+global epoch: 4
+global epoch: 5
+global epoch: 6
+global epoch: 7
+global epoch: 8
+global epoch: 9
+global epoch: 10
+global epoch: 11
+global epoch: 12
+global epoch: 13
+global epoch: 14
+global epoch: 15
+global epoch: 16
+global epoch: 17
+global epoch: 18
+global epoch: 19
+global epoch: 20
+global epoch: 21
+global epoch: 22
+global epoch: 23
+global epoch: 24
+global epoch: 25
+global epoch: 26
+global epoch: 27
+global epoch: 28
+global epoch: 29
+global epoch: 30
+global epoch: 31
+global epoch: 32
+global epoch: 33
+global epoch: 34
+global epoch: 35
+global epoch: 36
+global epoch: 37
+global epoch: 38
+global epoch: 39
+global epoch: 40
+global epoch: 41
+global epoch: 42
+global epoch: 43
+global epoch: 44
+global epoch: 45
+global epoch: 46
+global epoch: 47
+global epoch: 48
+global epoch: 49
+global epoch: 50
+global epoch: 51
+global epoch: 52
+global epoch: 53
+global epoch: 54
+global epoch: 55
+global epoch: 56
+global epoch: 57
+global epoch: 58
+global epoch: 59
+global epoch: 60
+global epoch: 61
+global epoch: 62
+global epoch: 63
+global epoch: 64
+global epoch: 65
+global epoch: 66
+global epoch: 67
+global epoch: 68
+global epoch: 69
+global epoch: 70
+global epoch: 71
+global epoch: 72
+global epoch: 73
+global epoch: 74
+global epoch: 75
+global epoch: 76
+global epoch: 77
+global epoch: 78
+global epoch: 79
+global epoch: 80
+global epoch: 81
+global epoch: 82
+global epoch: 83
+global epoch: 84
+global epoch: 85
+global epoch: 86
+global epoch: 87
+global epoch: 88
+global epoch: 89
+global epoch: 90
+global epoch: 91
+global epoch: 92
+global epoch: 93
+global epoch: 94
+global epoch: 95
+global epoch: 96
+global epoch: 97
+global epoch: 98
+global epoch: 99
+Total time 17301.466896s
+/home/apiasecz/.conda/envs/cent7/2020.11-py38/maxspan_fl_env/lib/python3.9/site-packages/torch/cuda/__init__.py:141: UserWarning: CUDA initialization: CUDA driver initialization failed, you might not have a CUDA gpu. (Triggered internally at /opt/conda/conda-bld/pytorch_1711403380164/work/c10/cuda/CUDAFunctions.cpp:108.)
+  return torch._C._cuda_getDeviceCount() > 0
+slurmstepd: error: *** JOB 6431352 ON gilbreth-n000 CANCELLED AT 2024-08-07T10:14:43 DUE TO TIME LIMIT ***

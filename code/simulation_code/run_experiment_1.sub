@@ -18,7 +18,7 @@ conda_env_used='maxspan_fl_env'
 
 # Load necessary stuff
 module load cuda/12.1.1
-module load anaconda
+module load anaconda/2020.11-py38
 
 # Activate desired environment
 conda activate $conda_env_used
