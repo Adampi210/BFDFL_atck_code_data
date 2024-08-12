@@ -1,6 +1,6 @@
-- Run experiments for different non-iid degrees - running now
-- Varying attack strength cases - include it.
-- A few more cases for the size (more for lower num of adversaries, also add ER graphs) - include it.
+- Run experiments for different non-iid degrees - done
+- Varying attack strength cases - done
+- A few more cases for the size (more for lower num of adversaries, also add ER graphs) - running
 - Run node failure experiments
     - generate network -> then run attack algorithm -> some nodes fail first -> train
     - alternatively: different nodes fail at different epochs

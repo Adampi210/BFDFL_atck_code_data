@@ -34,7 +34,7 @@ if device_used != torch.device('cuda:1'):
 
 start_time = time.time()
 # Set hyperparameters
-seed = 0 # Seed for PRNGs 
+seed = 15 # Seed for PRNGs 
 random.seed(seed)
 torch.manual_seed(seed)
 np.random.seed(seed)
@@ -50,11 +50,11 @@ aggregation_mechanism = aggreg_schemes[1]
 dir_networks = '../../data/full_decentralized/network_topologies'
 dir_data = '../../data/full_decentralized/%s/' % dataset_name
 graph_type = ('ER', 'dir_scale_free', 'dir_geom', 'k_out', 'pref_attach', 'SNAP_Cisco', 'WS_graph', 'hypercube_graph')
-graph_type_used = graph_type[4]
+graph_type_used = graph_type[2]
 # This is the source for network topology
 
 # ADJUSTABLE #####
-designated_clients = 10
+designated_clients = 100
 
 # ER
 if graph_type_used == 'ER':
@@ -151,10 +151,10 @@ attacks = ('none', 'FGSM', 'PGD', 'noise')      # Available attacks
 architectures = ('star', 'full_decentralized')  # Architecture used
 attack_used = 1                                 # Which attack from the list was used
 attack = attacks[0]                             # Always start with no attack (attack at some point)
-adv_pow = 0                                     # Power of the attack
-adv_percent = 0.0                               # Percentage of adversaries
+adv_pow = 100                                     # Power of the attack
+adv_percent = 0.6                               # Percentage of adversaries
 hop_distance = int(0.05 * N_CLIENTS)
-# adv_percent /= 10                             # If below 10%
+adv_percent /= 10                             # If below 10%
 adv_number = int(adv_percent * N_CLIENTS)       # Number of adversaries
 # adv_list = list(range(adv_number))
 # adv_list = random.sample(list(range(N_CLIENTS)), adv_number) # Choose the adversaries at random
@@ -165,7 +165,7 @@ nb_iter = 15   # Number of epochs for PGD attack
 
 # Define centrality measures and directories
 centralities = ('none', 'in_deg_centrality', 'out_deg_centrality', 'closeness_centrality', 'betweeness_centrality', 'eigenvector_centrality')
-cent_measure_used = 0
+cent_measure_used = 5
 
 # Split the data for the specified number of clients and servers
 if iid_type == 'iid':
