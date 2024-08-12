@@ -27,9 +27,9 @@ from nn_FL_de_cent import *
 from neural_net_architectures import *
 # Device configuration
 # Always check first if GPU is avaialble
-device_used = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+device_used = torch.device('cuda:1' if torch.cuda.is_available() else 'cpu')
 # If CUDA is not avaialbe, print message that CPU will be used
-if device_used != torch.device('cuda:0'):
+if device_used != torch.device('cuda:1'):
     print(f'CUDA not available, have to use {device_used}')
 
 start_time = time.time()
@@ -50,7 +50,7 @@ aggregation_mechanism = aggreg_schemes[1]
 dir_networks = '../../data/full_decentralized/network_topologies'
 dir_data = '../../data/full_decentralized/%s/' % dataset_name
 graph_type = ('ER', 'dir_scale_free', 'dir_geom', 'k_out', 'pref_attach', 'SNAP_Cisco', 'WS_graph', 'hypercube_graph')
-graph_type_used = graph_type[2]
+graph_type_used = graph_type[0]
 # This is the source for network topology
 
 # ADJUSTABLE #####
@@ -58,7 +58,7 @@ designated_clients = 10
 
 # ER
 if graph_type_used == 'ER':
-    prob_conn = 1
+    prob_conn = 3
     data_dir_name = dir_data + '%s_graph_c_%d_p_0%d/' % (graph_type_used, designated_clients, prob_conn)
     network_topology = '%s_graph_c_%d_p_0%d_seed_%d.txt' % (graph_type_used, designated_clients, prob_conn, seed)
 # DIR GEOM
@@ -141,7 +141,7 @@ with open(data_dir_name + 'node_centrality'+ '.csv', 'w', newline = '') as centr
 # Training parameters
 N_CLIENTS = len(adj_matrix[0]) # Number of clients
 N_SERVERS  = 0        # Number of servers
-iid_type = 'iid'      # 'iid' or 'non_iid'
+iid_type = 'iid' # Any of ('extreme_non_iid', 'non_iid', 'medium_non_iid', 'mild_non_iid', 'iid')
 N_LOCAL_EPOCHS  = 10  # Number of epochs for local training
 N_GLOBAL_EPOCHS = 100 # Number of epochs for global training
 BATCH_SIZE = 500      # Batch size while training
@@ -171,7 +171,17 @@ cent_measure_used = 0
 if iid_type == 'iid':
     train_dset_split, valid_dset_split = split_data_iid_excl_server(N_CLIENTS, dataset_name)
 elif iid_type == 'non_iid':
-    train_dset_split, valid_dset_split = split_data_non_iid_excl_server(N_CLIENTS, dataset_name)
+    N_CLASS = 3
+    train_dset_split, valid_dset_split = split_data_non_iid_excl_server(N_CLIENTS, dataset_name, N_CLASS)
+elif iid_type == 'extreme_non_iid':
+    N_CLASS = 1
+    train_dset_split, valid_dset_split = split_data_non_iid_excl_server(N_CLIENTS, dataset_name, N_CLASS)
+elif iid_type == 'medium_non_iid':
+    N_CLASS = 5
+    train_dset_split, valid_dset_split = split_data_non_iid_excl_server(N_CLIENTS, dataset_name, N_CLASS)
+elif iid_type == 'mild_non_iid':
+    N_CLASS = 7
+    train_dset_split, valid_dset_split = split_data_non_iid_excl_server(N_CLIENTS, dataset_name, N_CLASS)
 
 # Set the model used
 if dataset_name == 'fmnist':
@@ -196,14 +206,14 @@ def run_and_save_simulation(train_split, valid_split, adj_matrix, centrality_mea
     # nodes_to_atk_centrality = sort_by_centrality(centrality_data) # For normal operation
     # New framework #########################
     score_cent_dist_weight = 1 # 1 is the same as original, only choose by centralities, 0 chooses most spread out nodes
-    # prefix_name = 'score_cent_dist_manual_weight_0%d' % int(10 * score_cent_dist_weight) # For centrality-distance tradeoff
+    prefix_name = 'score_cent_dist_manual_weight_0%d' % int(10 * score_cent_dist_weight) # For centrality-distance tradeoff
     # prefix_name = 'cluster_metis_alg' # For creating clusters based on the metis algorithm and choosing most central node for each cluster
     # prefix_name = 'least_overlap_area' # For creating clusters based on the new least overlap area algorithm
-    prefix_name = 'random_nodes'
+    # prefix_name = 'random_nodes'
     # prefix_name = 'entropy_rand_walk'
     # prefix_name = 'MaxSpANFL_w_centrality_hopping'
     # prefix_name = 'MaxSpANFL_w_random_hopping'
-    prefix_name = 'MaxSpANFL_w_smart_hopping'
+    # prefix_name = 'MaxSpANFL_w_smart_hopping'
     
     print(f'Scheme used: {prefix_name}')
     if 'MaxSpANFL_w_centrality_hopping' in prefix_name:

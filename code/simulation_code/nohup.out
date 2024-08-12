@@ -1,0 +1,556 @@
+
+CommandNotFoundError: Your shell has not been properly configured to use 'conda activate'.
+To initialize your shell, run
+
+    $ conda init <SHELL_NAME>
+
+Currently supported shells are:
+  - bash
+  - fish
+  - tcsh
+  - xonsh
+  - zsh
+  - powershell
+
+See 'conda init --help' for more information and options.
+
+IMPORTANT: You may need to close and restart your shell after running 'conda init'.
+
+
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+
+CommandNotFoundError: Your shell has not been properly configured to use 'conda deactivate'.
+To initialize your shell, run
+
+    $ conda init <SHELL_NAME>
+
+Currently supported shells are:
+  - bash
+  - fish
+  - tcsh
+  - xonsh
+  - zsh
+  - powershell
+
+See 'conda init --help' for more information and options.
+
+IMPORTANT: You may need to close and restart your shell after running 'conda init'.
+
+
+
+CommandNotFoundError: Your shell has not been properly configured to use 'conda activate'.
+To initialize your shell, run
+
+    $ conda init <SHELL_NAME>
+
+Currently supported shells are:
+  - bash
+  - fish
+  - tcsh
+  - xonsh
+  - zsh
+  - powershell
+
+See 'conda init --help' for more information and options.
+
+IMPORTANT: You may need to close and restart your shell after running 'conda init'.
+
+
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "/root/programming/MaxSpANFL_atck_code_data/code/simulation_code/full_decentralized_1.py", line 4, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+
+CommandNotFoundError: Your shell has not been properly configured to use 'conda deactivate'.
+To initialize your shell, run
+
+    $ conda init <SHELL_NAME>
+
+Currently supported shells are:
+  - bash
+  - fish
+  - tcsh
+  - xonsh
+  - zsh
+  - powershell
+
+See 'conda init --help' for more information and options.
+
+IMPORTANT: You may need to close and restart your shell after running 'conda init'.
+
+

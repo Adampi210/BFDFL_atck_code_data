@@ -21,9 +21,9 @@ sed -i "s/designated_clients = $prev_designated_clients/designated_clients = $in
 
 for designated_clients in 25
 do
-    for iid_style in 'extreme_non_iid' 'medium_non_iid' 'mild_non_iid'
+    for iid_style in 'iid'
     do
-        for power in 100
+        for power in 50 250 500 1000
         do
             for adv_prec in 2
             do
@@ -52,7 +52,6 @@ do
     done
     prev_designated_clients=$designated_clients
 done
-
 
 sed -i "s/seed = $prev_seed/seed = $init_seed/g" full_decentralized_1.py
 sed -i "s/iid_type = '$prev_iid_style'/iid_type = '$init_iid_style'/g" full_decentralized_1.py
