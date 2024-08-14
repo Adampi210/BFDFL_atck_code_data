@@ -418,14 +418,14 @@ def calc_centralities(n_clients, graph_representation):
     # id:[in_deg_centrality, out_deg_centrality, closeness_centrality, betweeness_centrality, eigenvector_centrality]
     centralities_data = {i:[] for i in range(n_clients)}
     # Calculate centralities
-    in_deg_centrality = nx.in_degree_centrality(graph_representation)
+    deg_centrality = nx.degree_centrality(graph_representation)
     out_deg_centrality = nx.out_degree_centrality(graph_representation)
     closeness_centrality = nx.closeness_centrality(graph_representation)
     betweeness_centrality = nx.betweenness_centrality(graph_representation)
     eigenvector_centrality = nx.eigenvector_centrality(graph_representation.reverse(), max_iter = 1000) # Reverse for out-edges eigenvector centrality
     # Assign centralities
     for node in centralities_data.keys():
-        centralities_data[node].extend([in_deg_centrality[node], out_deg_centrality[node], closeness_centrality[node], betweeness_centrality[node], eigenvector_centrality[node]])
+        centralities_data[node].extend([deg_centrality[node], out_deg_centrality[node], closeness_centrality[node], betweeness_centrality[node], eigenvector_centrality[node]])
         
     return centralities_data
 
@@ -435,12 +435,12 @@ def sort_by_centrality(centrality_data):
     node_centralities = np.array(node_centralities)
 
     # Sort centralities
-    in_deg_sort = [int(_) for _ in node_centralities[node_centralities[:, 1].argsort()[::-1]][:, 0]]
+    deg_sort = [int(_) for _ in node_centralities[node_centralities[:, 1].argsort()[::-1]][:, 0]]
     out_deg_sort = [int(_) for _ in node_centralities[node_centralities[:, 2].argsort()[::-1]][:, 0]]
     closeness_sort = [int(_) for _ in node_centralities[node_centralities[:, 3].argsort()[::-1]][:, 0]]
     betweeness_sort = [int(_) for _ in node_centralities[node_centralities[:, 4].argsort()[::-1]][:, 0]]
     eigenvector_sort = [int(_) for _ in node_centralities[node_centralities[:, 5].argsort()[::-1]][:, 0]]
-    node_sorted_centrality = np.array([in_deg_sort,  out_deg_sort, closeness_sort, betweeness_sort, eigenvector_sort])
+    node_sorted_centrality = np.array([deg_sort,  out_deg_sort, closeness_sort, betweeness_sort, eigenvector_sort])
 
     return node_sorted_centrality
 
@@ -504,6 +504,12 @@ def least_overlap_area(n_clients, n_advs, graph_representation):
         adv_nodes.append(best_node)
         available_nodes.remove(best_node)
     
+    return adv_nodes
+
+def deg_cent_atk(n_clients, n_advs, graph_representation):
+    cent_clients = calc_centralities(n_clients, graph_representation)
+    deg_cent = {node: cent_clients[node][0] for node in cent_clients.keys()}
+    adv_nodes = [node for node, _ in sorted(deg_cent.items(), key=lambda x: x[1], reverse=True)[:n_advs]]
     return adv_nodes
 
 # Extension of least overlap area with centrality hopping

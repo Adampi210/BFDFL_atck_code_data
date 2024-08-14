@@ -50,7 +50,7 @@ aggregation_mechanism = aggreg_schemes[1]
 dir_networks = '../../data/full_decentralized/network_topologies'
 dir_data = '../../data/full_decentralized/%s/' % dataset_name
 graph_type = ('ER', 'dir_scale_free', 'dir_geom', 'k_out', 'pref_attach', 'SNAP_Cisco', 'WS_graph', 'hypercube_graph')
-graph_type_used = graph_type[0]
+graph_type_used = graph_type[2]
 # This is the source for network topology
 
 # ADJUSTABLE #####
@@ -206,9 +206,9 @@ def run_and_save_simulation(train_split, valid_split, adj_matrix, centrality_mea
     # nodes_to_atk_centrality = sort_by_centrality(centrality_data) # For normal operation
     # New framework #########################
     score_cent_dist_weight = 1 # 1 is the same as original, only choose by centralities, 0 chooses most spread out nodes
-    # prefix_name = 'score_cent_dist_manual_weight_0%d' % int(10 * score_cent_dist_weight) # For centrality-distance tradeoff
+    prefix_name = 'score_cent_dist_manual_weight_0%d' % int(10 * score_cent_dist_weight) # For centrality-distance tradeoff
     # prefix_name = 'cluster_metis_alg' # For creating clusters based on the metis algorithm and choosing most central node for each cluster
-    prefix_name = 'least_overlap_area' # For creating clusters based on the new least overlap area algorithm
+    # prefix_name = 'least_overlap_area' # For creating clusters based on the new least overlap area algorithm
     # prefix_name = 'random_nodes'
     # prefix_name = 'entropy_rand_walk'
     # prefix_name = 'MaxSpANFL_w_centrality_hopping'

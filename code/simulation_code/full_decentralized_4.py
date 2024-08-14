@@ -50,7 +50,7 @@ aggregation_mechanism = aggreg_schemes[1]
 dir_networks = '../../data/full_decentralized/network_topologies'
 dir_data = '../../data/full_decentralized/%s/' % dataset_name
 graph_type = ('ER', 'dir_scale_free', 'dir_geom', 'k_out', 'pref_attach', 'SNAP_Cisco', 'WS_graph', 'hypercube_graph')
-graph_type_used = graph_type[0]
+graph_type_used = graph_type[2]
 # This is the source for network topology
 
 # ADJUSTABLE #####
@@ -154,7 +154,7 @@ attack = attacks[0]                             # Always start with no attack (a
 adv_pow = 0                                     # Power of the attack
 adv_percent = 0.0                               # Percentage of adversaries
 hop_distance = int(0.05 * N_CLIENTS)
-adv_percent /= 10                             # If below 10%
+# adv_percent /= 10                             # If below 10%
 adv_number = int(adv_percent * N_CLIENTS)       # Number of adversaries
 # adv_list = list(range(adv_number))
 # adv_list = random.sample(list(range(N_CLIENTS)), adv_number) # Choose the adversaries at random
@@ -164,7 +164,7 @@ eps_iter = 0.0 # Learning rate for PGD attack
 nb_iter = 15   # Number of epochs for PGD attack
 
 # Define centrality measures and directories
-centralities = ('none', 'in_deg_centrality', 'out_deg_centrality', 'closeness_centrality', 'betweeness_centrality', 'eigenvector_centrality')
+centralities = ('none', 'deg_centrality', 'out_deg_centrality', 'closeness_centrality', 'betweeness_centrality', 'eigenvector_centrality')
 cent_measure_used = 0
 
 # Split the data for the specified number of clients and servers
@@ -213,9 +213,16 @@ def run_and_save_simulation(train_split, valid_split, adj_matrix, centrality_mea
     # prefix_name = 'entropy_rand_walk'
     # prefix_name = 'MaxSpANFL_w_centrality_hopping'
     # prefix_name = 'MaxSpANFL_w_random_hopping'
-    prefix_name = 'MaxSpANFL_w_smart_hopping'
-    
+    # prefix_name = 'MaxSpANFL_w_smart_hopping'
+    prefix_name = 'deg_cent_choice'
+
     print(f'Scheme used: {prefix_name}')
+    if 'deg_cent_choice' in prefix_name:
+        if centralities[centrality_measure] == 'none':
+            nodes_to_atk_centrality = []
+        else:
+            nodes_to_atk_centrality = deg_cent_atk(N_CLIENTS, adv_number, graph_representation)
+
     if 'MaxSpANFL_w_centrality_hopping' in prefix_name:
         if centralities[centrality_measure] == 'none':
             nodes_to_atk_centrality = []
@@ -249,7 +256,6 @@ def run_and_save_simulation(train_split, valid_split, adj_matrix, centrality_mea
             nodes_to_atk_centrality = []
         else:
             nodes_to_atk_centrality = least_overlap_area(N_CLIENTS, adv_number, graph_representation)
-
     # Init accuracy and loss values and files
     curr_loss, curr_acc = 0, 0
     centrality_used = centralities[centrality_measure]

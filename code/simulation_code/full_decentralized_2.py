@@ -50,7 +50,7 @@ aggregation_mechanism = aggreg_schemes[1]
 dir_networks = '../../data/full_decentralized/network_topologies'
 dir_data = '../../data/full_decentralized/%s/' % dataset_name
 graph_type = ('ER', 'dir_scale_free', 'dir_geom', 'k_out', 'pref_attach', 'SNAP_Cisco', 'WS_graph', 'hypercube_graph')
-graph_type_used = graph_type[0]
+graph_type_used = graph_type[4]
 # This is the source for network topology
 
 # ADJUSTABLE #####

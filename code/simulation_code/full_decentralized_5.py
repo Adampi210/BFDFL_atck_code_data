@@ -27,9 +27,9 @@ from nn_FL_de_cent import *
 from neural_net_architectures import *
 # Device configuration
 # Always check first if GPU is avaialble
-device_used = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+device_used = torch.device('cuda:1' if torch.cuda.is_available() else 'cpu')
 # If CUDA is not avaialbe, print message that CPU will be used
-if device_used != torch.device('cuda:0'):
+if device_used != torch.device('cuda:1'):
     print(f'CUDA not available, have to use {device_used}')
 
 start_time = time.time()
@@ -50,7 +50,7 @@ aggregation_mechanism = aggreg_schemes[1]
 dir_networks = '../../data/full_decentralized/network_topologies'
 dir_data = '../../data/full_decentralized/%s/' % dataset_name
 graph_type = ('ER', 'dir_scale_free', 'dir_geom', 'k_out', 'pref_attach', 'SNAP_Cisco', 'WS_graph', 'hypercube_graph')
-graph_type_used = graph_type[0]
+graph_type_used = graph_type[4]
 # This is the source for network topology
 
 # ADJUSTABLE #####
@@ -154,7 +154,7 @@ attack = attacks[0]                             # Always start with no attack (a
 adv_pow = 0                                     # Power of the attack
 adv_percent = 0.0                               # Percentage of adversaries
 hop_distance = int(0.05 * N_CLIENTS)
-adv_percent /= 10                             # If below 10%
+# adv_percent /= 10                             # If below 10%
 adv_number = int(adv_percent * N_CLIENTS)       # Number of adversaries
 # adv_list = list(range(adv_number))
 # adv_list = random.sample(list(range(N_CLIENTS)), adv_number) # Choose the adversaries at random
@@ -164,7 +164,7 @@ eps_iter = 0.0 # Learning rate for PGD attack
 nb_iter = 15   # Number of epochs for PGD attack
 
 # Define centrality measures and directories
-centralities = ('none', 'in_deg_centrality', 'out_deg_centrality', 'closeness_centrality', 'betweeness_centrality', 'eigenvector_centrality')
+centralities = ('none', 'deg_centrality', 'out_deg_centrality', 'closeness_centrality', 'betweeness_centrality', 'eigenvector_centrality')
 cent_measure_used = 0
 
 # Split the data for the specified number of clients and servers
@@ -208,14 +208,21 @@ def run_and_save_simulation(train_split, valid_split, adj_matrix, centrality_mea
     score_cent_dist_weight = 1 # 1 is the same as original, only choose by centralities, 0 chooses most spread out nodes
     # prefix_name = 'score_cent_dist_manual_weight_0%d' % int(10 * score_cent_dist_weight) # For centrality-distance tradeoff
     # prefix_name = 'cluster_metis_alg' # For creating clusters based on the metis algorithm and choosing most central node for each cluster
-    prefix_name = 'least_overlap_area' # For creating clusters based on the new least overlap area algorithm
+    # prefix_name = 'least_overlap_area' # For creating clusters based on the new least overlap area algorithm
     # prefix_name = 'random_nodes'
     # prefix_name = 'entropy_rand_walk'
     # prefix_name = 'MaxSpANFL_w_centrality_hopping'
     # prefix_name = 'MaxSpANFL_w_random_hopping'
     # prefix_name = 'MaxSpANFL_w_smart_hopping'
-    
+    prefix_name = 'deg_cent_choice'
+
     print(f'Scheme used: {prefix_name}')
+    if 'deg_cent_choice' in prefix_name:
+        if centralities[centrality_measure] == 'none':
+            nodes_to_atk_centrality = []
+        else:
+            nodes_to_atk_centrality = deg_cent_atk(N_CLIENTS, adv_number, graph_representation)
+
     if 'MaxSpANFL_w_centrality_hopping' in prefix_name:
         if centralities[centrality_measure] == 'none':
             nodes_to_atk_centrality = []
@@ -249,7 +256,6 @@ def run_and_save_simulation(train_split, valid_split, adj_matrix, centrality_mea
             nodes_to_atk_centrality = []
         else:
             nodes_to_atk_centrality = least_overlap_area(N_CLIENTS, adv_number, graph_representation)
-
     # Init accuracy and loss values and files
     curr_loss, curr_acc = 0, 0
     centrality_used = centralities[centrality_measure]

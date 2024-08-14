@@ -19,17 +19,17 @@ sed -i "s/iid_type = '$prev_iid_style'/iid_type = '$init_iid_style'/g" full_dece
 sed -i "s/cent_measure_used = $prev_cent_used/cent_measure_used = $init_cent_used/g" full_decentralized_2.py
 sed -i "s/designated_clients = $prev_designated_clients/designated_clients = $init_designated_clients/g" full_decentralized_2.py
 
-for designated_clients in 10 25 50 100
+for designated_clients in 25
 do
-    for iid_style in 'iid'
+    for iid_style in 'extreme_non_iid' 'medium_non_iid' 'mild_non_iid'
     do
-        for power in 100
+        for power in 0
         do
-            for adv_prec in 1 2
+            for adv_prec in 0
             do
                 for seed in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19
                 do 
-                    for cent_used in 5
+                    for cent_used in 0
                     do
                         sed -i "s/seed = $prev_seed/seed = $seed/g" full_decentralized_2.py
                         sed -i "s/iid_type = '$prev_iid_style'/iid_type = '$iid_style'/g" full_decentralized_2.py
