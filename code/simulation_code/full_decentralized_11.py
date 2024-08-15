@@ -55,7 +55,8 @@ graph_type_used = graph_type[4]
 
 # ADJUSTABLE #####
 designated_clients = 10
-
+graph_mode = 'static'  # ('static', 'dynamic', 'degradation')
+fail_period = 5
 # ER
 if graph_type_used == 'ER':
     prob_conn = 3
@@ -152,9 +153,9 @@ architectures = ('star', 'full_decentralized')  # Architecture used
 attack_used = 1                                 # Which attack from the list was used
 attack = attacks[0]                             # Always start with no attack (attack at some point)
 adv_pow = 0                                     # Power of the attack
-adv_percent = 0.0                               # Percentage of adversaries
+adv_percent = 0.2                               # Percentage of adversaries
 hop_distance = int(0.05 * N_CLIENTS)
-adv_percent /= 10                             # If below 10%
+# adv_percent /= 10                             # If below 10%
 adv_number = int(adv_percent * N_CLIENTS)       # Number of adversaries
 # adv_list = list(range(adv_number))
 # adv_list = random.sample(list(range(N_CLIENTS)), adv_number) # Choose the adversaries at random
@@ -166,6 +167,20 @@ nb_iter = 15   # Number of epochs for PGD attack
 # Define centrality measures and directories
 centralities = ('none', 'in_deg_centrality', 'out_deg_centrality', 'closeness_centrality', 'betweeness_centrality', 'eigenvector_centrality')
 cent_measure_used = 0
+
+# For dynamically changng graphs
+config_graph = [
+    # Low failure rate
+    (0.1, 0.8, 0.02, 0.9),
+    # Medium failure rate
+    (0.15, 0.5, 0.05, 0.7),
+    # High failure rate
+    (0.20, 0.3, 0.1, 0.4),
+    # Extreme failure rate
+    (0.3, 0.1, 0.2, 0.2)
+]
+config_graph_used = 0 
+p_link_fail, p_link_recover, p_node_fail, p_node_recover = config_graph[config_graph_used]
 
 # Split the data for the specified number of clients and servers
 if iid_type == 'iid':
@@ -190,7 +205,10 @@ elif dataset_name == 'cifar10':
     NetBasic = CIFAR10_Classifier
 
 # Run simulations and save the data
-def run_and_save_simulation(train_split, valid_split, adj_matrix, centrality_measure = 0):
+def run_and_save_simulation(train_split, valid_split, adj_matrix, centrality_measure = 0, 
+                            graph_mode = None, fail_period = 1, 
+                            p_link_fail = 0.1, p_link_recover = 0.5, 
+                            p_node_fail = 0.05, p_node_recover = 0.3):
     # Initialize list storing all the nodes
     node_list = []
     acc_clients = [0] * N_CLIENTS
@@ -209,11 +227,11 @@ def run_and_save_simulation(train_split, valid_split, adj_matrix, centrality_mea
     # prefix_name = 'score_cent_dist_manual_weight_0%d' % int(10 * score_cent_dist_weight) # For centrality-distance tradeoff
     # prefix_name = 'cluster_metis_alg' # For creating clusters based on the metis algorithm and choosing most central node for each cluster
     # prefix_name = 'least_overlap_area' # For creating clusters based on the new least overlap area algorithm
-    prefix_name = 'random_nodes'
+    # prefix_name = 'random_nodes'
     # prefix_name = 'entropy_rand_walk'
     # prefix_name = 'MaxSpANFL_w_centrality_hopping'
     # prefix_name = 'MaxSpANFL_w_random_hopping'
-    # prefix_name = 'MaxSpANFL_w_smart_hopping'
+    prefix_name = 'MaxSpANFL_w_smart_hopping'
     
     print(f'Scheme used: {prefix_name}')
     if 'MaxSpANFL_w_centrality_hopping' in prefix_name:
@@ -250,12 +268,19 @@ def run_and_save_simulation(train_split, valid_split, adj_matrix, centrality_mea
         else:
             nodes_to_atk_centrality = least_overlap_area(N_CLIENTS, adv_number, graph_representation)
 
+    # Check if running with failures
+    running_with_fail = graph_mode is not None
+    if running_with_fail:
+        filename_suffix = f"_link_node_fail_mode_{graph_mode}_p_link_f_{int(100 * p_link_fail)}_p_link_r_{int(100 * p_link_recover)}_p_node_f_{int(100 * p_node_fail)}_p_node_r_{int(100 * p_node_recover)}"
+    else:
+        filename_suffix = ""
+
     # Init accuracy and loss values and files
     curr_loss, curr_acc = 0, 0
     centrality_used = centralities[centrality_measure]
     # atk_%s_advs_%d_adv_pow_%s_atk_time_%d_seed_%d_iid_type_%s/' % (attacks[attack_used], adv_number, str(adv_pow), attack_time, seed, iid_type)
-    file_acc_name = data_dir_name + 'acc_%s_atk_%s_advs_%d_adv_pow_%s_atk_time_%d_seed_%d_iid_type_%s_cent_%s' % (prefix_name, attacks[attack_used], adv_number, str(adv_pow), attack_time, seed, iid_type, centrality_used)
-    file_loss_name = data_dir_name + 'loss_%s_atk_%s_advs_%d_adv_pow_%s_atk_time_%d_seed_%d_iid_type_%s_cent_%s' % (prefix_name, attacks[attack_used], adv_number, str(adv_pow), attack_time, seed, iid_type, centrality_used)
+    file_acc_name = data_dir_name + f'acc_{prefix_name}_atk_{attacks[attack_used]}_advs_{adv_number}_adv_pow_{str(adv_pow)}_atk_time_{attack_time}_seed_{seed}_iid_type_{iid_type}_cent_{centrality_used}{filename_suffix}'
+    file_loss_name = data_dir_name + f'loss_{prefix_name}_atk_{attacks[attack_used]}_advs_{adv_number}_adv_pow_{str(adv_pow)}_atk_time_{attack_time}_seed_{seed}_iid_type_{iid_type}_cent_{centrality_used}{filename_suffix}'
 
     with open(file_acc_name + '.csv', 'w', newline = '') as file_acc:
         with open(file_loss_name + '.csv', 'w', newline = '') as file_loss:
@@ -287,8 +312,22 @@ def run_and_save_simulation(train_split, valid_split, adj_matrix, centrality_mea
                     node.eps_iter = eps_iter
                     node.nb_iter = nb_iter
 
+            if running_with_fail:
+                graph_simulator = GraphSimulator(adj_matrix, mode = graph_mode, fail_period=fail_period,
+                                                     p_link_fail=p_link_fail, p_link_recover=p_link_recover,
+                                                     p_node_fail=p_node_fail, p_node_recover=p_node_recover)
+                original_nodes, original_edges = graph_simulator.count_active_elements()
+                print(f"Initial state: {original_nodes} nodes, {original_edges} edges")
+            else:
+                graph_simulator = None
+            
             # Run the training
             for i in range(N_GLOBAL_EPOCHS):
+                if running_with_fail:
+                    graph_simulator.update_graph(i)
+                    curr_adj_matrix = graph_simulator.get_curr_adj_matrix()
+                else:
+                    curr_adj_matrix = adj_matrix
                 # Update values if attacking
                 if i == attack_time:
                     attack = attacks[attack_used]
@@ -300,26 +339,50 @@ def run_and_save_simulation(train_split, valid_split, adj_matrix, centrality_mea
                             node.nb_iter = nb_iter
                 # Train and aggregate
                 print(f'global epoch: {i}')
+                if i % 10 == 0:
+                    active_nodes, active_edges = graph_simulator.count_active_elements()
+                    print(f"Epoch {i}: {active_nodes}/{original_nodes} nodes, {active_edges}/{original_edges} edges active")
                 # Exchange models and aggregate, MAIN PART
-                [node.exchange_models() for node in node_list]
-                [node.aggregate_SAB(BATCH_SIZE, N_LOCAL_EPOCHS, False) for node in node_list]
+                for node in node_list:
+                    if not running_with_fail or not graph_simulator.is_node_failed(node.client_id):
+                        node.exchange_models(curr_adj_matrix, node_list)
+                [node.aggregate_SAB(BATCH_SIZE, N_LOCAL_EPOCHS, False) for node in node_list if not running_with_fail or not graph_simulator.is_node_failed(node.client_id)]
+                
+                # [node.exchange_models() for node in node_list]
+                # [node.aggregate_SAB(BATCH_SIZE, N_LOCAL_EPOCHS, False) for node in node_list]
                 
                 # Save accuracies
+                acc_clients = []
+                loss_clients = []
                 for node in node_list:
-                    curr_loss, curr_acc = node.validate_client()
-                    acc_clients[node.client_id] = curr_acc
-                    loss_clients[node.client_id] = curr_loss
-
+                    if not graph_simulator.is_node_failed(node.client_id):
+                        curr_loss, curr_acc = node.validate_client()
+                        acc_clients.append(curr_acc)
+                        loss_clients.append(curr_loss)
+                    else:
+                        acc_clients.append(-1)  # -1 := failed node
+                        loss_clients.append(-1)
+                
+                # Replace -1 with averages
+                active_acc = [acc for acc in acc_clients if acc != -1]
+                active_loss = [loss for loss in loss_clients if loss != -1]
+                avg_acc = sum(active_acc) / len(active_acc) if active_acc else 0
+                avg_loss = sum(active_loss) / len(active_loss) if active_loss else 0
+                acc_clients = [avg_acc if acc == -1 else acc for acc in acc_clients]
+                loss_clients = [avg_loss if loss == -1 else loss for loss in loss_clients]     
                 # Save data
                 writer_acc.writerow([i, acc_clients])
                 writer_loss.writerow([i, loss_clients])
-
+                
 if __name__ == '__main__':
     print(f'File network: {network_topology}')
     print(f'Seed: {seed}, Adv percent: {adv_percent}, Adv power: {adv_pow}')
     print(f'iid_type: {iid_type}')
     print(f'Centrality: {centralities[cent_measure_used]}')
-    run_and_save_simulation(train_dset_split, valid_dset_split, adj_matrix, cent_measure_used)
+    run_and_save_simulation(train_dset_split, valid_dset_split, adj_matrix, cent_measure_used, 
+                            graph_mode = graph_mode, fail_period = fail_period,
+                            p_link_fail = p_link_fail, p_link_recover = p_link_recover,
+                            p_node_fail = p_node_fail, p_node_recover = p_node_recover)
     print('Total time %lfs' % (time.time() - start_time))
     
 

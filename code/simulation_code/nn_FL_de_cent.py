@@ -268,22 +268,28 @@ class client_FL():
                 return gradients
     
     # Get the models from in-neighbors (adversary never does this)
-    def exchange_models(self):
+    def exchange_models(self, curr_adj_matrix, node_list):
         if self.if_adv_client == False or (self.if_adv_client and self.attack == 'none'):
             # Get current parameters
             old_model_parameters = self.client_model.get_params()
+            # Calculate in-neighbors and out-neighbors based on current adjacency matrix
+            in_neighbors = [i for i in range(len(curr_adj_matrix)) if curr_adj_matrix[i][self.client_id] == 1]
+            out_neighbors = [i for i in range(len(curr_adj_matrix)) if curr_adj_matrix[self.client_id][i] == 1]
             # Calculate scaling weights a_ij, b_ij for the model aggregation
             # Since A is row-stochastic, the scaling is by the in-degree of the current node
             # Since B is column-stochastic, the scaling is by the out-degree of each in-neighbor
             # Also always include itself
-            global_model_param_weights = [1 / (len(self.in_neighbors) + 1) for _ in range(len(self.in_neighbors) + 1)]
-            gradient_estimate_weights = [1 / (len(neighbor.out_neighbors) + 1) for neighbor in self.in_neighbors.values()]
-            gradient_estimate_weights.append(1 / (len(self.out_neighbors) + 1))
+            # Calculate scaling weights
+            global_model_param_weights = [1 / (len(in_neighbors) + 1) for _ in range(len(in_neighbors) + 1)]
+            gradient_estimate_weights = [1 / (len([j for j in range(len(curr_adj_matrix)) if curr_adj_matrix[i][j] == 1]) + 1) for i in in_neighbors]
+            gradient_estimate_weights.append(1 / (len(out_neighbors) + 1))
+            
             # Create parameter lists for global model and gradient estimate
-            global_model_list = [neighbor.client_model.get_params() for neighbor in self.in_neighbors.values()]
+            global_model_list = [node_list[i].client_model.get_params() for i in in_neighbors]
             global_model_list.append(old_model_parameters)
-            gradient_estimate_list = [neighbor.grad_est_curr for neighbor in self.in_neighbors.values()]
+            gradient_estimate_list = [node_list[i].grad_est_curr for i in in_neighbors]
             gradient_estimate_list.append(self.grad_est_curr)
+            
             # Aggregate models
             # Get the parameter lists
             global_model_next_params = copy.deepcopy(global_model_list[0])
@@ -340,7 +346,83 @@ class client_FL():
             curr_model_adv_gradients = self.calc_client_grads(batch_s, n_epoch, show_progress, self.client_model)
             self.client_model.set_grads_and_step(curr_model_adv_gradients, lr) 
 
+# Class for simulating dynamically changing graphs
+class GraphSimulator:
+    def __init__(self, adj_matrix, mode = 'static', fail_period = 1, 
+                 p_link_fail = 0.1, p_link_recover = 0.5,
+                 p_node_fail = 0.05, p_node_recover = 0.3):
+        self.orig_adj_matrix = adj_matrix
+        self.curr_adj_matrix = adj_matrix.copy()
+        self.mode = mode
+        self.fail_period = fail_period
+        self.p_link_fail = p_link_fail
+        self.p_link_recover = p_link_recover
+        self.p_node_fail = p_node_fail
+        self.p_node_recover = p_node_recover
+        
+        self.n_nodes = len(adj_matrix)
+        self.link_states = np.ones_like(adj_matrix) # 1 - working, 0 - failed
+        self.node_states = np.ones(self.n_nodes)    # 1 - working, 0 - failed
 
+    # Run the simulation to fail some nodes
+    def simulate_failures(self, initial = False):
+        # For initial or static, only allow for failures (no recovery)
+        if initial or self.mode == 'static':
+            for i in range(self.n_nodes):
+                for j in range(self.n_nodes):
+                    # If there is a connection, simulate fail
+                    if self.orig_adj_matrix[i][j] == 1:
+                        if random.random() < self.p_link_fail:
+                            self.link_states[i][j] = 0
+                # If node in the graph, simulate fail
+                if random.random() < self.p_node_fail:
+                    self.node_states[i] = 0
+        # For dynamic and degradation modes
+        else:
+            for i in range(self.n_nodes):
+                for j in range(self.n_nodes):
+                    # If there was original connection
+                    if self.orig_adj_matrix[i][j] == 1:
+                        # If currently healthy, check fail
+                        if self.link_states[i][j] == 1:
+                            if random.random() < self.p_link_fail:
+                                self.link_states[i][j] = 0
+                        # If currently failed, and dynamic mode, try to recover
+                        elif self.mode == 'dynamic':
+                            if random.random() < self.p_link_recover:
+                                self.link_states[i][j] = 1
+                # Same for node
+                if self.node_states[i] == 1:
+                    if random.random() < self.p_node_fail:
+                        self.node_states[i] = 0
+                elif self.mode == 'dynamic':
+                    if random.random() < self.p_node_recover:
+                        self.node_states[i] = 1
+
+        # Update adj matrix based on link failures
+        self.curr_adj_matrix = self.orig_adj_matrix * self.link_states
+        # Then update nodes (along with all connections in adj matrix)
+        for i in range(self.n_nodes):
+            if self.node_states[i] == 0:
+                self.curr_adj_matrix[i, :] = 0
+                self.curr_adj_matrix[:, i] = 0
+
+    def update_graph(self, epoch):
+        if self.mode == 'static' and epoch == 0:
+            self.simulate_failures(initial = True)
+        elif self.mode in ['dynamic', 'degradation'] and epoch % self.fail_period == 0:
+            self.simulate_failures()
+
+    def get_curr_adj_matrix(self):
+        return self.curr_adj_matrix
+
+    def is_node_failed(self, node_id):
+        return self.node_states[node_id] == 0
+       
+    def count_active_elements(self):
+        active_nodes = sum(self.node_states)
+        active_edges = np.sum(self.curr_adj_matrix)
+        return active_nodes, active_edges
 # Hash a numpy array
 def hash_np_arr(np_arr):
     # Convert to a string of bytes
