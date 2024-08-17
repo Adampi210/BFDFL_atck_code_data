@@ -55,7 +55,7 @@ graph_type_used = graph_type[4]
 
 # ADJUSTABLE #####
 designated_clients = 10
-graph_mode = 'static'  # ('static', 'dynamic', 'degradation')
+graph_mode = 'dynamic'  # ('static', 'dynamic', 'degradation')
 fail_period = 5
 # ER
 if graph_type_used == 'ER':
@@ -153,7 +153,7 @@ architectures = ('star', 'full_decentralized')  # Architecture used
 attack_used = 1                                 # Which attack from the list was used
 attack = attacks[0]                             # Always start with no attack (attack at some point)
 adv_pow = 0                                     # Power of the attack
-adv_percent = 0.2                               # Percentage of adversaries
+adv_percent = 0.0                               # Percentage of adversaries
 hop_distance = int(0.05 * N_CLIENTS)
 # adv_percent /= 10                             # If below 10%
 adv_number = int(adv_percent * N_CLIENTS)       # Number of adversaries
