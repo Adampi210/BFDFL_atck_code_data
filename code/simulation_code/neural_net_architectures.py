@@ -99,3 +99,42 @@ class CIFAR10_Classifier(nn.Module):
         x = self.fcls(x)
 
         return x
+    
+# Oracle classifier
+class IQClassifier(nn.Module):
+    def __init__(self):
+        super(IQClassifier, self).__init__()
+        self.conv_layers = nn.Sequential(
+            nn.Conv1d(2, 128, kernel_size=7, stride=1, padding=3),
+            nn.ReLU(),
+            nn.Conv1d(128, 128, kernel_size=5, stride=1, padding=2),
+            nn.ReLU(),
+            nn.MaxPool1d(2),
+            nn.Conv1d(128, 128, kernel_size=7, stride=1, padding=3),
+            nn.ReLU(),
+            nn.Conv1d(128, 128, kernel_size=5, stride=1, padding=2),
+            nn.ReLU(),
+            nn.MaxPool1d(2),
+            nn.Conv1d(128, 128, kernel_size=7, stride=1, padding=3),
+            nn.ReLU(),
+            nn.Conv1d(128, 128, kernel_size=5, stride=1, padding=2),
+            nn.ReLU(),
+            nn.MaxPool1d(2),
+            nn.Conv1d(128, 128, kernel_size=7, stride=1, padding=3),
+            nn.ReLU(),
+            nn.Conv1d(128, 128, kernel_size=5, stride=1, padding=2),
+            nn.ReLU(),
+            nn.MaxPool1d(2),
+        )
+        self.fc1 = nn.Linear(128 * 8, 256)
+        self.fc2 = nn.Linear(256, 32)
+
+    def forward(self, x):
+        print(x.size())
+        x = x.view(-1, 2, 128)  # Reshape to (batch_size, 2, 128)
+        print(x.size())
+        x = self.conv_layers(x)
+        x = x.view(x.size(0), -1)
+        x = F.relu(self.fc1(x))
+        x = self.fc2(x)
+        return x

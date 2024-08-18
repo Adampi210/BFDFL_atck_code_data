@@ -12,6 +12,10 @@ from torch.utils.data import DataLoader
 
 import random
 import numpy as np
+import os
+import json
+import matplotlib.pyplot as plt
+import re
 
 # Set manual seeds for reproducibility 
 
@@ -288,3 +292,117 @@ def split_data_non_iid_excl_server(num_clients, dataset_name, num_classes_non_ii
     valid_list_dsets = iid_split(validation_data, num_clients, dataset_name)
     # Return the split datasets
     return train_list_dsets, valid_list_dsets
+
+# Read the sigmf data file
+def read_sigmf_data(file_path):
+    with open(file_path, 'rb') as f:
+        data = np.fromfile(f, dtype=np.complex128)
+    return data
+
+# Read the dataset
+def read_oracle_dataset(data_dir, window_size=128):
+    all_data = []
+    all_labels = []
+    
+    pattern = r'_IQ#(\w+)_'
+    
+    for filename in os.listdir(data_dir):
+        if filename.endswith('.sigmf-data'):
+            data_file = os.path.join(data_dir, filename)
+            
+            # Load data
+            data = read_sigmf_data(data_file)
+            match = re.search(pattern, filename)
+            if match:
+                label = int(match.group(1))
+            else:
+                print(f"Couldn't extract IQ imbalance configuration from filename: {filename}")
+                continue
+            
+            # Split data into windows
+            num_windows = len(data) // window_size
+            data_windows = np.array_split(data[:num_windows*window_size], num_windows)
+            
+            all_data.extend(data_windows)
+            all_labels.extend([label] * len(data_windows))
+
+    # Create a mapping of unique labels to integers
+    unique_labels = sorted(set(all_labels))
+    label_to_int = {label: i for i, label in enumerate(unique_labels)}
+    
+    # Convert labels to integers
+    int_labels = [label_to_int[label] for label in all_labels]
+
+    return np.array(all_data), np.array(all_labels), np.array(int_labels), label_to_int
+
+
+# Split the data in iid way
+def split_data_oracle_iid(data, labels, labels_int, num_clients):
+    # Shuffle the data
+    indices = np.arange(len(data))
+    np.random.shuffle(indices)
+    data = data[indices]
+    labels = labels[indices]
+    labels_int = labels_int[indices]
+    
+    # Split data equally among clients
+    data_split = np.array_split(data, num_clients)
+    labels_split = np.array_split(labels_int, num_clients)  # Use labels_int instead of labels
+    
+    return data_split, labels_split
+
+def split_data_oracle_iid_excl_server(num_clients, dataset_dir):
+    data, labels, labels_int, label_to_int = read_oracle_dataset(dataset_dir)
+    data_split, labels_split = split_data_oracle_iid(data, labels, labels_int, num_clients)
+    
+    train_list_dsets = [data_utils.TensorDataset(
+        torch.from_numpy(np.array(data)).to(torch.complex64),
+        torch.tensor(labels).long()
+    ) for data, labels in zip(data_split, labels_split)]
+    
+    # For simplicity, we'll use the same data for validation
+    valid_list_dsets = train_list_dsets
+    
+    return train_list_dsets, valid_list_dsets, label_to_int
+
+def plot_constellation(data, label, filename):
+    plt.figure(figsize=(10, 10))
+    plt.scatter(data.real, data.imag)
+    plt.title(f"Constellation Plot for IQ Imbalance Configuration {label}")
+    plt.xlabel("In-phase")
+    plt.ylabel("Quadrature")
+    plt.grid(True)
+    plt.savefig(filename)
+    plt.close()
+    
+def test_oracle_dataset():
+    data_dir = '../../../../data/ORACLE_dataset_demodulated/KRI-16IQImbalances-DemodulatedData/'
+    num_clients = 5
+    
+    print('Loading data')
+    train_list_dsets, valid_list_dsets, label_to_int = split_data_oracle_iid_excl_server(num_clients, data_dir)
+    
+    print(f"Number of clients: {num_clients}")
+    print(f"Total number of windows: {sum(len(dset) for dset in train_list_dsets)}")
+    print(f"Label mapping: {label_to_int}")
+    
+    # Print some information about the first client's data
+    print(f"\nFirst client data length: {len(train_list_dsets[0])}")
+    print(f"First client labels: {train_list_dsets[0].tensors[1][:10]}...")  # Show first 10 labels
+    
+    # Plot constellation for the first window of the first client
+    plot_constellation(train_list_dsets[0][0][0], train_list_dsets[0][0][1], "constellation_plot_sample.png")
+
+    print(f"\nNumber of windows in first client's dataset: {len(train_list_dsets[0])}")
+    print(f"Shape of first window in first client's dataset: {train_list_dsets[0][0][0].shape}")
+    print(f"Label of first window in first client's dataset: {train_list_dsets[0][0][1]}")
+    
+    # Verify IID distribution
+    all_labels = set()
+    for dset in train_list_dsets:
+        all_labels.update(dset.tensors[1].numpy())
+    print(f"\nNumber of unique labels across all clients: {len(all_labels)}")
+    print(f"Number of unique labels for first client: {len(set(train_list_dsets[0].tensors[1].numpy()))}")
+
+if __name__ == "__main__":
+    test_oracle_dataset()

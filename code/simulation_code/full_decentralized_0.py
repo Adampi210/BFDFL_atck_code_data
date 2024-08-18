@@ -40,8 +40,17 @@ torch.manual_seed(seed)
 np.random.seed(seed)
 
 # Aggregation and datase parameters
-dataset_name = 'fmnist' # 'fmnist' or 'cifar10'
-dataset_size = int(6e4) if dataset_name in ['fmnist', 'mnist'] else int(5e4)
+dataset_name = 'oracle' # 'fmnist' or 'cifar10'
+if dataset_name == 'fmnist':
+    dataset_size = int(6e4)
+    data_dir = '~/data/datasets/fmnist'
+elif dataset_name == 'oracle':
+    dataset_size = None  # We'll determine this from the actual data
+    data_dir = '../../../../data/ORACLE_dataset_demodulated/KRI-16IQImbalances-DemodulatedData/'
+else:
+    raise ValueError("Unsupported dataset name. Choose 'fmnist' or 'oracle'.")
+
+
 aggreg_schemes = ('push_sum', 'sab', 'belief_secure_push_sum', 'test')
 aggregation_mechanism = aggreg_schemes[1]
 
@@ -55,7 +64,7 @@ graph_type_used = graph_type[0]
 
 # ADJUSTABLE #####
 designated_clients = 10
-graph_mode = 'static'  # ('static', 'dynamic', 'degradation')
+graph_mode = None  # ('static', 'dynamic', 'degradation')
 fail_period = 5
 
 # ER
@@ -184,26 +193,32 @@ config_graph_used = 0
 p_link_fail, p_link_recover, p_node_fail, p_node_recover = config_graph[config_graph_used]
 
 # Split the data for the specified number of clients and servers
-if iid_type == 'iid':
-    train_dset_split, valid_dset_split = split_data_iid_excl_server(N_CLIENTS, dataset_name)
-elif iid_type == 'non_iid':
-    N_CLASS = 3
-    train_dset_split, valid_dset_split = split_data_non_iid_excl_server(N_CLIENTS, dataset_name, N_CLASS)
-elif iid_type == 'extreme_non_iid':
-    N_CLASS = 1
-    train_dset_split, valid_dset_split = split_data_non_iid_excl_server(N_CLIENTS, dataset_name, N_CLASS)
-elif iid_type == 'medium_non_iid':
-    N_CLASS = 5
-    train_dset_split, valid_dset_split = split_data_non_iid_excl_server(N_CLIENTS, dataset_name, N_CLASS)
-elif iid_type == 'mild_non_iid':
-    N_CLASS = 7
-    train_dset_split, valid_dset_split = split_data_non_iid_excl_server(N_CLIENTS, dataset_name, N_CLASS)
+if dataset_name == 'fmnist':
+    if iid_type == 'iid':
+        train_dset_split, valid_dset_split = split_data_iid_excl_server(N_CLIENTS, dataset_name)
+    elif iid_type == 'non_iid':
+        N_CLASS = 3
+        train_dset_split, valid_dset_split = split_data_non_iid_excl_server(N_CLIENTS, dataset_name, N_CLASS)
+    elif iid_type == 'extreme_non_iid':
+        N_CLASS = 1
+        train_dset_split, valid_dset_split = split_data_non_iid_excl_server(N_CLIENTS, dataset_name, N_CLASS)
+    elif iid_type == 'medium_non_iid':
+        N_CLASS = 5
+        train_dset_split, valid_dset_split = split_data_non_iid_excl_server(N_CLIENTS, dataset_name, N_CLASS)
+    elif iid_type == 'mild_non_iid':
+        N_CLASS = 7
+        train_dset_split, valid_dset_split = split_data_non_iid_excl_server(N_CLIENTS, dataset_name, N_CLASS)
+elif dataset_name == 'oracle':
+    train_dset_split, valid_dset_split, _ = split_data_oracle_iid_excl_server(N_CLIENTS, data_dir)
 
+    
 # Set the model used
 if dataset_name == 'fmnist':
     NetBasic = FashionMNIST_Classifier
 elif dataset_name == 'cifar10':
     NetBasic = CIFAR10_Classifier
+elif dataset_name == 'oracle':
+    NetBasic = IQClassifier
 
 # Run simulations and save the data
 def run_and_save_simulation(train_split, valid_split, adj_matrix, centrality_measure = 0, 
@@ -340,9 +355,6 @@ def run_and_save_simulation(train_split, valid_split, adj_matrix, centrality_mea
                             node.nb_iter = nb_iter
                 # Train and aggregate
                 print(f'global epoch: {i}')
-                if i % 10 == 0:
-                    active_nodes, active_edges = graph_simulator.count_active_elements()
-                    print(f"Epoch {i}: {active_nodes}/{original_nodes} nodes, {active_edges}/{original_edges} edges active")
                 # Exchange models and aggregate, MAIN PART
                 for node in node_list:
                     if not running_with_fail or not graph_simulator.is_node_failed(node.client_id):
@@ -356,7 +368,7 @@ def run_and_save_simulation(train_split, valid_split, adj_matrix, centrality_mea
                 acc_clients = []
                 loss_clients = []
                 for node in node_list:
-                    if not graph_simulator.is_node_failed(node.client_id):
+                    if not running_with_fail or not graph_simulator.is_node_failed(node.client_id):
                         curr_loss, curr_acc = node.validate_client()
                         acc_clients.append(curr_acc)
                         loss_clients.append(curr_loss)
@@ -368,6 +380,7 @@ def run_and_save_simulation(train_split, valid_split, adj_matrix, centrality_mea
                 active_acc = [acc for acc in acc_clients if acc != -1]
                 active_loss = [loss for loss in loss_clients if loss != -1]
                 avg_acc = sum(active_acc) / len(active_acc) if active_acc else 0
+                print(f'Avg acc: {avg_acc}')
                 avg_loss = sum(active_loss) / len(active_loss) if active_loss else 0
                 acc_clients = [avg_acc if acc == -1 else acc for acc in acc_clients]
                 loss_clients = [avg_loss if loss == -1 else loss for loss in loss_clients]     

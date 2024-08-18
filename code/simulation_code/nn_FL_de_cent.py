@@ -43,6 +43,9 @@ class CompiledModel():
         self.model.train()        # Put the model in training mode
         cumulative_gradients = [] # Will hold different averaged gradients (gradient lists)
 
+        if train_data.dtype == torch.complex64:
+            train_data = torch.stack([train_data.real, train_data.imag], dim = -1)
+    
         # Create a training dataset, move data to GPU
         train_dataset = torch.utils.data.TensorDataset(train_data.to(self.device), train_labels.to(self.device))
 
@@ -96,6 +99,9 @@ class CompiledModel():
         self.model.eval() # Set model in the evaluation mode
 
         # Create validation dataset
+        if valid_data.dtype == torch.complex64:
+            valid_data = torch.stack([valid_data.real, valid_data.imag], dim = -1)
+
         valid_dataset = torch.utils.data.TensorDataset(valid_data.to(self.device), valid_labels.to(self.device))
 
         # Create validation dataloader, pin_memory = True to speed up the transfer to GPU
@@ -156,20 +162,30 @@ class client_FL():
     # Get client data from training and validation dataloaders
     # Client data should be local to the client
     def get_data(self, train_dataset, valid_dataset):
-        # Get the training and testing data
-        x_train, self.y_train = train_dataset.tensors 
-        x_valid, self.y_valid = valid_dataset.tensors 
+        # Check if the input is a TensorDataset or a Tensor
+        if isinstance(train_dataset, torch.utils.data.TensorDataset):
+            x_train, self.y_train = train_dataset.tensors
+            x_valid, self.y_valid = valid_dataset.tensors
+            # Normalize for FMNIST
+            self.x_train = x_train.float() / 255
+            self.x_valid = x_valid.float() / 255
+        elif isinstance(train_dataset, torch.Tensor):
+            self.x_train = train_dataset
+            self.y_train = valid_dataset  # For oracle valid_dataset contains labels for training data
+            self.x_valid = train_dataset  # For oracle, we don't have separate validation data
+            self.y_valid = self.y_train
+        else:
+            raise TypeError("Unsupported dataset type")
         self.y_train = self.y_train.to(self.device)
         self.y_valid = self.y_valid.to(self.device)
 
         # Normalize the datasets to be between 0 and 1
-        self.x_train = x_train.float() / 255
         self.x_train = self.x_train.to(self.device)
-        self.x_valid = x_valid.float() / 255
         self.x_valid = self.x_valid.to(self.device)
 
         # Also save the dataset size
         self.dset_size = len(self.x_train)
+
         # Add out neigbor
     
     # Add out neighbor
@@ -240,10 +256,18 @@ class client_FL():
                     print('Client %d: FGSM - attacking dataset' % self.client_id)
                 if model_used == None:
                     print("Model was not initialized!")
+                 # Handle complex input
+                if self.x_train.dtype == torch.complex64:
+                    x_train_real_imag = torch.stack([self.x_train.real, self.x_train.imag], dim = -1)
+                else:
+                    x_train_real_imag = self.x_train
                 # Create posioned dataset
-                new_adv_data = fast_gradient_method(model_fn = model_used.model, x = self.x_train, eps = self.adv_pow, norm = 2)
-                # Train on the posioned dataset
-                gradients = model_used.calc_grads(train_data = new_adv_data,  train_labels = self.y_train, train_batch_size = batch_s, n_epoch = n_epoch, show_progress = show_progress)
+                new_adv_data = fast_gradient_method(model_fn = model_used.model, x = x_train_real_imag, eps = self.adv_pow, norm = 2)
+                # Convert back to complex if the data was complex
+                if self.x_train.dtype == torch.complex64:
+                    new_adv_data = torch.complex(new_adv_data[..., 0], new_adv_data[..., 1])
+                # Train on the poisoned dataset
+                gradients = model_used.calc_grads(train_data = new_adv_data, train_labels = self.y_train, train_batch_size = batch_s, n_epoch = n_epoch, show_progress = show_progress)
                 return gradients
             elif self.attack == 'PGD':
                 if show_progress:

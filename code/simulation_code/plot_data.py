@@ -323,6 +323,23 @@ def plot_acc_aver_snap(graph_type_used = '', dataset_name = 'fmnist'):
             # Reset values
             cent_data = {cent:[] for cent in cent_data.keys()}
             aver_cent_data = {cent:[] for cent in cent_data.keys()}
+       
+# Get average adversarial distances 
+def get_aver_dist_diff_graphs(dir_with_data):
+    with open('dist_vals.txt', 'w') as distance_file:
+        distance_file.write('Graph Type                      ; Eigenvector Centrality; MaxSpanFL; Random Nodes')
+        graph_data = os.listdir(dir_with_data)
+        graphs = []
+        for graph in graph_data:
+            if 'SNAP' not in graph and 'hypercube' not in graph:
+                graphs.append(graph)
+        graphs.remove('dir_geom_graph_c_100_type_2d_r_02')
+        for graph in graphs:
+            dists = measure_avg_dist_diff_schemes(graph)
+            eig_dist = dists['score_cent_dist_manual_weight_010']
+            least_overlap_dist = dists['least_overlap_area']
+            rand_dist = dists['random_nodes']
+            distance_file.write(f'\n{graph:<40}  {eig_dist:.4f};          {least_overlap_dist:.4f};      {rand_dist:.4f}')
         
 # Used to generate ER graphs
 def gen_ER_graph(n_clients, prob_conn = 0.5, graph_name = '', seed = 0):
@@ -366,7 +383,7 @@ def gen_dir_scale_free_graph(n_clients, type_graph = 'default', graph_name = '',
     return graph, adj_matrix
 
 # Used to generate geometric graphs
-def gen_dir_geom_graph(n_clients, graph_type = '2d_close_nodes', graph_name = '', seed = 0):
+def gen_dir_geom_graph(n_clients, graph_type = '2d_r_02', graph_name = '', seed = 0):
     dir_networks = '../../data/full_decentralized/network_topologies/'
     geo_graph_configs = {
         '2d_very_close_nodes': [2, 0.5],
@@ -1430,173 +1447,147 @@ def calculate_attack_gain_connectivity(dir_names):
     print(gains)
     
 def calculate_attack_gain_size_and_adv_percent(dir_names):
-    iid_types = ('iid', 'non_iid')
-    attacks = ('score_cent_dist_manual_weight_010', 'random_nodes', 'least_overlap_area', 'none')
+    LARGE_FONT_SIZE = 16
+    SMALL_FONT_SIZE = 14
+    iid_types = ('iid', )
+    attacks = ['score_cent_dist_manual_weight_010', 'random_nodes', 'least_overlap_area', 'MaxSpANFL_w_smart_hopping']
     dev_nums = (10, 25, 50, 100)
     adv_percentages = {
-        10: [int(0.1 * 10), int(0.2 * 10)],
-        25: [int(0.1 * 25), int(0.2 * 25)],
-        50: [int(0.06 * 50), int(0.1 * 50), int(0.2 * 50)],
-        100: [int(0.05 * 100), int(0.1 * 100), int(0.2 * 100)]
+        10: [0.1, 0.2],
+        25: [0.1, 0.2],
+        50: [0.06, 0.1, 0.2],
+        100: [0.06, 0.1, 0.2]
     }
 
-    n_bars = len(iid_types) * len(attacks)
+    def read_file(file_path):
+        try:
+            with open(file_path, 'r') as f:
+                reader = csv.reader(f)
+                first_row = next(reader)
+                
+                # Extract and clean the adversary list string
+                attacked_nodes_str = first_row[1].split(',', 1)[-1].strip()
+                attacked_nodes_str = attacked_nodes_str.strip('[]"')
+                
+                # Split the string into individual elements
+                elements = re.findall(r'\d+', attacked_nodes_str)
+                
+                # Convert to integers
+                attacked_nodes = [int(elem) for elem in elements]
+                
+                # Read the rest of the data
+                data = [ast.literal_eval(row[1]) for row in reader]
+            
+            if len(data) != 100:  # Ensure we have 100 data points
+                print(f"Incomplete data in {file_path}. Skipping...")
+                return None, None
+            return data, attacked_nodes
+        except Exception as e:
+            print(f"Error reading {file_path}: {str(e)}. Skipping...")
+            return None, None
+    
     seed_range = 20
-    dataset_name = 'fmnist' # Remember to change for CIFAR10
+    dataset_name = 'fmnist'  # Remember to change for CIFAR10
     dir_plots = '../../data/full_decentralized/finalized_plots/'
     pwr = 100
-    # Define your colors
+    
     colors = {
         'score_cent_dist_manual_weight_010': 'green', 
-        'least_overlap_area': 'black', 
-        'random_nodes': 'purple'
+        'least_overlap_area': 'blue', 
+        'random_nodes': 'purple',
+        'MaxSpANFL_w_smart_hopping': 'orange'
     }
 
-    # Custom legend labels
     legend_labels = [
         'Eigenvector-Centrality Based Attack', 
         'Random Choice Attack', 
-        'BLDFL Attack'
+        'MaxSpAN-FL Attack',
+        'Hopping-augmented MaxSpAN-FL Attack'
     ]
 
-    # Create a list of Patch objects for the legend
-    handles = [mpatches.Patch(color=colors[attack], label=label) for attack, label in zip(colors.keys(), legend_labels)]
-
-    
-    # Assuming dir_names contain full paths to the directories with the data
-    # attacks is a list of attack names
-    # iid_types is a list containing 'iid' and 'non_iid'
-    # n_bars is the number of bars per group (should be len(attacks) * len(iid_types))
-    accuracies = {
-        dev_num: {
-            attack: {
-                iid: {
-                    (0 if attack == 'none' else adv_percent): []
-                    for adv_percent in (adv_percentages[dev_num] if attack != 'none' else [0])
-                } for iid in iid_types
-            } for attack in attacks
-        } for dev_num in dev_nums
-    }
-    gains = {
-        dev_num: {
-            attack: {
-                iid: {
-                    (0 if attack == 'none' else adv_percent): 0
-                    for adv_percent in (adv_percentages[dev_num] if attack != 'none' else [0])
-                } for iid in iid_types
-            } for attack in attacks
-        } for dev_num in dev_nums
-    }
-
-    
-    # Initialize the data structure to hold the gains
+    gains = {dev_num: {attack: {iid: {adv_percent: [] for adv_percent in adv_percentages[dev_num]} for iid in iid_types} for attack in attacks} for dev_num in dev_nums}
     
     for network in dir_names:
-        dir_data = '../../data/full_decentralized/%s/%s/' % (dataset_name, network)
-        n_clients_network = int((re.search('_c_(\d+)', network)).group(1))
+        dir_data = f'../../data/full_decentralized/{dataset_name}/{network}/'
+        n_clients_network = int(re.search('_c_(\d+)', network).group(1))
+        
         for iid in iid_types:
+            no_attack_acc = []
             for seed in range(seed_range):
-                file_name = 'acc_score_cent_dist_manual_weight_010_atk_FGSM_advs_0_adv_pow_0_atk_time_25_seed_%d_iid_type_%s_cent_none.csv' % (seed, iid)
-                file_data_path = os.path.join(dir_data, file_name)
-                with open(file_data_path, 'r') as acc_data_file:
-                    reader = csv.reader(acc_data_file)
-                    curr_seed_run = []
-                    for i, row in enumerate(reader):
-                        if i != 0:
-                            acc = ast.literal_eval(row[1])
-                            acc = sum(acc) / len(acc)
-                            curr_seed_run.append(acc)
-                    accuracies[n_clients_network]['none'][iid][0].append(curr_seed_run)
-            accuracies[n_clients_network]['none'][iid][0] = np.mean(accuracies[n_clients_network]['none'][iid][0], axis = 0)
-
-    for network in dir_names:
-        n_clients_network = int((re.search('_c_(\d+)', network)).group(1))
-        dir_data = '../../data/full_decentralized/%s/%s/' % (dataset_name, network)
-        for attack in attacks:
-            if attack == 'none':
+                file_name = f'acc_score_cent_dist_manual_weight_010_atk_FGSM_advs_0_adv_pow_0_atk_time_25_seed_{seed}_iid_type_{iid}_cent_none.csv'
+                data, _ = read_file(os.path.join(dir_data, file_name))
+                if data:
+                    no_attack_acc.append([sum(acc) / len(acc) for acc in data])
+            
+            if not no_attack_acc:
+                print(f"No valid no-attack data for {network}, {iid}. Skipping...")
                 continue
-            for iid in iid_types:
-                for adv_num in adv_percentages[n_clients_network]:
+            
+            no_attack_acc = np.array(no_attack_acc)
+            
+            for attack in attacks:
+                for adv_percent in adv_percentages[n_clients_network]:
+                    adv_num = int(adv_percent * n_clients_network)
+                    attack_acc = []
+                    valid_seeds = []
                     for seed in range(seed_range):
-                        file_name = 'acc_%s_atk_FGSM_advs_%d_adv_pow_%d_atk_time_25_seed_%d_iid_type_%s_cent_eigenvector_centrality.csv' % (attack, adv_num, pwr, seed, iid)
-                        file_data_path = os.path.join(dir_data, file_name)
-                        with open(file_data_path, 'r') as acc_data_file:
-                            reader = csv.reader(acc_data_file)
-                            curr_seed_run = []
-                            for i, row in enumerate(reader):
-                                if i == 0:
-                                    attacked_nodes = ast.literal_eval(row[1])
-                                    attacked_nodes = [int(_) for _ in attacked_nodes]
-                                else:
-                                    acc = ast.literal_eval(row[1])
-                                    acc_honest = [_ for i, _ in enumerate(acc) if i not in attacked_nodes]
-                                    acc_honest = sum(acc_honest) / len(acc_honest)
-                                    curr_seed_run.append(acc_honest)
-                            accuracies[n_clients_network][attack][iid][adv_num].append(curr_seed_run)
-                    accuracies[n_clients_network][attack][iid][adv_num] = np.mean(accuracies[n_clients_network][attack][iid][adv_num], axis = 0)
-    
-    for network in dir_names:
-        dev_num = int((re.search('_c_(\d+)', network)).group(1))
-        for attack in attacks:
-            for iid in iid_types:
-                if attack == 'none':
-                    gains[dev_num]['none'][iid][0] = np.sum(accuracies[dev_num]['none'][iid][0][25:])
-                    continue
-                for adv_perc in adv_percentages[dev_num]:
-                    gains[dev_num][attack][iid][adv_perc] = (np.sum(accuracies[dev_num]['none'][iid][0][25:]) - np.sum(accuracies[dev_num][attack][iid][adv_perc][25:])) * 100 / 75
-    for i in adv_percentages.keys():
-        for advs in adv_percentages[i]:
-            print(f'{i}, {advs} ', end='')
-            if gains[i]['random_nodes']['iid'][advs] > gains[i]['score_cent_dist_manual_weight_010']['iid'][advs]:
-                x = gains[i]['random_nodes']['iid'][advs]
-            else:
-                x = gains[i]['score_cent_dist_manual_weight_010']['iid'][advs]
-            print((gains[i]['least_overlap_area']['iid'][advs] - x) / (x) * 100)
+                        file_name = f'acc_{attack}_atk_FGSM_advs_{adv_num}_adv_pow_{pwr}_atk_time_25_seed_{seed}_iid_type_{iid}_cent_eigenvector_centrality.csv'
+                        data, attacked_nodes = read_file(os.path.join(dir_data, file_name))
+                        if data and attacked_nodes is not None:
+                            attack_acc.append([sum(acc[i] for i in range(len(acc)) if i not in attacked_nodes) / (len(acc) - len(attacked_nodes)) for acc in data])
+                            valid_seeds.append(seed)
+                    
+                    if not attack_acc:
+                        print(f"No valid attack data for {network}, {attack}, {iid}, {adv_num}. Skipping...")
+                        continue
+                    
+                    attack_acc = np.array(attack_acc)
+                    
+                    # Use only the no_attack_acc for valid seeds
+                    valid_no_attack_acc = no_attack_acc[valid_seeds]
+                    
+                    # Calculate AAL for each seed
+                    aal_per_seed = (np.sum(valid_no_attack_acc[:, 25:], axis=1) - np.sum(attack_acc[:, 25:], axis=1)) * 100 / 75
+                    gains[n_clients_network][attack][iid][adv_percent] = aal_per_seed
 
-    
     # Plot
-    iid = 'iid'  # Focusing only on 'iid'
-    attacks = ['score_cent_dist_manual_weight_010', 'random_nodes', 'least_overlap_area']
-    bar_width = 0.2  # Width of the bars
-    opacity = 0.8
+    fig, axs = plt.subplots(2, 2, figsize=(20, 15))
+    axs = axs.flatten()
 
-    # Create a figure with 2x2 subplots
-    fig, axs = plt.subplots(2, 2, figsize=(15, 10))  # Adjust the size as needed
-    axs = axs.flatten()  # Flatten the 2x2 array for easy indexing
+    bar_width = 0.2
 
-    for idx, dev_num in enumerate([10, 25, 50, 100]):  # Order of dev_nums
-        adv_percentages = gains[dev_num][attacks[0]][iid].keys()
-
-        # Number of groups
-        n_groups = len(adv_percentages)
-
+    for idx, dev_num in enumerate(dev_nums):
+        adv_percentages_plot = adv_percentages[dev_num]
+        n_groups = len(adv_percentages_plot)
         index = np.arange(n_groups)
+        
         for i, attack in enumerate(attacks):
-            gains_values = [gains[dev_num][attack][iid][adv_perc] for adv_perc in adv_percentages]
-            axs[idx].bar(index + i * bar_width, gains_values, bar_width, alpha=opacity, color=colors[attack], label=attack if idx == 0 else "")
-        if idx >= 2:
-            axs[idx].set_xlabel('Number of Adversarial Devices', fontsize=14)
-        if idx == 0 or idx == 2:
-            axs[idx].set_ylabel('Averaged Attack Accuracy Loss %', fontsize=14)
-        axs[idx].set_title(f'{idx + 1}) Network Size: {dev_num} Devices', fontsize=14)
-               
-        axs[idx].set_xticks(index + bar_width / 2)
-        axs[idx].tick_params(axis='y', labelsize=12)
-        axs[idx].set_xticklabels(adv_percentages, fontsize=12)
-
-    # Create a single legend for the entire figure
-    # Custom legend labels
-    legend_labels = [
-        'Eigenvector-Centrality Based Attack', 
-        'Random Choice Attack', 
-        'BLDFL Attack'
-    ]
-
-    # Create a single legend for the entire figure with custom labels
-    # Adjust the legend placement
-    handles = [handles[0], handles[2], handles[1]]
-    fig.legend(handles, legend_labels, loc='upper center', ncol=3, fontsize='large')
-    plt.tight_layout(rect=[0, 0, 1, 0.95])  # Adjust the layout to make space for the legend
+            gains_values = []
+            gains_std = []
+            for adv_perc in adv_percentages_plot:
+                gain_array = np.array(gains[dev_num][attack]['iid'][adv_perc])
+                if gain_array.size > 0:
+                    gains_values.append(np.mean(gain_array))
+                    gains_std.append(np.std(gain_array))
+                else:
+                    gains_values.append(0)
+                    gains_std.append(0)
+            
+            axs[idx].bar(index + i * bar_width, gains_values, bar_width, color=colors[attack], 
+                         yerr=gains_std, capsize=5, label=legend_labels[i] if idx == 0 else "", zorder=3)
+        
+        axs[idx].set_xlabel('Adversarial Percentage', fontsize=LARGE_FONT_SIZE)
+        axs[idx].set_ylabel('Averaged Attack Accuracy Loss %', fontsize=LARGE_FONT_SIZE)
+        axs[idx].set_title(f'{idx + 1}) Network Size: {dev_num} Devices', fontsize=LARGE_FONT_SIZE + 2)
+        axs[idx].grid(True, zorder=0, alpha=0.3)
+        axs[idx].set_xticks(index + 1.5 * bar_width)
+        axs[idx].set_xticklabels([f'{int(p * 100)}%' for p in adv_percentages_plot], fontsize=SMALL_FONT_SIZE)
+        axs[idx].tick_params(axis='y', labelsize=SMALL_FONT_SIZE)
+        axs[idx].set_ylim(0, axs[idx].get_ylim()[1] * 1.05)
+        
+    # fig.legend(loc='upper center', ncol=4, fontsize='large')
+    plt.tight_layout(rect=[0, 0.05, 1, 0.95])
+    plt.savefig(f'PA_graphs_size_adv_percent_graphs.png', dpi=300, bbox_inches='tight')
     plt.show()
 
 def plot_timing_attack(dir_name):
@@ -1704,42 +1695,217 @@ def plot_timing_attack(dir_name):
     fig.legend(handles, labels, loc='upper center', ncol=3)
     plt.show()
 
+def plot_non_iid_measures(graph_type, dataset_name = 'fmnist'):
+    print(f'Graph type: {graph_type}')
+    LARGE_FONT_SIZE = 16
+    SMALL_FONT_SIZE = 14
+    iid_types = ['extreme_non_iid', 'non_iid', 'medium_non_iid', 'mild_non_iid', 'iid']
+    class_nums = [1, 3, 5, 7, 10]
+    attacks = ['score_cent_dist_manual_weight_010', 'least_overlap_area', 'random_nodes', 'MaxSpANFL_w_smart_hopping']
+    centralities = ['eigenvector_centrality',]
     
-def get_aver_dist_diff_graphs(dir_with_data):
-    with open('dist_vals.txt', 'w') as distance_file:
-        distance_file.write('Graph Type                      ; Eigenvector Centrality; MaxSpanFL; Random Nodes')
-        graph_data = os.listdir(dir_with_data)
-        graphs = []
-        for graph in graph_data:
-            if 'SNAP' not in graph and 'hypercube' not in graph:
-                graphs.append(graph)
-        graphs.remove('dir_geom_graph_c_100_type_2d_r_02')
-        for graph in graphs:
-            dists = measure_avg_dist_diff_schemes(graph)
-            eig_dist = dists['score_cent_dist_manual_weight_010']
-            least_overlap_dist = dists['least_overlap_area']
-            rand_dist = dists['random_nodes']
-            distance_file.write(f'\n{graph:<40}  {eig_dist:.4f};          {least_overlap_dist:.4f};      {rand_dist:.4f}')
+    seed_range = 20
+    dir_data = f'../../data/full_decentralized/{dataset_name}/{graph_type}/'
+    
+    # Initialize data structure
+    data = {iid: {attack: {cent: [] for cent in centralities} for attack in attacks} for iid in iid_types}
+    final_accuracies = {iid: {attack: [] for attack in attacks + ['no_attack']} for iid in iid_types}
+    
+    # Read data and calculate AAL
+    n_clients = int(re.search('_c_(\d+)', graph_type).group(1))
+    adv_number = int(0.2 * n_clients)
+    
+    for iid in iid_types:
+        for attack in attacks:
+            for cent in centralities:
+                aal_values = []
+                for seed in range(seed_range):
+                    file_name = f'acc_{attack}_atk_FGSM_advs_{adv_number}_adv_pow_100_atk_time_25_seed_{seed}_iid_type_{iid}_cent_{cent}.csv'
+                    file_path = os.path.join(dir_data, file_name)
+                    
+                    try:
+                        with open(file_path, 'r') as f:
+                            reader = csv.reader(f)
+                            next(reader)  # Skip header
+                            attacked_nodes = ast.literal_eval(next(reader)[1])
+                            acc_data = [ast.literal_eval(row[1]) for row in reader]
+
+                        honest_acc = [[acc[i] for i in range(len(acc)) if i not in attacked_nodes] for acc in acc_data]
+                        avg_honest_acc = [sum(acc) / len(acc) for acc in honest_acc]
+                        final_accuracies[iid][attack].append(avg_honest_acc[-1])
+                        
+                        no_attack_file = f'acc_score_cent_dist_manual_weight_010_atk_FGSM_advs_0_adv_pow_0_atk_time_25_seed_{seed}_iid_type_{iid}_cent_none.csv'
+                        no_attack_path = os.path.join(dir_data, no_attack_file)
+                        
+                        with open(no_attack_path, 'r') as f:
+                            reader = csv.reader(f)
+                            next(reader)  # Skip header
+                            no_attack_acc = [sum(ast.literal_eval(row[1])) / len(ast.literal_eval(row[1])) for row in reader]
+                        final_accuracies[iid]['no_attack'].append(no_attack_acc[-1])
+                        
+                        aal = (sum(no_attack_acc[25:]) - sum(avg_honest_acc[25:])) / len(avg_honest_acc[25:]) * 100
+                        aal_values.append(aal)
+                    
+                    except FileNotFoundError:
+                        print(f"Warning: File not found: {file_name}. Skipping...")
+                    except Exception as e:
+                        print(f"Error processing {file_name}: {str(e)}. Skipping...")
+                
+                if aal_values:
+                    data[iid][attack][cent] = aal_values
+                else:
+                    print(f"Warning: No valid data for {iid}, {attack}, {cent}. Skipping in plot...")
+    
+    # Calculate and print average final accuracies
+    print("\nAverage Final Accuracies:")
+    for iid in iid_types:
+        print(f"\n{iid}:")
+        for attack in attacks + ['no_attack']:
+            avg_accuracy = np.mean(final_accuracies[iid][attack])
+            print(f"  {attack}: {avg_accuracy:.4f}")
+    
+    # Plotting
+    fig, ax = plt.subplots(figsize = (15, 8))
+    x = np.arange(len(iid_types))
+    width = 0.2
+    
+    colors = {'score_cent_dist_manual_weight_010': 'green', 'least_overlap_area': 'blue', 'random_nodes': 'purple', 'MaxSpANFL_w_smart_hopping': 'orange'}
+    
+    for i, attack in enumerate(attacks):
+        means = [np.mean([np.mean(data[iid][attack][cent]) for cent in centralities if data[iid][attack][cent]]) for iid in iid_types]
+        stds = [np.mean([np.std(data[iid][attack][cent]) for cent in centralities if data[iid][attack][cent]]) for iid in iid_types]
+        valid_means = [m for m in means if not np.isnan(m)]
+        valid_stds = [s for m, s in zip(means, stds) if not np.isnan(m)]
+        valid_x = [xi for xi, m in zip(x, means) if not np.isnan(m)]
+        if valid_means:
+            ax.bar([xi + i*width for xi in valid_x], valid_means, width, color=colors[attack], label=attack, yerr=valid_stds, capsize=5, zorder = 3)
+    
+    if 'ER' in graph_type:
+        graph_type_name = 'ER'
+    elif 'pref_attach' in graph_type:
+        graph_type_name = 'Preferential Attachment'
+    elif 'dir_geom' in graph_type:
+        graph_type_name = 'Directed Geometric'
+    
+    ax.set_ylabel('Averaged Attack Accuracy Loss (%)', fontsize=LARGE_FONT_SIZE)
+    ax.set_xlabel('Number of Available Classes', fontsize=LARGE_FONT_SIZE)
+    ax.set_title(f'AAL for Different Non-IID Measures in {graph_type_name} Graphs', fontsize=LARGE_FONT_SIZE + 2)
+    ax.set_xticks(x + width * 1.5)
+    ax.set_xticklabels(class_nums, fontsize=SMALL_FONT_SIZE)
+    ax.tick_params(axis='y', labelsize=SMALL_FONT_SIZE)  # Set y-axis tick label size
+    # ax.legend(fontsize=SMALL_FONT_SIZE)
+    ax.grid(True, zorder = 0)
+    plt.tight_layout()
+    plt.savefig(f'non_iid_measures_{graph_type}.png')
+    plt.close()
+
+def plot_attack_strengths(graph_type, dataset_name = 'fmnist'):
+    LARGE_FONT_SIZE = 16
+    SMALL_FONT_SIZE = 14
+    attacks = ['score_cent_dist_manual_weight_010', 'least_overlap_area', 'random_nodes', 'MaxSpANFL_w_smart_hopping']
+    centralities = ['eigenvector_centrality',]
+    attack_powers = [50, 100, 250, 500, 1000]
+    
+    seed_range = 20
+    dir_data = f'../../data/full_decentralized/{dataset_name}/{graph_type}/'
+    
+    # Initialize data structure
+    data = {attack: {power: [] for power in attack_powers} for attack in attacks}
+    
+    # Read data and calculate AAL
+    n_clients = int(re.search('_c_(\d+)', graph_type).group(1))
+    adv_number = int(0.2 * n_clients)
+    
+    for attack in attacks:
+        for power in attack_powers:
+            aal_values = []
+            for seed in range(seed_range):
+                for cent in centralities:
+                    file_name = f'acc_{attack}_atk_FGSM_advs_{adv_number}_adv_pow_{power}_atk_time_25_seed_{seed}_iid_type_iid_cent_{cent}.csv'
+                    file_path = os.path.join(dir_data, file_name)
+                    
+                    with open(file_path, 'r') as f:
+                        reader = csv.reader(f)
+                        next(reader)  # Skip header
+                        attacked_nodes = ast.literal_eval(next(reader)[1])
+                        acc_data = [ast.literal_eval(row[1]) for row in reader]
+                    
+                    honest_acc = [[acc[i] for i in range(len(acc)) if i not in attacked_nodes] for acc in acc_data]
+                    avg_honest_acc = [sum(acc) / len(acc) for acc in honest_acc]
+                    
+                    no_attack_file = f'acc_score_cent_dist_manual_weight_010_atk_FGSM_advs_0_adv_pow_0_atk_time_25_seed_{seed}_iid_type_iid_cent_none.csv'
+                    no_attack_path = os.path.join(dir_data, no_attack_file)
+                    
+                    with open(no_attack_path, 'r') as f:
+                        reader = csv.reader(f)
+                        next(reader)  # Skip header
+                        no_attack_acc = [sum(ast.literal_eval(row[1])) / len(ast.literal_eval(row[1])) for row in reader]
+                    
+                    aal = (sum(no_attack_acc[25:]) - sum(avg_honest_acc[25:])) / len(avg_honest_acc[25:]) * 100
+                    aal_values.append(aal)
+            
+            data[attack][power] = np.mean(aal_values)
+    
+    # Plotting
+    if 'ER' in graph_type:
+        graph_type_name = 'ER'
+    elif 'pref_attach' in graph_type:
+        graph_type_name = 'Preferential Attachment'
+    elif 'dir_geom' in graph_type:
+        graph_type_name = 'Directed Geometric'
+    fig, ax = plt.subplots(figsize=(10, 6))
+    
+    colors = {'score_cent_dist_manual_weight_010': 'green', 'least_overlap_area': 'blue', 'random_nodes': 'purple', 'MaxSpANFL_w_smart_hopping': 'orange'}
+    
+    for attack in attacks:
+        ax.plot(attack_powers, [data[attack][power] for power in attack_powers], marker='o', color=colors[attack], label=attack, linewidth=1.5)
+    
+    ax.set_xlabel('Attack Power', fontsize = LARGE_FONT_SIZE)
+    ax.set_ylabel('Averaged Attack Accuracy Loss (%)', fontsize = LARGE_FONT_SIZE)
+    ax.set_title(f'AAL for Different Attack Powers in {graph_type_name} Graphs', fontsize = LARGE_FONT_SIZE + 2)
+    ax.tick_params(axis='y', labelsize = SMALL_FONT_SIZE)
+    ax.tick_params(axis='x', labelsize = SMALL_FONT_SIZE)
+
+    ax.grid()
+    # ax.set_xscale('log')
+    
+    plt.tight_layout()
+    plt.savefig(f'attack_strengths_{graph_type}.png')
+    plt.close()
+
 
 if __name__ == '__main__':
     # plot_new_schemes('ER_graph_c_25_p_01', 'iid')
-    create_composite_figure([('dir_geom_graph_c_25_type_2d_r_02', 'iid'),            
-                             ('ER_graph_c_25_p_03', 'iid'), 
-                             ('pref_attach_graph_c_25_type_sparse', 'iid'), 
-                             ('dir_geom_graph_c_25_type_2d_r_02', 'non_iid'),
-                             ('ER_graph_c_25_p_03', 'non_iid'), 
-                             ('pref_attach_graph_c_25_type_dense_3', 'iid')])
-    
-    #plot_timing_attack('dir_geom_graph_c_25_type_2d_r_02')
+    #create_composite_figure([('dir_geom_graph_c_25_type_2d_r_02', 'iid'),            
+    #                         ('ER_graph_c_25_p_03', 'iid'), 
+    #                         ('pref_attach_graph_c_25_type_sparse', 'iid'), 
+    #                         ('dir_geom_graph_c_25_type_2d_r_02', 'non_iid'),
+    #                         ('ER_graph_c_25_p_03', 'non_iid'), 
+    #                         ('pref_attach_graph_c_25_type_dense_3', 'iid')])
+    # plot_non_iid_measures('ER_graph_c_25_p_03')
+    # plot_non_iid_measures('dir_geom_graph_c_25_type_2d_r_02')
+    # plot_non_iid_measures('pref_attach_graph_c_25_type_sparse')
+    # plot_attack_strengths('ER_graph_c_25_p_03')
+    # plot_attack_strengths('dir_geom_graph_c_25_type_2d_r_02')
+    # plot_attack_strengths('pref_attach_graph_c_25_type_sparse')
+    # plot_timing_attack('dir_geom_graph_c_25_type_2d_r_02')
     #for n_dim in [3, 5, 8]:
     #    for seed in range(1):
     #        n_cls = 2 ** n_dim
     #        graph_name = 'hypercube_graph_c_%d_n_dim_%d_seed_%d.txt' % (n_cls, n_dim, seed)
     #        gen_hypercube_graph(n_dim, graph_name)
-    #calculate_attack_gain_size_and_adv_percent(['dir_geom_graph_c_10_type_2d_r_02',
-    #                       'dir_geom_graph_c_25_type_2d_r_02',
-    #                       'dir_geom_graph_c_50_type_2d_r_02',
-    #                       'dir_geom_graph_c_100_type_2d_r_02'])
+    # calculate_attack_gain_size_and_adv_percent(['dir_geom_graph_c_10_type_2d_r_02',
+    #                         'dir_geom_graph_c_25_type_2d_r_02',
+    #                         'dir_geom_graph_c_50_type_2d_r_02',
+    #                         'dir_geom_graph_c_100_type_2d_r_02'])
+    # calculate_attack_gain_size_and_adv_percent(['ER_graph_c_10_p_03',
+    #                          'ER_graph_c_25_p_03',
+    #                          'ER_graph_c_50_p_03',
+    #                          'ER_graph_c_100_p_03'])
+    calculate_attack_gain_size_and_adv_percent(['pref_attach_graph_c_10_type_sparse',
+                             'pref_attach_graph_c_25_type_sparse',
+                             'pref_attach_graph_c_50_type_sparse',
+                             'pref_attach_graph_c_100_type_sparse'])
     #calculate_attack_gain_connectivity(['dir_geom_graph_c_25_type_2d_r_02',
     #                                    'dir_geom_graph_c_25_type_2d_r_04',
     #                                    'dir_geom_graph_c_25_type_2d_r_06'])
@@ -1772,7 +1938,7 @@ if __name__ == '__main__':
     # Take 25 -> reduce power see if change (separation) (first)
     # Take 100 see case for 5 advs
     # 
-
+    pass
 # Plot variables
 # Different types of networks (ER, Geom, Pref-Attach, SNAP?) - iid and non-iid FMNIST and CIFAR10
 # Different connectivity (ER 0.1 0.3 0.5 0.7, Geom r = 0.2 0.4 0.6, pref_attach -> look at parameters to change)
