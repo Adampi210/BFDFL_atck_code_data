@@ -1590,6 +1590,7 @@ def calculate_attack_gain_size_and_adv_percent(dir_names):
     plt.savefig(f'PA_graphs_size_adv_percent_graphs.png', dpi=300, bbox_inches='tight')
     plt.show()
 
+# Different attack times
 def plot_timing_attack(dir_name):
     iid_types = ('iid', 'non_iid')
     attacks = ('score_cent_dist_manual_weight_010', 'least_overlap_area', 'random_nodes', 'none')
@@ -1695,6 +1696,7 @@ def plot_timing_attack(dir_name):
     fig.legend(handles, labels, loc='upper center', ncol=3)
     plt.show()
 
+# Different distributions
 def plot_non_iid_measures(graph_type, dataset_name = 'fmnist'):
     print(f'Graph type: {graph_type}')
     LARGE_FONT_SIZE = 16
@@ -1799,6 +1801,7 @@ def plot_non_iid_measures(graph_type, dataset_name = 'fmnist'):
     plt.savefig(f'non_iid_measures_{graph_type}.png')
     plt.close()
 
+# Diff attack strengths
 def plot_attack_strengths(graph_type, dataset_name = 'fmnist'):
     LARGE_FONT_SIZE = 16
     SMALL_FONT_SIZE = 14
@@ -1873,6 +1876,191 @@ def plot_attack_strengths(graph_type, dataset_name = 'fmnist'):
     plt.savefig(f'attack_strengths_{graph_type}.png')
     plt.close()
 
+# Dynamic graphs
+def plot_dynamic_graphs(graph_type, dataset_name = 'fmnist'):
+    LARGE_FONT_SIZE = 18
+    SMALL_FONT_SIZE = 16
+    # Configuration
+    attacks = ['none', 'score_cent_dist_manual_weight_010', 'least_overlap_area', 'random_nodes', 'MaxSpANFL_w_smart_hopping']
+    config_graph = [
+        (0.1, 0.8, 0.02, 0.9),
+        (0.15, 0.5, 0.05, 0.7),
+        (0.20, 0.3, 0.1, 0.4),
+        (0.3, 0.1, 0.2, 0.2)
+    ]
+    
+    dynamics_titles = [
+        "Low Edge & Node Dynamics",
+        "Mild Edge & Node Dynamics",
+        "Moderate Edge & Node Dynamics",
+        "High Edge & Node Dynamics"
+    ]
+    
+    colors = {
+        'none': 'black',
+        'score_cent_dist_manual_weight_010': 'green',
+        'least_overlap_area': 'blue',
+        'random_nodes': 'purple',
+        'MaxSpANFL_w_smart_hopping': 'orange'
+    }
+   
+    legend_labels = {
+        'none': 'No attack',
+        'score_cent_dist_manual_weight_010': 'Eigenvector-Centrality Based Attack',
+        'least_overlap_area': 'MaxSpAN-FL Attack',
+        'random_nodes': 'Random Choice Based Attack',
+        'MaxSpANFL_w_smart_hopping': 'Hopping-augmented MaxSpAN-FL Attack'
+    }
+
+    # Plotting
+    if 'ER' in graph_type:
+        graph_type_name = 'ER'
+    elif 'pref_attach' in graph_type:
+        graph_type_name = 'Preferential Attachment'
+    elif 'dir_geom' in graph_type:
+        graph_type_name = 'Directed Geometric'
+        
+
+    # Create figure
+    fig, axs = plt.subplots(2, 2, figsize = (20, 15))
+    fig.suptitle(f'Accuracy Curves for Dynamic {graph_type_name} Graphs', fontsize = LARGE_FONT_SIZE + 4)
+
+    for idx, config in enumerate(config_graph):
+        p_link_fail, p_link_recover, p_node_fail, p_node_recover = config
+        ax = axs[idx // 2, idx % 2]
+       
+        for attack in attacks:
+            all_accuracies = []
+            for seed in range(20):  # Loop over 20 seeds
+                if attack == 'none':
+                    filename = f'../../data/full_decentralized/{dataset_name}/{graph_type}/'
+                    filename += f'acc_score_cent_dist_manual_weight_010_atk_FGSM_advs_0_adv_pow_0_atk_time_25_seed_{seed}_iid_type_iid_cent_none'
+                    filename += f'_link_node_fail_mode_static_p_link_f_{int(100*p_link_fail)}_p_link_r_{int(100*p_link_recover)}_p_node_f_{int(100*p_node_fail)}_p_node_r_{int(100*p_node_recover)}.csv'
+                else:
+                    filename = f'../../data/full_decentralized/{dataset_name}/{graph_type}/'
+                    filename += f'acc_{attack}_atk_FGSM_advs_5_adv_pow_100_atk_time_25_seed_{seed}_iid_type_iid_cent_eigenvector_centrality'
+                    filename += f'_link_node_fail_mode_static_p_link_f_{int(100*p_link_fail)}_p_link_r_{int(100*p_link_recover)}_p_node_f_{int(100*p_node_fail)}_p_node_r_{int(100*p_node_recover)}.csv'
+               
+                try:
+                    with open(filename, 'r') as f:
+                        reader = csv.reader(f)
+                        next(reader)  # Skip header
+                        data = [ast.literal_eval(row[1]) for row in reader]
+                   
+                    accuracies = [sum(epoch_data) / len(epoch_data) for epoch_data in data]
+                    all_accuracies.append(accuracies)
+                except FileNotFoundError:
+                    print(f"File not found: {filename}")
+                    continue
+
+            if all_accuracies:
+                # Calculate average accuracies across all seeds
+                avg_accuracies = np.mean(all_accuracies, axis=0)
+                ax.plot(avg_accuracies, label=legend_labels[attack], color=colors[attack])
+
+        ax.set_xlabel('Epoch', fontsize = LARGE_FONT_SIZE)
+        ax.set_ylabel('Average Accuracy', fontsize = LARGE_FONT_SIZE)
+        ax.set_title(dynamics_titles[idx], fontsize = LARGE_FONT_SIZE)
+        ax.grid(True)
+        ax.tick_params(axis='y', labelsize = SMALL_FONT_SIZE)
+        ax.tick_params(axis='x', labelsize = SMALL_FONT_SIZE)
+        ax.axvline(x = 25, color = 'r', linestyle = '--', label = 'Attack begins')
+
+    handles, labels = ax.get_legend_handles_labels()
+    # fig.legend(handles, labels, loc='upper center', bbox_to_anchor=(0.5, 0.05), ncol=3)
+   
+    plt.tight_layout()
+    plt.savefig(f'dynamic_graphs_{graph_type}_{dataset_name}.png')
+    plt.close() 
+  
+def plot_all_attacks_aal(graph_list, dataset_name):
+    # Font sizes
+    LARGE_FONT_SIZE = 18
+    MEDIUM_FONT_SIZE = 16
+    SMALL_FONT_SIZE = 14
+
+    # Configuration
+    attacks = ['none', 'score_cent_dist_manual_weight_010', 'least_overlap_area', 'random_nodes', 'MaxSpANFL_w_smart_hopping', 'deg_cent_choice']
+    colors = {
+        'score_cent_dist_manual_weight_010': 'green',
+        'least_overlap_area': 'blue',
+        'random_nodes': 'purple',
+        'MaxSpANFL_w_smart_hopping': 'orange',
+        'deg_cent_choice': 'red'
+    }
+    labels = {
+        'score_cent_dist_manual_weight_010': 'Eigenvector-Centrality Based',
+        'least_overlap_area': 'MaxSpAN-FL',
+        'random_nodes': 'Random Choice Based',
+        'MaxSpANFL_w_smart_hopping': 'Hopping-augmented MaxSpAN-FL',
+        'deg_cent_choice': 'Degree Centrality Based'
+    }
+    
+    fig, ax = plt.subplots(figsize=(15, 10))
+    bar_width = 0.15
+    index = np.arange(len(graph_list))
+
+    for i, attack in enumerate(attacks[1:]):  # Skip 'none'
+        aals = []
+        variances = []
+        for graph in graph_list:
+            all_aals = []
+            
+            for seed in range(20):  # Loop over 20 seeds
+                if attack == 'deg_cent_choice':
+                    attack_filename = f'../../data/full_decentralized/{dataset_name}/{graph}/'
+                    attack_filename += f'acc_{attack}_atk_FGSM_advs_5_adv_pow_100_atk_time_25_seed_{seed}_iid_type_iid_cent_deg_centrality.csv'
+                else:
+                    attack_filename = f'../../data/full_decentralized/{dataset_name}/{graph}/'
+                    attack_filename += f'acc_{attack}_atk_FGSM_advs_5_adv_pow_100_atk_time_25_seed_{seed}_iid_type_iid_cent_eigenvector_centrality.csv'
+                
+                no_attack_filename = f'../../data/full_decentralized/{dataset_name}/{graph}/'
+                no_attack_filename += f'acc_score_cent_dist_manual_weight_010_atk_FGSM_advs_0_adv_pow_0_atk_time_25_seed_{seed}_iid_type_iid_cent_none.csv'
+                
+                try:
+                    with open(attack_filename, 'r') as f:
+                        reader = csv.reader(f)
+                        next(reader)  # Skip header
+                        data = [ast.literal_eval(row[1]) for row in reader]
+                    attack_acc = [sum(epoch_data) / len(epoch_data) for epoch_data in data]
+
+                    with open(no_attack_filename, 'r') as f:
+                        reader = csv.reader(f)
+                        next(reader)  # Skip header
+                        data = [ast.literal_eval(row[1]) for row in reader]
+                    no_attack_acc = [sum(epoch_data) / len(epoch_data) for epoch_data in data]
+
+                    aal = (sum(no_attack_acc[25:]) - sum(attack_acc[25:])) / len(attack_acc[25:]) * 100
+                    all_aals.append(aal)
+                except FileNotFoundError:
+                    print(f"File not found: {attack_filename} or {no_attack_filename}")
+                    continue
+
+            if all_aals:
+                aals.append(np.mean(all_aals))
+                variances.append(np.std(all_aals))
+            else:
+                print(f"No valid data for graph: {graph}")
+                aals.append(0)
+                variances.append(0)
+        
+        ax.bar(index + i * bar_width, aals, bar_width, label=labels[attack], color=colors[attack], yerr=variances, capsize=5, zorder=3)
+
+    ax.set_xlabel('Graph Type', fontsize=MEDIUM_FONT_SIZE)
+    ax.set_ylabel('Average Attack Accuracy Loss (%)', fontsize=MEDIUM_FONT_SIZE)
+    ax.set_title(f'AAL for Different Attack Types', fontsize=LARGE_FONT_SIZE)
+    ax.set_xticks(index + bar_width * 2)
+    ax.set_xticklabels(['ER Graph', 'Directed Geometric Graph', 'Preferential Attachment Graph'], fontsize=SMALL_FONT_SIZE)
+    ax.tick_params(axis='y', labelsize=SMALL_FONT_SIZE)
+    ax.grid(True, axis='y', linestyle='--', zorder=0)
+
+    # Move legend above the plot
+    ax.legend(fontsize=SMALL_FONT_SIZE, loc='upper center', bbox_to_anchor=(0.5, 1.20), ncol=3)
+
+    plt.tight_layout()
+    plt.savefig(f'all_attacks_aal_{dataset_name}.png', dpi=300, bbox_inches='tight')
+    plt.close()
+
 
 if __name__ == '__main__':
     # plot_new_schemes('ER_graph_c_25_p_01', 'iid')
@@ -1902,16 +2090,21 @@ if __name__ == '__main__':
     #                          'ER_graph_c_25_p_03',
     #                          'ER_graph_c_50_p_03',
     #                          'ER_graph_c_100_p_03'])
-    calculate_attack_gain_size_and_adv_percent(['pref_attach_graph_c_10_type_sparse',
-                             'pref_attach_graph_c_25_type_sparse',
-                             'pref_attach_graph_c_50_type_sparse',
-                             'pref_attach_graph_c_100_type_sparse'])
+    #calculate_attack_gain_size_and_adv_percent(['pref_attach_graph_c_10_type_sparse',
+    #                         'pref_attach_graph_c_25_type_sparse',
+    #                         'pref_attach_graph_c_50_type_sparse',
+    #                         'pref_attach_graph_c_100_type_sparse'])
     #calculate_attack_gain_connectivity(['dir_geom_graph_c_25_type_2d_r_02',
     #                                    'dir_geom_graph_c_25_type_2d_r_04',
     #                                    'dir_geom_graph_c_25_type_2d_r_06'])
     #calculate_attack_gain_connectivity(['ER_graph_c_25_p_01',
     #                                    'ER_graph_c_25_p_03',
     #                                    'ER_graph_c_25_p_05'])
+    graph_list = ['ER_graph_c_25_p_03', 'dir_geom_graph_c_25_type_2d_r_02', 'pref_attach_graph_c_25_type_sparse']
+    plot_all_attacks_aal(graph_list, 'fmnist')
+    # plot_dynamic_graphs('ER_graph_c_25_p_03')
+    # plot_dynamic_graphs('dir_geom_graph_c_25_type_2d_r_02')
+    # plot_dynamic_graphs('pref_attach_graph_c_25_type_sparse')
     #plot_new_schemes('pref_attach_graph_c_25_type_sparse', 'iid')
     # plots_baseline = [('dir_geom_graph_c_25_type_2d_r_02', 'iid'), 
     #                   ('pref_attach_graph_c_25_type_dense_3', 'iid'),
